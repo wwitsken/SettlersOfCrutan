@@ -30,3 +30,5 @@ var frontend = builder.AddNpmApp("frontend", "../SettlersOfCrutan.Frontend")
     .PublishAsDockerFile();
 
 builder.Build().Run();
+
+// Hello World
