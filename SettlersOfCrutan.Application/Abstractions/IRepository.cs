@@ -1,0 +1,11 @@
+﻿using SettlersOfCrutan.Domain.Core;
+
+namespace SettlersOfCrutan.Application.Abstractions;
+public interface IRepository<TAgg, TId>
+    where TAgg : AggregateRoot<TId>
+    where TId : BaseId
+{
+    Task<TAgg?> GetAsync(TId id, CancellationToken ct = default);
+    Task<bool> SaveAsync(TAgg aggregate, CancellationToken ct = default);
+    Task<bool> DeleteAsync(TId id, CancellationToken ct = default);
+}
