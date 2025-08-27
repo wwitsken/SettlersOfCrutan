@@ -8,6 +8,7 @@ using SettlersOfCrutan.Infrastructure;
 using SettlersOfCrutan.Infrastructure.Redis;
 using SettlersOfCrutan.Presentation.Endpoints;
 using SettlersOfCrutan.Presentation.Identity;
+using SettlersOfCrutan.Infrastructure.Redis.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,12 @@ builder.Services.AddDomainServices();
 builder.Services.AddApplicationServices();
 builder.Services.Configure<RedisOptions>(builder.Configuration.GetSection("Redis"));
 builder.Services.AddInfrastructureServices();
+
+// Flatten BaseId value objects in HTTP JSON (responses and requests)
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new BaseIdJsonConverterFactory());
+});
 
 builder.Services
     .AddIdentity<ApplicationUser, ApplicationRole>(opts =>
@@ -75,6 +82,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGameEndpoints();
 app.MapAuthEndpoints();
 app.MapTodoListEndpoints();
 

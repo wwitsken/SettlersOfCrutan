@@ -15,13 +15,7 @@ public enum PortType
 public record PortId : BaseId;
 public class Port : Entity<PortId>
 {
-    public override PortId Id { get; } = new();
-
-    public Port()
-    {
-        Id.Value = Guid.NewGuid();
-    }
-
+    public override PortId Id { get; init; } = new() { Value = Guid.NewGuid() };
     public BoardId BoardId { get; set; }
     public PortType Type { get; set; }
     public EdgeCoord Edge { get; set; }

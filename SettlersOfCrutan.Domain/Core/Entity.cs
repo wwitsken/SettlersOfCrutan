@@ -6,7 +6,7 @@ public abstract class Entity<TId>()
     : IHasId<TId>
     where TId : BaseId
 {
-    public abstract TId Id { get; }
+    public abstract TId Id { get; init; }
 
     public override bool Equals(object? other)
     {

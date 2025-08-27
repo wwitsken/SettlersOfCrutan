@@ -27,12 +27,7 @@ namespace SettlersOfCrutan.Domain.Games;
 public record EdgeId : BaseId;
 public class Edge : Entity<EdgeId>
 {
-    public override EdgeId Id { get; } = new();
-
-    public Edge()
-    {
-        Id.Value = Guid.NewGuid();
-    }
+    public override EdgeId Id { get; init; } = new() { Value = Guid.NewGuid() };
 
     /// <summary>
     /// Board that owns this edge.

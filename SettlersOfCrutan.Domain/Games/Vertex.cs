@@ -28,13 +28,7 @@ namespace SettlersOfCrutan.Domain.Games;
 public record VertexId : BaseId;
 public class Vertex : Entity<VertexId>
 {
-    public override VertexId Id { get; } = new();
-
-    public Vertex()
-    {
-        Id.Value = Guid.NewGuid();
-    }
-
+    public override VertexId Id { get; init; } = new() { Value = Guid.NewGuid() };
     /// <summary>
     /// Board that owns this vertex.
     /// </summary>

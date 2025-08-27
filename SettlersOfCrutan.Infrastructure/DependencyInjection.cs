@@ -1,8 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SettlersOfCrutan.Application.Games;
+using SettlersOfCrutan.Application.Todos;
 using SettlersOfCrutan.Infrastructure.Redis;
 using SettlersOfCrutan.Infrastructure.Redis.Repositories;
 using StackExchange.Redis;
-using SettlersOfCrutan.Application.Todos;
 
 namespace SettlersOfCrutan.Infrastructure;
 public static class DependencyInjection
@@ -20,6 +21,7 @@ public static class DependencyInjection
         // Repositories
         services.AddScoped(typeof(RedisRepository<,>));
         services.AddScoped<ITodoListRepository, RedisTodoListRepository>();
+        services.AddScoped<IGameRepository, RedisGameRepository>();
 
         return services;
     }

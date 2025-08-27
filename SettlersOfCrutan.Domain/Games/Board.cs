@@ -5,13 +5,7 @@ namespace SettlersOfCrutan.Domain.Games;
 public record BoardId : BaseId;
 public class Board : Entity<BoardId>
 {
-    public override BoardId Id { get; } = new();
-
-    public Board()
-    {
-        Id.Value = Guid.NewGuid();
-    }
-
+    public override BoardId Id { get; init; } = new() { Value = Guid.NewGuid() };
     public List<Hex> Hexes { get; set; } = [];
     public List<Vertex> Vertices { get; set; } = [];
     public List<Edge> Edges { get; set; } = [];
@@ -36,7 +30,7 @@ public class Board : Entity<BoardId>
             return Result<Settlement>.Failure(new DomainError("SettlementPlacement", "Vertex already occupied"));
         }
         // distance rule: no adjacent settlements (pure topology; independent of materialized edges/vertices)
-        if (HexTopology.GetAdjacentVertices(coord).Any(vc => IsVertexOccupied(vc)))
+        if (HexTopology.GetAdjacentVertices(coord).Any(IsVertexOccupied))
         {
             return Result<Settlement>.Failure(new DomainError("SettlementPlacement", "Adjacent vertex occupied (distance rule)"));
         }
@@ -206,9 +200,9 @@ public class Board : Entity<BoardId>
         return (va, vb);
     }
 
-    private IEnumerable<EdgeCoord> GetEdgesForVertex(VertexCoord coord)
+    private static IEnumerable<EdgeCoord> GetEdgesForVertex(VertexCoord coord)
         => HexTopology.GetVertexEdges(HexTopology.Canonicalize(coord));
 
-    private IEnumerable<EdgeCoord> GetAdjacentEdges(EdgeCoord coord)
+    private static IEnumerable<EdgeCoord> GetAdjacentEdges(EdgeCoord coord)
         => HexTopology.GetAdjacentEdges(HexTopology.Canonicalize(coord));
 }
