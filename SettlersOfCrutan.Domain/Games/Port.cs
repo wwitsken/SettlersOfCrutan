@@ -1,4 +1,5 @@
 using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.Games.Coordinates;
 
 namespace SettlersOfCrutan.Domain.Games;
 
@@ -12,11 +13,10 @@ public enum PortType
     Ore2to1
 }
 
-public record PortId : BaseId;
-public class Port : Entity<PortId>
+public record PortId : BaseId<Edge>;
+public class Port(Edge edgeCoordinate) : Entity<PortId>
 {
-    public override PortId Id { get; init; } = new() { Value = Guid.NewGuid() };
-    public BoardId BoardId { get; set; }
+    public override PortId Id { get; init; } = new() { Value = edgeCoordinate };
     public PortType Type { get; set; }
-    public EdgeCoord Edge { get; set; }
+    public Edge EdgeCoordinate => Id.Value;
 }

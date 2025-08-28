@@ -2,7 +2,7 @@
 
 namespace SettlersOfCrutan.Domain.Todos;
 
-public record TodoListId : BaseId;
+public record TodoListId : BaseId<Guid>;
 public class TodoList(TodoListId id, string name, List<string> todos) : AggregateRoot<TodoListId>
 {
     public override TodoListId Id { get; init; } = id;

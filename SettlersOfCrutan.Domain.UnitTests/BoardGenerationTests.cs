@@ -1,4 +1,5 @@
 ﻿using SettlersOfCrutan.Domain.Games;
+using SettlersOfCrutan.Domain.Games.Coordinates;
 using SettlersOfCrutan.Domain.Generation;
 
 namespace SettlersOfCrutan.Domain.UnitTests;
@@ -47,10 +48,7 @@ public class BoardGenerationTests
 
         // Robber exists on exactly one desert (if any deserts)
         var deserts = board.Hexes.Where(h => h.Resource == ResourceType.Desert).ToList();
-        if (deserts.Count > 0)
-        {
-            Assert.Single(deserts, h => h.HasRobber);
-        }
+        if (deserts.Count > 0) Assert.Single(deserts, h => h.HasRobber);
     }
 
     [Fact]
@@ -66,17 +64,16 @@ public class BoardGenerationTests
         Assert.Equal(cfg.NumberTokens.Count, nonDeserts.Count);
 
         // No adjacent 6/8 tiles
-        var byCoord = board.Hexes.ToDictionary(h => h.Coord);
+        Dictionary<HexCoord, Hex> byCoord = board.Hexes.ToDictionary(h => h.Coordinate);
         foreach (var h in nonDeserts)
         {
             if (h.NumberToken is 6 or 8)
             {
-                foreach (EdgeDirection dir in Enum.GetValues(typeof(EdgeDirection)))
+                foreach (HexCoord coord in h.Coordinate.GetAdjacentHexCoords())
                 {
-                    var nCoord = HexTopology.Neighbor(h.Coord, dir);
-                    if (byCoord.TryGetValue(nCoord, out var neigh) && neigh.Resource != ResourceType.Desert)
+                    if (byCoord.TryGetValue(coord, out var neigh) && neigh.Resource != ResourceType.Desert)
                     {
-                        Assert.False(neigh.NumberToken is 6 or 8, $"High token adjacency at {h.Coord} and {nCoord}");
+                        Assert.False(neigh.NumberToken is 6 or 8, $"High token adjacency at {h.Coordinate} and {coord}");
                     }
                 }
             }
@@ -93,13 +90,12 @@ public class BoardGenerationTests
         int totalPorts = cfg.Ports.Sum(p => p.count);
         Assert.Equal(totalPorts, board.Ports.Count);
 
-        var coords = GetAxialCoords(cfg.Radius).ToHashSet();
-
         // Each port must be on a border edge (neighbor hex missing)
         foreach (var port in board.Ports)
         {
-            var neighbor = HexTopology.Neighbor(port.Edge.Hex, port.Edge.Direction);
-            Assert.DoesNotContain(neighbor, coords);
+            var e = port.EdgeCoordinate;
+            List<Hex> hexes = board.Hexes.FindAll(h => h.Coordinate.Equals(e.HexCoord1) || h.Coordinate.Equals(e.HexCoord2));
+            Assert.Single(hexes); // exactly one of the two hexes is on the board
         }
 
         // Types distribution matches
@@ -109,16 +105,4 @@ public class BoardGenerationTests
         }
     }
 
-    private static IEnumerable<AxialCoord> GetAxialCoords(int radius)
-    {
-        for (int q = -radius; q <= radius; q++)
-        {
-            int r1 = Math.Max(-radius, -q - radius);
-            int r2 = Math.Min(radius, -q + radius);
-            for (int r = r1; r <= r2; r++)
-            {
-                yield return new AxialCoord(q, r);
-            }
-        }
-    }
 }

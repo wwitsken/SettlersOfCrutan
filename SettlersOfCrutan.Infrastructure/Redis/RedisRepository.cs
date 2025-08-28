@@ -53,11 +53,7 @@ public class RedisRepository<TAgg, TId>(IDatabase db, IOptions<RedisOptions> opt
 
     private static TAgg CloneWithNextVersion(TAgg original)
     {
-        // Simple approach:
-        // 1) serialize current object
-        // 2) deserialize to a mutable document (Dictionary<string,object>) and bump version
-        // 3) or if your aggregate exposes a method to bump then return same instance
-        // Here, we assume the aggregate provides BumpVersion()
+        // For now, we just bump version on the original aggregate.
         original.BumpVersion();
         return original;
     }

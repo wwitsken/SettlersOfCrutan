@@ -2,7 +2,7 @@
 
 namespace SettlersOfCrutan.Application.Abstractions;
 public interface IRepository<TAgg, TId>
-    where TAgg : AggregateRoot<TId>
+    where TAgg : Entity<TId>
     where TId : BaseId
 {
     Task<TAgg?> GetAsync(TId id, CancellationToken ct = default);

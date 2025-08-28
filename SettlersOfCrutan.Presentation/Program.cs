@@ -6,9 +6,10 @@ using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Domain;
 using SettlersOfCrutan.Infrastructure;
 using SettlersOfCrutan.Infrastructure.Redis;
+using SettlersOfCrutan.Infrastructure.Redis.Serialization;
 using SettlersOfCrutan.Presentation.Endpoints;
 using SettlersOfCrutan.Presentation.Identity;
-using SettlersOfCrutan.Infrastructure.Redis.Serialization;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,7 @@ builder.Services.AddInfrastructureServices();
 // Flatten BaseId value objects in HTTP JSON (responses and requests)
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()); // or new(JsonNamingPolicy.CamelCase)
     options.SerializerOptions.Converters.Add(new BaseIdJsonConverterFactory());
 });
 

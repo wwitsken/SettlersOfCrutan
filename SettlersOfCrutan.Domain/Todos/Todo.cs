@@ -2,7 +2,7 @@
 
 namespace SettlersOfCrutan.Domain.Todos;
 
-public record TodoId : BaseId;
+public record TodoId : BaseId<Guid>;
 public class Todo(TodoId id, string title, string message, bool isDone) : Entity<TodoId>
 {
     public override TodoId Id { get; init; } = id;

@@ -1,5 +1,13 @@
 ﻿namespace SettlersOfCrutan.Domain.Core;
-public abstract record BaseId
+
+// Base non-generic marker type for IDs
+public abstract record BaseId;
+
+// Generic BaseId that can hold any value type (e.g., Guid, custom value object)
+public abstract record BaseId<TValue>
+: BaseId
 {
-    public Guid Value { get; set; }
+    public TValue Value { get; init; }
+
+    public override string ToString() => Value?.ToString() ?? string.Empty;
 }

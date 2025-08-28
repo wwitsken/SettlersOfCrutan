@@ -23,7 +23,7 @@ public sealed class GenerateBoardCommandHandler
 
         var game = new Game() { Board = board };
 
-        var players = command.UserIds.Select(id => new Player() { GameId = game.Id, Name = "", UserId = id }).ToList();
+        var players = command.UserIds.Select(id => new Player() { Name = "", UserId = id }).ToList();
 
         game.Players = players;
 

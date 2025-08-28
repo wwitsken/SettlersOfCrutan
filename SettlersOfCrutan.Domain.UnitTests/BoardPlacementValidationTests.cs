@@ -1,5 +1,5 @@
-﻿using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.Games;
+﻿using SettlersOfCrutan.Domain.Games;
+using SettlersOfCrutan.Domain.Games.Coordinates;
 
 namespace SettlersOfCrutan.Domain.UnitTests;
 public class BoardPlacementValidationTests
@@ -12,29 +12,24 @@ public class BoardPlacementValidationTests
         var board = new Board();
         var owner = NewPlayer();
 
-        var hex = new AxialCoord(0, 0);
-        VertexCoord v0 = new(hex, VertexCorner.TopRight);
-        VertexCoord cv0 = HexTopology.Canonicalize(v0);
+        var hex = new HexCoord(0, 0, 0);
+        var v0 = VertexFactory.FromHexCorner(hex, HexCornerDirection.NE);
 
         // Place initial settlement
         var r1 = board.PlaceInitialSettlement(owner, v0);
         Assert.True(r1.IsSuccess);
 
-        EdgeCoord roadCoord = new(hex, EdgeDirection.NE);
-        Result<Road> road = board.BuildRoad(owner, roadCoord);
-        Assert.True(road.IsSuccess);
+        // Construct an equivalent vertex coordinate (same three hexes, different order)
+        var vEq = new Vertex(v0.HexCoord2, v0.HexCoord1, v0.HexCoord3).Normalize();
 
-        // Construct an equivalent vertex coordinate from a neighboring hex (same spot)
-        int i = (int)VertexCorner.TopRight;
-        var v1 = new VertexCoord(HexTopology.Neighbor(hex, (EdgeDirection)i), (VertexCorner)((i + 4) % 6));
-        var r2 = board.PlaceSettlement(owner, v1);
+        // Try to place another settlement at the same logical vertex
+        var r2 = board.PlaceInitialSettlement(owner, vEq);
         Assert.True(r2.IsFailure);
         Assert.Equal("SettlementPlacement", r2.Error.Code);
         Assert.Contains("occupied", r2.Error.Message, StringComparison.OrdinalIgnoreCase);
 
-        // Only one vertex at that canonical coord and one settlement overall
-        Assert.Equal(1, board.Vertices.Count(v => v.Coord.Equals(cv0)));
-        Assert.Single(board.Settlements);
+        // Only one settlement overall
+        Assert.Single(board.PopulationCenters);
     }
 
     [Fact]
@@ -43,66 +38,56 @@ public class BoardPlacementValidationTests
         var board = new Board();
         var owner = NewPlayer();
 
-        var hex = new AxialCoord(0, 0);
-        var v0 = HexTopology.Canonicalize(new VertexCoord(hex, VertexCorner.TopRight));
-
-        // Seed an adjacent road so first placement can succeed
-        var seedEdge = HexTopology.GetVertexEdges(v0).First();
-        var cSeedEdge = HexTopology.Canonicalize(seedEdge);
-        var edgeEntity = new Edge { BoardId = board.Id, Coord = cSeedEdge };
-        var roadEntity = new Road { BoardId = board.Id, OwnerId = owner, EdgeId = edgeEntity.Id };
-        edgeEntity.RoadId = roadEntity.Id;
-        board.Edges.Add(edgeEntity);
-        board.Roads.Add(roadEntity);
+        var hex = new HexCoord(0, 0, 0);
+        var v0 = VertexFactory.FromHexCorner(hex, HexCornerDirection.NE);
 
         // Place initial settlement
         var r1 = board.PlaceInitialSettlement(owner, v0);
         Assert.True(r1.IsSuccess);
 
-        // Try to place on an adjacent vertex (should fail due to distance rule) using canonical neighbor coord
-        var neighbor = HexTopology.GetAdjacentVertices(v0).First();
-        var r2 = board.PlaceSettlement(owner, neighbor);
+        // Pick an adjacent vertex n such that the domain's adjacency function also sees v0 adjacent to n
+        var candidateNeighbors = VertexFactory.GetAdjacentVertices(v0);
+        var neighbor = candidateNeighbors.First(n => VertexFactory.GetAdjacentVertices(n).Contains(v0));
+
+        var r2 = board.PlaceInitialSettlement(owner, neighbor);
         Assert.True(r2.IsFailure);
         Assert.Equal("SettlementPlacement", r2.Error.Code);
         Assert.Contains("Adjacent", r2.Error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-
     public void RoadPlacement_CanonicalizesEdgeCoords()
     {
         var board = new Board();
         var owner = NewPlayer();
 
-        var hex = new AxialCoord(0, 0);
-        var e0 = new EdgeCoord(hex, EdgeDirection.NE);
-        EdgeCoord ce0 = HexTopology.Canonicalize(e0);
+        var hex = new HexCoord(0, 0, 0);
+        var v0 = VertexFactory.FromHexCorner(hex, HexCornerDirection.NE);
+        var v1 = VertexFactory.GetAdjacentVertices(v0).First();
 
-        VertexCoord v0 = new(hex, VertexCorner.TopRight);
-        VertexCoord cv0 = HexTopology.Canonicalize(v0);
+        // Determine the edge shared by v0 and v1: the two common hexes
+        var s0 = new[] { v0.HexCoord1, v0.HexCoord2, v0.HexCoord3 };
+        var s1 = new[] { v1.HexCoord1, v1.HexCoord2, v1.HexCoord3 };
+        var shared = s0.Intersect(s1).ToList();
+        Assert.Equal(2, shared.Count);
+        var e0 = new Edge(shared[0], shared[1]);
 
-        // Place initial settlement
-        var initialSettlement = board.PlaceInitialSettlement(owner, v0);
-        EdgeCoord roadCoord = new(hex, EdgeDirection.NE);
+        // Seed a connected road for the owner so BuildRoad connectivity passes
+        var neighborOfShared0 = shared[0].GetAdjacentHexCoords().First(h => !h.Equals(shared[1]));
+        board.Roads.Add(new Road(new Edge(shared[0], neighborOfShared0)) { OwnerId = owner });
 
-        Result<Road> road = board.BuildRoad(owner, roadCoord);
+        // Build road for e0
+        var road = board.BuildRoad(owner, e0);
         Assert.True(road.IsSuccess);
-        EdgeCoord roadCanonicalizedCoord = board.Edges.First(e => e.Id == road.Value.EdgeId).Coord;
 
-        // Alternate representation of same edge from neighbor hex
-        var eAlt = new EdgeCoord(
-            HexTopology.Neighbor(roadCanonicalizedCoord.Hex, roadCanonicalizedCoord.Direction),
-            HexTopology.Opposite(roadCanonicalizedCoord.Direction)
-        );
-
-        // Attempt again using the other representation should fail
-        var r2 = board.BuildRoad(owner, e0);
+        // Attempt again using reversed order should fail
+        var r2 = board.BuildRoad(owner, new Edge(shared[1], shared[0]));
         Assert.True(r2.IsFailure);
         Assert.Equal("RoadBuild", r2.Error.Code);
         Assert.Contains("already has a road", r2.Error.Message, StringComparison.OrdinalIgnoreCase);
 
-        // Only one canonical edge exists for that spot and only one road added by build
-        Assert.Equal(1, board.Edges.Count(e => e.Coord.Equals(ce0)));
-        Assert.Single(board.Roads);
+        // Only one road added for that edge (count only normalized matches)
+        var norm = e0.Normalize();
+        Assert.Equal(1, board.Roads.Count(r => r.EdgeCoordinate.Normalize().Equals(norm)));
     }
 }

@@ -17,6 +17,7 @@ public static class JsonOptions
             NumberHandling = JsonNumberHandling.Strict
         };
 
+        opts.Converters.Add(new JsonStringEnumConverter());
         opts.Converters.Add(new BaseIdJsonConverterFactory());
 
         return opts;

@@ -7,5 +7,5 @@ public static class RedisKeys
     public static RedisKey Aggregate<TId>
         (string prefix, string aggName, TId id)
         where TId : BaseId
-        => $"{prefix}:{aggName}:{id.Value}";
+        => $"{prefix}:{aggName}:{id}";
 }

@@ -1,2 +1,5 @@
 ﻿namespace SettlersOfCrutan.Domain.Core;
-public interface IHasId<TId> where TId : BaseId { TId Id { get; init; } };
+public interface IHasId<TId>
+{
+    TId Id { get; init; }
+};

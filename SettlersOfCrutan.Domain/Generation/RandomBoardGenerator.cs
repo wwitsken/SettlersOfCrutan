@@ -1,6 +1,5 @@
 using SettlersOfCrutan.Domain.Games;
-using SettlersOfCrutan.Domain.DomainErrors;
-using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.Games.Coordinates;
 
 namespace SettlersOfCrutan.Domain.Generation;
 
@@ -14,16 +13,13 @@ public class RandomBoardGenerator : IBoardGenerator
         var board = new Board
         {
             Hexes = [],
-            Vertices = [],
-            Edges = [],
             Roads = [],
-            Settlements = [],
-            Cities = [],
-            Ports = []
+            PopulationCenters = [],
+            Ports = [],
         };
 
         // Build axial coordinates within radius
-        var coords = GetAxialCoords(config.Radius).ToList();
+        var coords = GetHexCoords(config.Radius).ToList();
         var hexCount = coords.Count;
 
         // Assign resources according to counts
@@ -34,10 +30,8 @@ public class RandomBoardGenerator : IBoardGenerator
         var hexes = new List<Hex>(hexCount);
         for (int i = 0; i < hexCount; i++)
         {
-            var h = new Hex
+            var h = new Hex(coords[i])
             {
-                BoardId = board.Id,
-                Coord = coords[i],
                 Resource = resourceBag[i],
                 NumberToken = null,
                 HasRobber = false
@@ -76,7 +70,7 @@ public class RandomBoardGenerator : IBoardGenerator
         var ports = new List<Port>();
         for (int i = 0; i < Math.Min(portTypes.Count, chosenEdges.Count); i++)
         {
-            ports.Add(new Port { BoardId = board.Id, Type = portTypes[i], Edge = chosenEdges[i] });
+            ports.Add(new Port(chosenEdges[i]) { Type = portTypes[i] });
         }
         board.Ports = ports;
 
@@ -115,7 +109,7 @@ public class RandomBoardGenerator : IBoardGenerator
         return bag;
     }
 
-    private static IEnumerable<AxialCoord> GetAxialCoords(int radius)
+    private static IEnumerable<HexCoord> GetHexCoords(int radius)
     {
         for (int q = -radius; q <= radius; q++)
         {
@@ -123,7 +117,8 @@ public class RandomBoardGenerator : IBoardGenerator
             int r2 = Math.Min(radius, -q + radius);
             for (int r = r1; r <= r2; r++)
             {
-                yield return new AxialCoord(q, r);
+                int s = -q - r; // cube coordinate third component
+                yield return new HexCoord(q, r, s);
             }
         }
     }
@@ -144,17 +139,15 @@ public class RandomBoardGenerator : IBoardGenerator
         var others = tokens.Where(t => t != 6 && t != 8).ToList();
 
         // adjacency map among non-desert indices
-        var indexByCoord = hexes.ToDictionary(h => h.Coord, h => h);
+        var indexByCoord = hexes.ToDictionary(h => h.Coordinate, h => h);
+
         bool IsAdjacentWithHigh(int idx)
         {
             var h = hexes[idx];
-            foreach (EdgeDirection dir in Enum.GetValues(typeof(EdgeDirection)))
+            foreach (var neighborCoord in h.Coordinate.GetAdjacentHexCoords())
             {
-                var neighborCoord = HexTopology.Neighbor(h.Coord, dir);
-                if (indexByCoord.TryGetValue(neighborCoord, out var n))
-                {
-                    if (n.NumberToken is 6 or 8) return true;
-                }
+                if (indexByCoord.TryGetValue(neighborCoord, out var n) && n.NumberToken is 6 or 8)
+                    return true;
             }
             return false;
         }
@@ -190,18 +183,15 @@ public class RandomBoardGenerator : IBoardGenerator
         }
     }
 
-    private static IEnumerable<EdgeCoord> GetBorderEdges(IEnumerable<AxialCoord> coords)
+    private static IEnumerable<Edge> GetBorderEdges(IEnumerable<HexCoord> coords)
     {
-        var set = new HashSet<AxialCoord>(coords);
+        var set = new HashSet<HexCoord>(coords);
         foreach (var h in set)
         {
-            foreach (EdgeDirection dir in Enum.GetValues(typeof(EdgeDirection)))
+            foreach (var neighbor in h.GetAdjacentHexCoords())
             {
-                var n = HexTopology.Neighbor(h, dir);
-                if (!set.Contains(n))
-                {
-                    yield return new EdgeCoord(h, dir);
-                }
+                if (!set.Contains(neighbor))
+                    yield return new Edge(h, neighbor).Normalize();
             }
         }
     }

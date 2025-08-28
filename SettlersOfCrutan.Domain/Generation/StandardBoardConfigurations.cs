@@ -1,6 +1,6 @@
-﻿using SettlersOfCrutan.Domain.Generation;
+﻿using SettlersOfCrutan.Domain.Games;
 
-namespace SettlersOfCrutan.Domain.Games;
+namespace SettlersOfCrutan.Domain.Generation;
 public static class StandardBoardConfigurations
 {
     public static BoardConfig DefaultBaseGame => new
