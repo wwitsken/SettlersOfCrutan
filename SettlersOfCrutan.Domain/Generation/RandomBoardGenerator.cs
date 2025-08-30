@@ -144,7 +144,7 @@ public class RandomBoardGenerator : IBoardGenerator
         bool IsAdjacentWithHigh(int idx)
         {
             var h = hexes[idx];
-            foreach (var neighborCoord in h.Coordinate.GetAdjacentHexCoords())
+            foreach (var neighborCoord in h.Coordinate.GetAdjacentHexCoords().Values)
             {
                 if (indexByCoord.TryGetValue(neighborCoord, out var n) && n.NumberToken is 6 or 8)
                     return true;
@@ -188,7 +188,7 @@ public class RandomBoardGenerator : IBoardGenerator
         var set = new HashSet<HexCoord>(coords);
         foreach (var h in set)
         {
-            foreach (var neighbor in h.GetAdjacentHexCoords())
+            foreach (var neighbor in h.GetAdjacentHexCoords().Values)
             {
                 if (!set.Contains(neighbor))
                     yield return new Edge(h, neighbor).Normalize();

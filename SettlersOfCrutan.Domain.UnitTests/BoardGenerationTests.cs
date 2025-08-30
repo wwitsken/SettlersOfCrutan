@@ -69,7 +69,7 @@ public class BoardGenerationTests
         {
             if (h.NumberToken is 6 or 8)
             {
-                foreach (HexCoord coord in h.Coordinate.GetAdjacentHexCoords())
+                foreach (HexCoord coord in h.Coordinate.GetAdjacentHexCoords().Values)
                 {
                     if (byCoord.TryGetValue(coord, out var neigh) && neigh.Resource != ResourceType.Desert)
                     {

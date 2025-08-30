@@ -21,3 +21,11 @@ public record Result<T>
     public static Result<Nothing> Success() => new(true, new Nothing(), null);
     public static Result<T> Failure(Error error) => new(false, default, error);
 }
+
+public static class Result
+{
+    public static Result<Nothing> Success() => Result<Nothing>.Success();
+    public static Result<Nothing> Failure(Error error) => Result<Nothing>.Failure(error);
+    public static Result<T> Success<T>(T value) => Result<T>.Success(value);
+    public static Result<T> Failure<T>(Error error) => Result<T>.Failure(error);
+}

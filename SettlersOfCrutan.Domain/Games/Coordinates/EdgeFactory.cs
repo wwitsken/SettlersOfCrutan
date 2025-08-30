@@ -1,4 +1,5 @@
 ﻿namespace SettlersOfCrutan.Domain.Games.Coordinates;
+
 public static class EdgeFactory
 {
     public static bool ConnectsToEdge(Edge edge, Edge other)
@@ -7,4 +8,11 @@ public static class EdgeFactory
         List<HexCoord> otherHexes = [other.HexCoord1, other.HexCoord2];
         return edgeHexes.Intersect(otherHexes).Any();
     }
+
+    public static Edge FromHexEdge(HexCoord hex, EdgeDirection edgeDirection)
+    {
+        HexCoord otherHex = hex.GetAdjacentHexCoords()[edgeDirection];
+        return new Edge(hex, otherHex).Normalize();
+    }
+
 }

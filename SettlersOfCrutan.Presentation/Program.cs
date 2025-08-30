@@ -3,7 +3,6 @@ using ElCamino.AspNetCore.Identity.AzureTable;
 using ElCamino.AspNetCore.Identity.AzureTable.Model;
 using Scalar.AspNetCore;
 using SettlersOfCrutan.Application;
-using SettlersOfCrutan.Domain;
 using SettlersOfCrutan.Infrastructure;
 using SettlersOfCrutan.Infrastructure.Redis;
 using SettlersOfCrutan.Infrastructure.Redis.Serialization;
@@ -18,7 +17,6 @@ builder.AddAzureTableServiceClient("tables");
 //builder.AddAzureKeyVaultClient("kv");
 
 builder.Services.AddOpenApi();
-builder.Services.AddDomainServices();
 builder.Services.AddApplicationServices();
 builder.Services.Configure<RedisOptions>(builder.Configuration.GetSection("Redis"));
 builder.Services.AddInfrastructureServices();

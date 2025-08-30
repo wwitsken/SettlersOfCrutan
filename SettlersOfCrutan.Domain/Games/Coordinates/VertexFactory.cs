@@ -69,11 +69,6 @@ public static class VertexFactory
 
     public static Vertex[] FromHex(HexCoord hex)
     {
-        // Plan:
-        // 1. For each corner of the hex, use FromHexCorner to get the VertexCoord.
-        // 2. There are 6 corners: NE, E, SE, SW, W, NW.
-        // 3. Return array of VertexCoord for each corner.
-
         var corners = new[]
         {
             HexCornerDirection.NE,
@@ -94,12 +89,6 @@ public static class VertexFactory
 
     public static Vertex[] GetAdjacentVertices(Vertex v)
     {
-        // Plan:
-        // 1. Each vertex is defined by three hexes (V1, V2, V3).
-        // 2. Each adjacent vertex shares two of these hexes, and one is replaced by an adjacent hex.
-        // 3. For each pair of hexes in v, find the third hex adjacent to both.
-        // 4. Construct new VertexCoord for each such combination, normalize, and collect unique results.
-
         var vertices = new HashSet<Vertex>();
 
         var hexes = new[] { v.HexCoord1, v.HexCoord2, v.HexCoord3 };
@@ -111,9 +100,9 @@ public static class VertexFactory
             var h2 = hexes[(i + 1) % 3];
 
             // Get adjacent hexes to h1
-            var adjH1 = h1.GetAdjacentHexCoords();
+            var adjH1 = h1.GetAdjacentHexCoords().Values;
             // Get adjacent hexes to h2
-            var adjH2 = h2.GetAdjacentHexCoords();
+            var adjH2 = h2.GetAdjacentHexCoords().Values;
 
             // Find common adjacent hex
             foreach (var candidate in adjH1)

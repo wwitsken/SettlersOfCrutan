@@ -4,17 +4,17 @@ namespace SettlersOfCrutan.Domain.Games.Coordinates;
 
 public readonly record struct HexCoord(int Q, int R, int S)
 {
-    public List<HexCoord> GetAdjacentHexCoords() =>
-    [
-        new HexCoord(Q + 1, R - 1, S),
-        new HexCoord(Q + 1, R, S - 1),
-        new HexCoord(Q, R + 1, S - 1),
-        new HexCoord(Q - 1, R + 1, S),
-        new HexCoord(Q - 1, R, S + 1),
-        new HexCoord(Q, R - 1, S + 1),
-    ];
+    public Dictionary<EdgeDirection, HexCoord> GetAdjacentHexCoords() =>
+        new()
+        {
+            { EdgeDirection.North,     new HexCoord(Q, R - 1, S + 1) },
+            { EdgeDirection.NorthEast, new HexCoord(Q + 1, R - 1, S) },
+            { EdgeDirection.SouthEast, new HexCoord(Q + 1, R, S - 1) },
+            { EdgeDirection.South,     new HexCoord(Q, R + 1, S - 1) },
+            { EdgeDirection.SouthWest, new HexCoord(Q - 1, R + 1, S) },
+            { EdgeDirection.NorthWest, new HexCoord(Q - 1, R, S + 1) }
+        };
 
-    // Keep ToString for debugging only
     public override string ToString() => $"{Q}:{R}:{S}";
     public string ToIdString() => FormattableString.Invariant($"{Q}:{R}");
     public string ToIdString3() => FormattableString.Invariant($"{Q}:{R}:{S}");
