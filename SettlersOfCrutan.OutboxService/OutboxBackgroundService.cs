@@ -10,11 +10,11 @@ public sealed class OutboxBackgroundService(IServiceScopeFactory scopeFactory, I
     private readonly ILogger<OutboxBackgroundService> _logger = logger;
 
     public const string ActivitySourceName = "Outbox";
-    private static readonly ActivitySource s_activitySource = new(ActivitySourceName);
+    private static readonly ActivitySource _activitySource = new(ActivitySourceName);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var activity = s_activitySource.StartActivity("Migrating database", ActivityKind.Client);
+        using var activity = _activitySource.StartActivity("Processing outbox messages", ActivityKind.Server);
 
         _logger.LogInformation("OutboxBackgroundService starting");
         try
@@ -33,8 +33,7 @@ public sealed class OutboxBackgroundService(IServiceScopeFactory scopeFactory, I
         {
             _logger.LogError(ex, "OutboxBackgroundService encountered an unhandled exception.");
             activity?.AddException(ex);
-            // Optionally: add small delay to avoid tight crash loop
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken); // small delay to avoid tight crash loop
         }
         finally
         {
