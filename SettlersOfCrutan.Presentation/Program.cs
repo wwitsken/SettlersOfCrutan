@@ -8,13 +8,14 @@ using SettlersOfCrutan.Infrastructure.Redis;
 using SettlersOfCrutan.Infrastructure.Redis.Serialization;
 using SettlersOfCrutan.Presentation.Endpoints;
 using SettlersOfCrutan.Presentation.Identity;
+using SettlersOfCrutan.ServiceDefaults;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 builder.AddRedisClient("redis");
 builder.AddAzureTableServiceClient("tables");
-//builder.AddAzureKeyVaultClient("kv");
 
 builder.Services.AddOpenApi();
 builder.Services.AddApplicationServices();

@@ -6,14 +6,16 @@ var builder = DistributedApplication.CreateBuilder(args);
 var redis = builder.AddRedis("redis");
 var storage = builder.AddAzureStorage("storage");
 var tables = storage.AddTables("tables");
-//var keyVault = builder.AddAzureKeyVault("kv");
 
 var api = builder.AddProject<Projects.SettlersOfCrutan_Presentation>("api")
     .WithReference(redis)
     .WithReference(tables)
-    //.WithReference(keyVault)
     .WaitFor(redis)
     .WaitFor(tables);
+
+var jobs = builder.AddProject<Projects.SettlersOfCrutan_OutboxService>("jobs")
+    .WithReference(redis)
+    .WaitFor(redis);
 
 if (builder.Environment.IsDevelopment())
 {

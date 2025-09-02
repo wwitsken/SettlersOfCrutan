@@ -5,7 +5,7 @@ using SettlersOfCrutan.Domain.Generation;
 
 namespace SettlersOfCrutan.Application.Games;
 
-public record GenerateBoardCommand(string[] UserIds);
+public record GenerateBoardCommand(string GameName, string[] UserIds);
 public sealed class GenerateBoardCommandHandler
 {
     private readonly IGameRepository _gameRepository;
@@ -19,16 +19,12 @@ public sealed class GenerateBoardCommandHandler
 
     public async Task<Result<GameId>> Handle(GenerateBoardCommand command, CancellationToken ct = default)
     {
-        Board board = _boardGenerator.Generate(StandardBoardConfigurations.DefaultBaseGame, Environment.TickCount);
+        var gameResult = Game.CreateGame(command.GameName, command.UserIds, _boardGenerator);
 
-        var game = new Game() { Board = board };
+        if (gameResult.IsFailure) return Result<GameId>.Failure(new DomainError("GameCreation", "Game could not be spawned"));
 
-        var players = command.UserIds.Select((id, index) => Player.Create(index, id)).ToList();
+        var success = await _gameRepository.SaveAsync(gameResult.Value, ct);
 
-        game.Players = players;
-
-        var success = await _gameRepository.SaveAsync(game, ct);
-
-        return success ? Result<GameId>.Success(game.Id) : Result<GameId>.Failure(DomainError.InvalidOperation);
+        return success ? Result<GameId>.Success(gameResult.Value.Id) : Result<GameId>.Failure(DomainError.InvalidOperation);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games.Coordinates;
+using SettlersOfCrutan.Domain.Generation;
 
 namespace SettlersOfCrutan.Domain.Games;
 
@@ -24,6 +25,8 @@ public class Game : AggregateRoot<GameId>
     // Turn state
     public DateTimeOffset? TurnExpiresAt => CurrentTurnDetails?.ExpiresAt;
     public PlayerId CurrentPlayerId() => Players[PlayerIndex].Id;
+
+    public List<PlayerId> PlayersNeedingToDiscardHalf => [.. CurrentTurnDetails.DiscardHalfRequirements.Select(r => r.PlayerId)];
 
     public void NextPlayer()
     {
@@ -261,5 +264,17 @@ public class Game : AggregateRoot<GameId>
         return Result.Success();
     }
 
-    public List<PlayerId> PlayersNeedingToDiscardHalf => [.. CurrentTurnDetails.DiscardHalfRequirements.Select(r => r.PlayerId)];
+    public static Result<Game> CreateGame(string gameName, string[] playerIds, IBoardGenerator boardGenerator)
+    {
+        Game game = new()
+        {
+            Name = gameName,
+            Players = [.. playerIds.Select((id, ix) => Player.Create(ix, id))],
+            Board = boardGenerator.Generate(StandardBoardConfigurations.DefaultBaseGame, Environment.TickCount)
+        };
+
+        game.AddDomainEvent(new GameCreatedDomainEvent(game.Id, [.. game.Players.Select(p => p.UserId)]));
+
+        return Result.Success(game);
+    }
 }

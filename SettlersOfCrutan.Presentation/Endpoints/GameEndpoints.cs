@@ -18,12 +18,23 @@ public static class GameEndpoints
             GenerateBoardCommandHandler handler,
             CancellationToken ct) =>
         {
-            var cmd = new GenerateBoardCommand(command.UserIds);
-            Result<GameId> result = await handler.Handle(cmd, ct);
+            Result<GameId> result = await handler.Handle(command, ct);
             return result.IsSuccess
             ? TypedResults.Created($"/games/{result.Value.Value}")
             : TypedResults.ValidationProblem(new Dictionary<string, string[]> { [result.Error.Code] = [result.Error.Message] });
         });
+
+        //group.MapPost("/", async Task<Results<Created, ValidationProblem>> (
+        //    [FromBody] CreateGameCommand command,
+        //    CreateGameCommandHandler handler,
+        //    CancellationToken ct) =>
+        //{
+        //    var cmd = new CreateGameCommand(command.GameName, command.UserIds);
+        //    var result = await handler.Handle(cmd, ct);
+        //    return result.IsSuccess
+        //        ? TypedResults.Created($"/games/{result.Value.Value}")
+        //        : TypedResults.ValidationProblem(new Dictionary<string, string[]> { [result.Error.Code] = [result.Error.Message] });
+        //});
 
         group.MapGet("/{id:guid}", async Task<Results<Ok<Game>, NotFound, ValidationProblem>> (
             Guid id,
@@ -40,7 +51,7 @@ public static class GameEndpoints
             {
                 return TypedResults.ValidationProblem(new Dictionary<string, string[]>
                 {
-                    [result.Error.Code] = new[] { result.Error.Message }
+                    [result.Error.Code] = [result.Error.Message]
                 });
             }
 

@@ -56,7 +56,7 @@ public class RandomBoardGenerator : IBoardGenerator
         board.Hexes = hexes;
 
         // Generate random ports on border edges
-        var totalPorts = config.Ports.Sum(p => p.count);
+        var totalPorts = config.Ports.Sum(p => p.Value);
         var borderEdges = GetBorderEdges(coords).ToList();
         Shuffle(borderEdges, rng);
         var chosenEdges = borderEdges.Take(totalPorts).ToList();
@@ -79,7 +79,7 @@ public class RandomBoardGenerator : IBoardGenerator
 
     private static void ValidateConfig(BoardConfig config)
     {
-        if (config.Radius < 0) throw new ArgumentOutOfRangeException(nameof(config.Radius));
+        if (config.Radius < 0) throw new ArgumentOutOfRangeException(nameof(config));
         var expectedHexes = 3 * config.Radius * (config.Radius + 1) + 1;
         var resourceSum = config.ResourceCounts.Values.Sum();
         if (resourceSum != expectedHexes)

@@ -1,21 +1,17 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>0a5cafde-2aa3-499f-977a-873e8293e599</UserSecretsId>
+    <UserSecretsId>dotnet-SettlersOfCrutan.OutboxProcessor-c73e1bd9-52de-4274-a007-a2609e1f9326</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Azure.Data.Tables" Version="9.4.2" />
-    <PackageReference Include="Aspire.StackExchange.Redis" Version="9.4.2" />
-    <PackageReference Include="ElCamino.AspNetCore.Identity.AzureTable" Version="9.0.5" />
-    <PackageReference Include="ElCamino.AspNetCore.Identity.AzureTable.Model" Version="9.0.5" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.8" />
+    <PackageReference Include="Aspire.StackExchange.Redis" Version="9.4.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.7.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,5 +19,4 @@
     <ProjectReference Include="..\SettlersOfCrutan.Infrastructure\SettlersOfCrutan.Infrastructure.csproj" />
     <ProjectReference Include="..\SettlersOfCrutan.ServiceDefaults\SettlersOfCrutan.ServiceDefaults.csproj" />
   </ItemGroup>
-
 </Project>

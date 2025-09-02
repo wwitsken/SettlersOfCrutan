@@ -5,6 +5,6 @@ public sealed record BoardConfig
 (
     int Radius,
     IReadOnlyDictionary<ResourceType, int> ResourceCounts,
-    IReadOnlyList<int> NumberTokens,
-    IReadOnlyList<(PortType type, int count)> Ports
+    IReadOnlyDictionary<PortType, int> Ports,
+    IReadOnlyList<int> NumberTokens
 );

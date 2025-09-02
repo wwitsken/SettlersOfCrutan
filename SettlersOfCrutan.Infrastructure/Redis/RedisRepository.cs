@@ -1,12 +1,13 @@
 ﻿using Microsoft.Extensions.Options;
+using SettlersOfCrutan.Application.Abstractions;
+using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Infrastructure.Outbox;
 using SettlersOfCrutan.Infrastructure.Redis.Serialization;
 using StackExchange.Redis;
 using System.Text.Json;
-using SettlersOfCrutan.Application.Abstractions;
-using SettlersOfCrutan.Domain.Core;
 
 namespace SettlersOfCrutan.Infrastructure.Redis;
-public class RedisRepository<TAgg, TId>(IDatabase db, IOptions<RedisOptions> opts) : IRepository<TAgg, TId>
+public partial class RedisRepository<TAgg, TId>(IDatabase db, IOptions<RedisOptions> opts) : IRepository<TAgg, TId>
     where TAgg : AggregateRoot<TId>
     where TId : BaseId
 {
@@ -32,12 +33,31 @@ public class RedisRepository<TAgg, TId>(IDatabase db, IOptions<RedisOptions> opt
         var toStore = CloneWithNextVersion(aggregate); // this increments Version
         var json = JsonSerializer.Serialize(toStore, JsonOptions.Default);
 
+        // Prepare outbox event envelopes
+        var outboxKey = RedisKeys.Outbox(_opts.KeyPrefix);
+        var envelopes = aggregate.DomainEvents
+            .Select(ev => OutboxEnvelope.Create(_aggName, aggregate.Id.ToString(), toStore.Version, ev))
+            .ToList();
+
         RedisKey key = RedisKeys.Aggregate(_opts.KeyPrefix, _aggName, aggregate.Id);
+
+        // Prepare arguments for Lua script -- domain events go into ARGV[4..]
+        List<RedisValue> argv =
+        [
+            expected,
+            json,
+            envelopes.Count.ToString()
+        ];
+        foreach (var env in envelopes)
+        {
+            argv.Add(JsonSerializer.Serialize(env, JsonOptions.Default));
+        }
 
         var result = (int)await _db.ScriptEvaluateAsync(
             Scripts.CompareExchangeSet,
-            [key],
-            [expected, json]).ConfigureAwait(false);
+            [key, RedisKeys.Outbox(_opts.KeyPrefix)],
+            [.. argv]
+        ).ConfigureAwait(false);
 
         if (result == 1 && _opts.DefaultTtl is { } ttl)
             await _db.KeyExpireAsync(key, ttl).ConfigureAwait(false);

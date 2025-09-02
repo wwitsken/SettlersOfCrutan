@@ -10,5 +10,11 @@ public class Player : Entity<PlayerId>
     public string Name { get; set; }
     public ResourceBag ResourceBag { get; set; }
 
-    public static Player Create(int turnId, string userId) => new() { Id = new() { Value = turnId }, UserId = userId, ResourceBag = new(), Name = userId };
+    public static Player Create(int turnId, string userId) => new()
+    {
+        Id = new() { Value = turnId },
+        UserId = userId,
+        ResourceBag = new(),
+        Name = userId.ToString()
+    };
 }
