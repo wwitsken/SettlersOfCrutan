@@ -1,3 +1,3 @@
 ﻿namespace SettlersOfCrutan.Domain.Games;
 
-public enum GamePhase { Setup1, Setup2, Normal }
+public enum GamePhase { PendingStart, Setup, RollDice, DiscardHalf, ResolveRobber, TradeBuild, GameEnd }

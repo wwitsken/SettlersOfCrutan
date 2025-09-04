@@ -73,7 +73,6 @@ public partial class RedisRepository<TAgg, TId>(IDatabase db, IOptions<RedisOpti
 
     private static TAgg CloneWithNextVersion(TAgg original)
     {
-        // For now, we just bump version on the original aggregate.
         original.BumpVersion();
         return original;
     }

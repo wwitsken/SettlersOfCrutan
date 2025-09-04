@@ -1,5 +1,6 @@
 ﻿using SettlersOfCrutan.Domain.Games;
-using SettlersOfCrutan.Domain.Games.Coordinates;
+using SettlersOfCrutan.Domain.Games.Boards;
+using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Generation;
 
 namespace SettlersOfCrutan.Domain.UnitTests;

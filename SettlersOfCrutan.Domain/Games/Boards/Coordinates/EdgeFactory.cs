@@ -1,4 +1,4 @@
-﻿namespace SettlersOfCrutan.Domain.Games.Coordinates;
+﻿namespace SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 
 public static class EdgeFactory
 {

@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Domain.Core;
 
-namespace SettlersOfCrutan.Domain.Games;
+namespace SettlersOfCrutan.Domain.Games.DomainEvents;
 
 public sealed class GameCreatedDomainEventHandler : IDomainEventHandler<GameCreatedDomainEvent>
 {

@@ -1,4 +1,4 @@
-﻿namespace SettlersOfCrutan.Domain.Games.Coordinates;
+﻿namespace SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 public readonly record struct Vertex(HexCoord HexCoord1, HexCoord HexCoord2, HexCoord HexCoord3)
 {
     public Vertex Normalize()
@@ -25,7 +25,7 @@ public readonly record struct Vertex(HexCoord HexCoord1, HexCoord HexCoord2, Hex
 
     public bool Equals(Vertex other)
     {
-        var norm = this.Normalize();
+        var norm = Normalize();
         var otherNorm = other.Normalize();
         return norm.HexCoord1 == otherNorm.HexCoord1 &&
                norm.HexCoord2 == otherNorm.HexCoord2 &&
@@ -38,5 +38,5 @@ public readonly record struct Vertex(HexCoord HexCoord1, HexCoord HexCoord2, Hex
         return HashCode.Combine(norm.HexCoord1, norm.HexCoord2, norm.HexCoord3);
     }
 
-    public List<HexCoord> ToList() => [HexCoord1, HexCoord2, HexCoord3];
+    public List<HexCoord> HexCoords() => [HexCoord1, HexCoord2, HexCoord3];
 }

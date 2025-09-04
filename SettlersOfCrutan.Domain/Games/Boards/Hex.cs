@@ -1,8 +1,8 @@
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.Games.Coordinates;
+using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using System.Text.Json.Serialization;
 
-namespace SettlersOfCrutan.Domain.Games;
+namespace SettlersOfCrutan.Domain.Games.Boards;
 
 public record HexId : BaseId<HexCoord>;
 

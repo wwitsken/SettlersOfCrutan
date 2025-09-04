@@ -28,7 +28,8 @@ public abstract class Entity<TId>()
     [JsonIgnore]
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
-    protected void AddDomainEvent(IDomainEvent eventItem) => _domainEvents.Add(eventItem);
-    protected void RemoveDomainEvent(IDomainEvent eventItem) => _domainEvents.Remove(eventItem);
-    protected void ClearDomainEvents() => _domainEvents.Clear();
+    // Only aggregates (and internals like repositories) can enqueue/clear events
+    protected internal void AddDomainEvent(IDomainEvent eventItem) => _domainEvents.Add(eventItem);
+    protected internal void RemoveDomainEvent(IDomainEvent eventItem) => _domainEvents.Remove(eventItem);
+    protected internal void ClearDomainEvents() => _domainEvents.Clear();
 }

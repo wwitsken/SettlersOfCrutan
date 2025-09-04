@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Scrutor;
 using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Application.Todos;
 using SettlersOfCrutan.Domain.Core;

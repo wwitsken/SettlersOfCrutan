@@ -1,4 +1,4 @@
-﻿namespace SettlersOfCrutan.Domain.Games.Coordinates;
+﻿namespace SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 public static class VertexFactory
 {
     private static readonly Dictionary<HexEdgeDirection, (int dX, int dY, int dZ)> EdgeOffsets = new()

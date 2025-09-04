@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 
-namespace SettlersOfCrutan.Domain.Games.Coordinates;
+namespace SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 
 public readonly record struct HexCoord(int Q, int R, int S)
 {

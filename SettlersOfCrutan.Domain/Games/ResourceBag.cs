@@ -13,6 +13,13 @@ public class ResourceBag : Entity<ResourceBagId>
     public int Settlements { get; set; } = 0;
     public int Cities { get; set; } = 0;
     public int Roads { get; set; } = 0;
+
+    private List<DevelopmentCardAmount> _developmentCards = [];
+    public List<DevelopmentCardAmount> DevelopmentCards
+    {
+        get => [.. _developmentCards];
+        set => _developmentCards = value ?? [];
+    }
     public void SubtractResource(ResourceType type, int amount)
     {
         switch (type)
@@ -38,14 +45,50 @@ public class ResourceBag : Entity<ResourceBagId>
         }
     }
 
-    public bool HasAtLeast(ResourceType type, int amount) => type switch
+    public bool HasAtLeast(ResourceType type, int amount) => Count(type) >= amount;
+
+    public int Count(ResourceType type) => type switch
     {
-        ResourceType.Brick => Brick >= amount,
-        ResourceType.Lumber => Lumber >= amount,
-        ResourceType.Wool => Wool >= amount,
-        ResourceType.Grain => Grain >= amount,
-        ResourceType.Ore => Ore >= amount,
-        _ => false
+        ResourceType.Brick => Brick,
+        ResourceType.Lumber => Lumber,
+        ResourceType.Wool => Wool,
+        ResourceType.Grain => Grain,
+        ResourceType.Ore => Ore,
+        _ => 0
     };
+
     public int TotalResourceCards => Brick + Lumber + Wool + Grain + Ore;
+
+    public bool HasDevelopmentCard(DevelopmentCardType type) => DevelopmentCards.FirstOrDefault(c => c.Type == type && c.Quantity > 0) is not null;
+
+    public void RemoveDevelopmentCard(DevelopmentCardType type)
+    {
+        var card = DevelopmentCards.FirstOrDefault(c => c.Type == type && c.Quantity > 0);
+        if (card != null)
+        {
+            if (card.Quantity == 1)
+            {
+                DevelopmentCards.Remove(card);
+            }
+            else
+            {
+                DevelopmentCards.Remove(card);
+                DevelopmentCards.Add(card with { Quantity = card.Quantity - 1 });
+            }
+        }
+    }
+
+    public void AddDevelopmentCard(DevelopmentCardType type)
+    {
+        var card = DevelopmentCards.FirstOrDefault(c => c.Type == type);
+        if (card != null)
+        {
+            DevelopmentCards.Remove(card);
+            DevelopmentCards.Add(card with { Quantity = card.Quantity + 1 });
+        }
+        else
+        {
+            DevelopmentCards.Add(new DevelopmentCardAmount(type, 1));
+        }
+    }
 }

@@ -1,7 +1,7 @@
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.Games.Coordinates;
+using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 
-namespace SettlersOfCrutan.Domain.Games;
+namespace SettlersOfCrutan.Domain.Games.Boards;
 
 public record RoadId : BaseId<Edge>;
 public class Road(Edge edgeCoordinate) : Entity<RoadId>

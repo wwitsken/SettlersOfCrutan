@@ -1,5 +1,3 @@
-using SettlersOfCrutan.Domain.Core;
-
 namespace SettlersOfCrutan.Domain.Games;
 
 public enum ResourceType
@@ -12,3 +10,5 @@ public enum ResourceType
     Ore,
     Desert
 }
+
+public record ResourceAmount(ResourceType Type, int Quantity);

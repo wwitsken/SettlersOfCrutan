@@ -1,5 +1,4 @@
-﻿
-namespace SettlersOfCrutan.Domain.Games.Coordinates;
+﻿namespace SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 public readonly record struct Edge(HexCoord HexCoord1, HexCoord HexCoord2)
 {
     // Normalize ordering so (a,b) == (b,a)
@@ -25,7 +24,7 @@ public readonly record struct Edge(HexCoord HexCoord1, HexCoord HexCoord2)
 
     public bool Equals(Vertex other)
     {
-        var norm = this.Normalize();
+        var norm = Normalize();
         var otherNorm = other.Normalize();
         return norm.HexCoord1 == otherNorm.HexCoord1 &&
                norm.HexCoord2 == otherNorm.HexCoord2;

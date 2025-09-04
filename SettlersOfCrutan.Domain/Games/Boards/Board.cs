@@ -1,8 +1,8 @@
 ﻿using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
-using SettlersOfCrutan.Domain.Games.Coordinates;
+using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 
-namespace SettlersOfCrutan.Domain.Games;
+namespace SettlersOfCrutan.Domain.Games.Boards;
 public record BoardId : BaseId<Guid>;
 public class Board : Entity<BoardId>
 {
@@ -45,7 +45,7 @@ public class Board : Entity<BoardId>
             return Result<(PopulationCenter, Road)>.Failure(new DomainError("RoadBuild", "Edge already has a road"));
 
         // connectivity: initial road must connect to initial settlement
-        var edgeAndVertexConnected = vertex.ToList().Intersect(edge.ToList()).Count() == 2;
+        var edgeAndVertexConnected = vertex.HexCoords().Intersect(edge.ToList()).Count() == 2;
         if (!IsEdgeBuildableBy(owner, edge))
             return Result<(PopulationCenter, Road)>.Failure(new DomainError("RoadBuildAndSettlement", "Road not connected to new Settlement"));
 
@@ -108,7 +108,7 @@ public class Board : Entity<BoardId>
     }
 
     public bool IsPlayerExposedToHex(HexCoord hexCoord, PlayerId playerId) =>
-        PopulationCenters.Any(pc => pc.VertexCoordinate.ToList().Contains(hexCoord) && pc.PlayerOwner == playerId);
+        PopulationCenters.Any(pc => pc.VertexCoordinate.HexCoords().Contains(hexCoord) && pc.PlayerOwner == playerId);
 
     public bool IsVertexOccupied(Vertex coord) =>
         PopulationCenters.Any(p => p.VertexCoordinate.Equals(coord));
@@ -135,5 +135,14 @@ public class Board : Entity<BoardId>
         });
 
         return connectedToRoad || connectedToPopulationCenter;
+    }
+
+    public bool CanMoveRobberTo(HexCoord newRobberHexCoord)
+    {
+        var hex = Hexes.FirstOrDefault(h => h.Coordinate.Equals(newRobberHexCoord));
+        if (hex is null) return false;
+        if (hex.Resource == ResourceType.Desert) return false;
+        if (hex.HasRobber) return false;
+        return true;
     }
 }

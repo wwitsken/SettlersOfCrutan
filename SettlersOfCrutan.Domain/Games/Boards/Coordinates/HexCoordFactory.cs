@@ -1,4 +1,4 @@
-﻿namespace SettlersOfCrutan.Domain.Games.Coordinates;
+﻿namespace SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 public static class HexCoordFactory
 {
     public static List<HexCoord> GetFromAdjacentEdge(Edge edgeCoord)

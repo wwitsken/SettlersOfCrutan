@@ -1,7 +1,12 @@
 ﻿using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.Games.Coordinates;
+using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 
-namespace SettlersOfCrutan.Domain.Games;
+namespace SettlersOfCrutan.Domain.Games.Boards;
+public enum PopulationCenterLevel
+{
+    Settlement = 1,
+    City = 2
+}
 public record PopulationCenterId : BaseId<Vertex>;
 public class PopulationCenter(Vertex vertexCoordinate) : Entity<PopulationCenterId>
 {
