@@ -12,6 +12,13 @@ public class DomainError(string code, string message) : Error(code, message)
     public static DomainError GameAlreadyStarted => new("GameAlreadyStarted", "The game has already started and cannot be modified.");
     public static DomainError WrongTurn => new("WrongTurn", "It is not the correct turn for this player.");
     public static DomainError WrongTurnStatus => new("WrongTurnStatus", "The turn status is not currently active.");
-    public static DomainError WrongTurnStep => new("WrongTurnStep", "Action cannot be performed at this turn step.");
+    public static DomainError WrongGamePhase => new("WrongGamePhase", "Action cannot be performed at this turn step.");
+
+    public static Error MissingRoad => new("MissingRoad", "Player has no remaining roads to build.");
+    public static Error MissingSettlement => new("MissingSettlement", "Player has no remaining settlements to build.");
+    public static Error MissingCity => new("MissingSettlement", "Player has no remaining cities to build.");
+
+    public static Error TooManyDevelopmentCards => new("TooManyDevelopmentCards", "Can't have more than 3 development cards at a time.");
+    public static Error InsufficientBankDevelopmentCards => new("InsufficientBankDevelopmentCards", "There are not enough bank development cards to satisfy the purchase.");
 
 }

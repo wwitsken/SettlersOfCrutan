@@ -21,7 +21,7 @@ public class TradeOffer : Entity<TradeOfferId>
         set => _offeredResources = value;
     }
     public bool IsAccepted => AcceptorId is not null;
-    private TradeOffer() { } // for deserialization
+    //private TradeOffer() { } // for deserialization
     private TradeOffer(PlayerId proposerId, List<ResourceAmount> requestedResources, List<ResourceAmount> offeredResources)
     {
         ProposerId = proposerId;

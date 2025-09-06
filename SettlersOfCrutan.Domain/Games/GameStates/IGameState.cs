@@ -2,18 +2,7 @@
 /*
 public interface IGameState
 {
-    Result<Decision> StartGame(Game game);
-    Result<Decision<(int d1, int d2)>> RollAndResolveProduction(Game game, PlayerId playerId);
-    Result<Decision> ResolveProduction(Game game, PlayerId playerId);
-    Result<Decision> DiscardHalf(Game game, PlayerId playerId, List<ResourceAmount> discards);
-    Result<Decision<RobberResult>> ResolveRobber(Game game, PlayerId playerId, HexCoord newRobberHexCoord, PlayerId victimId);
-    Result<Decision<PlayerId>> EndTurn(Game game, PlayerId playerId);
-
     // Build/Purchase
-    Result<Decision<(PopulationCenter pc, Road road)>> PlaceInitialAndEndTurn(Game game, PlayerId playerId, Vertex settlementVertex, Edge roadEdge);
-    Result<Decision<Road>> BuildRoad(Game game, PlayerId playerId, Edge edge);
-    Result<Decision<PopulationCenter>> BuildSettlement(Game game, PlayerId playerId, Vertex vertex);
-    Result<Decision<PopulationCenter>> BuildCity(Game game, PlayerId playerId, Vertex vertex);
     Result<Decision<DevelopmentCardType>> BuyDevelopmentCard(Game game, PlayerId playerId);
 
     // Trade
