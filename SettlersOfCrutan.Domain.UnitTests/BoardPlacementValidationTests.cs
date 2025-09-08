@@ -5,7 +5,7 @@ using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 namespace SettlersOfCrutan.Domain.UnitTests;
 public class BoardPlacementValidationTests
 {
-    private static PlayerId NewPlayer() => new() { Value = 0 };
+    private static PlayerId NewPlayer() => new() { Value = "123" };
 
     [Fact]
     public void SettlementPlacement_RejectsDuplicateAcrossEquivalentVertexCoords()
@@ -39,6 +39,7 @@ public class BoardPlacementValidationTests
     public void SettlementPlacement_DistanceRuleBlocksAdjacentRegardlessOfMaterialization()
     {
         var board = new Board();
+
         var owner = NewPlayer();
 
         var hex = new HexCoord(0, 0, 0);
@@ -64,6 +65,7 @@ public class BoardPlacementValidationTests
     public void RoadPlacement_CanonicalizesEdgeCoords()
     {
         var board = new Board();
+
         var owner = NewPlayer();
 
         var hex = new HexCoord(0, 0, 0);
@@ -82,7 +84,7 @@ public class BoardPlacementValidationTests
             .GetAdjacentHexCoords()
             .Values
             .First(v => !v.Equals(shared[1]));
-        board.Roads.Add(new Road(new Edge(shared[0], neighborOfShared0)) { OwnerId = owner });
+        board.BuildRoad(owner!, new Edge(shared[0], neighborOfShared0));
 
         // Build road for e0
         var road = board.BuildRoad(owner, e0);

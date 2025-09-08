@@ -5,11 +5,11 @@ using SettlersOfCrutan.Domain.Games.DomainEvents;
 namespace SettlersOfCrutan.Domain.Games;
 public partial class Game
 {
-    public Result<ResourceType> ResolveRobber(Game game, PlayerId robbingPlayerId, HexCoord newRobberHexCoord, PlayerId victimId)
+    public Result<ResourceType> ResolveRobber(PlayerId robbingPlayerId, HexCoord newRobberHexCoord, PlayerId victimId)
     {
-        if (game.CurrentPlayerId() != robbingPlayerId) return Result<ResourceType>.Failure(DomainErrors.DomainError.WrongTurn);
+        if (CurrentPlayerId() != robbingPlayerId) return Result<ResourceType>.Failure(DomainErrors.DomainError.WrongTurn);
 
-        if (game.Board.IsPlayerExposedToHex(newRobberHexCoord, victimId) == false)
+        if (Board.IsPlayerExposedToHex(newRobberHexCoord, victimId) == false)
             return Result<ResourceType>.Failure(new Error("Robber", "Victim player is not exposed to the new robber hex"));
 
         var moved = Board.MoveRobber(newRobberHexCoord);

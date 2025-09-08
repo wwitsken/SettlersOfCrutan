@@ -26,14 +26,14 @@ public partial class Game
         return result;
     }
 
-    public Result<Road> BuildRoad(PlayerId playerId, Edge edge)
+    public Result<Road> BuildRoad(IPriceCalculator priceCalculator, PlayerId playerId, Edge edge)
     {
         if (CurrentPlayerId() != playerId) return Result.Failure<Road>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild) return Result.Failure<Road>(DomainErrors.DomainError.WrongGamePhase);
 
         var playerBag = Players.First(p => p.Id == playerId).ResourceBag;
 
-        List<ResourceAmount> roadCost = PriceCalculator.RoadPrice();
+        List<ResourceAmount> roadCost = priceCalculator.RoadPrice();
         if (!playerBag.HasAtLeast(roadCost)) return Result.Failure<Road>(DomainErrors.DomainError.InsufficientResources);
         if (playerBag.Roads <= 0) return Result.Failure<Road>(DomainErrors.DomainError.MissingRoad);
 
@@ -50,14 +50,14 @@ public partial class Game
         return result;
     }
 
-    public Result<PopulationCenter> BuildSettlement(PlayerId playerId, Vertex vertex)
+    public Result<PopulationCenter> BuildSettlement(IPriceCalculator priceCalculator, PlayerId playerId, Vertex vertex)
     {
         if (CurrentPlayerId() != playerId) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.WrongGamePhase);
 
         var playerBag = Players.First(p => p.Id == playerId).ResourceBag;
 
-        List<ResourceAmount> settlementPrice = PriceCalculator.SettlementPrice();
+        List<ResourceAmount> settlementPrice = priceCalculator.SettlementPrice();
         if (!playerBag.HasAtLeast(settlementPrice)) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.InsufficientResources);
         if (playerBag.Settlements <= 0) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.MissingSettlement);
 
@@ -74,14 +74,14 @@ public partial class Game
         return result;
     }
 
-    public Result<PopulationCenter> BuildCity(PlayerId playerId, Vertex vertex)
+    public Result<PopulationCenter> BuildCity(IPriceCalculator priceCalculator, PlayerId playerId, Vertex vertex)
     {
         if (CurrentPlayerId() != playerId) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.WrongGamePhase);
 
         var playerBag = Players.First(p => p.Id == playerId).ResourceBag;
 
-        List<ResourceAmount> cityPrice = PriceCalculator.CityPrice();
+        List<ResourceAmount> cityPrice = priceCalculator.CityPrice();
         if (!playerBag.HasAtLeast(cityPrice)) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.InsufficientResources);
         if (playerBag.Cities <= 0) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.MissingCity);
 
@@ -99,14 +99,14 @@ public partial class Game
         return result;
     }
 
-    public Result<DevelopmentCardType> BuyDevelopmentCard(PlayerId playerId)
+    public Result<DevelopmentCardType> BuyDevelopmentCard(IPriceCalculator priceCalculator, PlayerId playerId)
     {
         if (CurrentPlayerId() != playerId) return Result.Failure<DevelopmentCardType>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild) return Result.Failure<DevelopmentCardType>(DomainErrors.DomainError.WrongGamePhase);
 
         var playerBag = Players.First(p => p.Id == playerId).ResourceBag;
 
-        List<ResourceAmount> devCardPrice = PriceCalculator.DevelopmentCardPrice();
+        List<ResourceAmount> devCardPrice = priceCalculator.DevelopmentCardPrice();
         if (!playerBag.HasAtLeast(devCardPrice)) return Result.Failure<DevelopmentCardType>(DomainErrors.DomainError.InsufficientResources);
         if (playerBag.DevelopmentCards.Count > 3) return Result.Failure<DevelopmentCardType>(DomainErrors.DomainError.TooManyDevelopmentCards);
         if (Bank.DevelopmentCards.Count <= 0) return Result.Failure<DevelopmentCardType>(DomainErrors.DomainError.InsufficientBankDevelopmentCards);

@@ -10,7 +10,8 @@ public enum PortType
     Lumber2to1,
     Wool2to1,
     Grain2to1,
-    Ore2to1
+    Ore2to1,
+    None
 }
 
 public record PortId : BaseId<Edge>;

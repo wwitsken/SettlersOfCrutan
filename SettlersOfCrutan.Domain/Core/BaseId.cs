@@ -7,7 +7,8 @@ public abstract record BaseId;
 public abstract record BaseId<TValue>
 : BaseId
 {
-    public TValue Value { get; init; }
+    public required TValue Value { get; init; }
 
     public override string ToString() => Value?.ToString() ?? string.Empty;
+
 }

@@ -20,4 +20,7 @@ public static class ResourceAmountExtensions
 
     public static IEnumerable<ResourceAmount> Invert(this IEnumerable<ResourceAmount> resourceAmounts) =>
         resourceAmounts.Select(ra => new ResourceAmount(ra.Type, -ra.Quantity));
+
+    public static ResourceAmount Invert(this ResourceAmount resourceAmount) =>
+        new(resourceAmount.Type, -resourceAmount.Quantity);
 }

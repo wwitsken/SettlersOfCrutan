@@ -7,10 +7,34 @@ public record BoardId : BaseId<Guid>;
 public class Board : Entity<BoardId>
 {
     public override BoardId Id { get; init; } = new() { Value = Guid.NewGuid() };
+
+
+    //public Board(List<Hex> hexes, List<PopulationCenter> populationCenters, List<Road> roads, List<Port> ports)
+    //{
+    //    _hexes = hexes;
+    //    _populationCenters = populationCenters;
+    //    _roads = roads;
+    //    _ports = ports;
+    //}
+
+    private readonly List<Hex> _hexes = [];
+    public IReadOnlyList<Hex> Hexes => [.. _hexes];
+
+    private readonly List<PopulationCenter> _populationCenters = [];
+    public IReadOnlyList<PopulationCenter> PopulationCenters => [.. _populationCenters];
+
+    private readonly List<Road> _roads = [];
+    public IReadOnlyList<Road> Roads => [.. _roads];
+
+    private readonly List<Port> _ports = [];
+    public IReadOnlyList<Port> Ports => [.. _ports];
+
+    /*
     public List<Hex> Hexes { get; set; } = [];
     public List<PopulationCenter> PopulationCenters { get; set; } = [];
     public List<Road> Roads { get; set; } = [];
     public List<Port> Ports { get; set; } = [];
+    */
 
     // Invariants helpers
     public Result<PopulationCenter> PlaceSettlement(PlayerId owner, Vertex coord)
@@ -27,7 +51,7 @@ public class Board : Entity<BoardId>
             return Result<PopulationCenter>.Failure(new DomainError("SettlementPlacement", "No adjacent road for owner"));
 
         var entity = new PopulationCenter(coord) { PlayerOwner = owner };
-        PopulationCenters.Add(entity);
+        _populationCenters.Add(entity);
         return Result<PopulationCenter>.Success(entity);
     }
 
@@ -45,15 +69,15 @@ public class Board : Entity<BoardId>
             return Result<(PopulationCenter, Road)>.Failure(new DomainError("RoadBuild", "Edge already has a road"));
 
         // connectivity: initial road must connect to initial settlement
-        var edgeAndVertexConnected = vertex.HexCoords().Intersect(edge.ToList()).Count() == 2;
+        var edgeAndVertexConnected = vertex.HexCoords().Intersect(edge.HexCoords()).Count() == 2;
         if (!IsEdgeBuildableBy(owner, edge))
             return Result<(PopulationCenter, Road)>.Failure(new DomainError("RoadBuildAndSettlement", "Road not connected to new Settlement"));
 
         var road = new Road(normEdge) { OwnerId = owner };
-        Roads.Add(road);
+        _roads.Add(road);
 
         var populationCenter = new PopulationCenter(vertex) { PlayerOwner = owner };
-        PopulationCenters.Add(populationCenter);
+        _populationCenters.Add(populationCenter);
 
         return Result<(PopulationCenter, Road)>.Success((populationCenter, road));
     }
@@ -71,7 +95,7 @@ public class Board : Entity<BoardId>
         }
         // perform upgrade
         var city = new PopulationCenter(settlement.VertexCoordinate) { Level = PopulationCenterLevel.City, PlayerOwner = owner };
-        PopulationCenters.Add(city);
+        _populationCenters.Add(city);
         return Result<PopulationCenter>.Success(city);
     }
 
@@ -86,7 +110,7 @@ public class Board : Entity<BoardId>
             return Result<Road>.Failure(new DomainError("RoadBuild", "Road not connected to player's network"));
 
         var road = new Road(norm) { OwnerId = owner };
-        Roads.Add(road);
+        _roads.Add(road);
         return Result<Road>.Success(road);
     }
 
@@ -119,7 +143,7 @@ public class Board : Entity<BoardId>
             && (r.EdgeCoordinate.HexCoord1.Equals(coord) || r.EdgeCoordinate.HexCoord2.Equals(coord)));
     }
 
-    private bool IsEdgeBuildableBy(PlayerId owner, Edge edgeCoord)
+    public bool IsEdgeBuildableBy(PlayerId owner, Edge edgeCoord)
     {
         // connected to player's existing road network
         bool connectedToRoad = Roads.Any(r => r.OwnerId.Equals(owner)

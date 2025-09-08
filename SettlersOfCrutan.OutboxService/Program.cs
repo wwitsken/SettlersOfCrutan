@@ -12,6 +12,7 @@ builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices();
 builder.Services.AddScoped<ProcessOutboxMessagesJob>();
 builder.Services.AddHostedService<OutboxBackgroundService>();
+builder.Services.AddSignalR().AddStackExchangeRedis(builder.Configuration.GetConnectionString("redis")!);
 
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracing => tracing.AddSource(OutboxBackgroundService.ActivitySourceName));

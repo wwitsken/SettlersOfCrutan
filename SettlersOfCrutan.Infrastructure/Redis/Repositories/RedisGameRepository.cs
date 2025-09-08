@@ -1,4 +1,4 @@
-﻿using SettlersOfCrutan.Application.Games;
+﻿using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Domain.Games;
 
 namespace SettlersOfCrutan.Infrastructure.Redis.Repositories;

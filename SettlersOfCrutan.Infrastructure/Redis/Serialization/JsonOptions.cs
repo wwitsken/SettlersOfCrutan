@@ -10,6 +10,7 @@ public static class JsonOptions
     {
         var opts = new JsonSerializerOptions
         {
+            IncludeFields = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = false,
             PropertyNameCaseInsensitive = true,

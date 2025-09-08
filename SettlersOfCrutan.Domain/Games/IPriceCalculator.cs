@@ -1,4 +1,4 @@
-﻿namespace SettlersOfCrutan.Domain.Games.PriceCalculators;
+﻿namespace SettlersOfCrutan.Domain.Games;
 public interface IPriceCalculator
 {
     List<ResourceAmount> SettlementPrice();

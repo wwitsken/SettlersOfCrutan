@@ -1,12 +1,13 @@
+using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
 
-namespace SettlersOfCrutan.Application.Games;
+namespace SettlersOfCrutan.Application.Games.Queries;
 
-public record GetGameByIdQuery(GameId Id);
+public record GetGameByIdQuery(GameId Id) : IQuery<Game>;
 
-public class GetGameByIdQueryHandler
+public class GetGameByIdQueryHandler : IQueryHandler<GetGameByIdQuery, Game>
 {
     private readonly IGameRepository _repository;
 

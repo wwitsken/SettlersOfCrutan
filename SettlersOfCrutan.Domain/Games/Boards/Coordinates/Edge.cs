@@ -1,4 +1,5 @@
-﻿namespace SettlersOfCrutan.Domain.Games.Boards.Coordinates;
+﻿
+namespace SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 public readonly record struct Edge(HexCoord HexCoord1, HexCoord HexCoord2)
 {
     // Normalize ordering so (a,b) == (b,a)
@@ -36,5 +37,5 @@ public readonly record struct Edge(HexCoord HexCoord1, HexCoord HexCoord2)
         return HashCode.Combine(norm.HexCoord1, norm.HexCoord2);
     }
 
-    public List<HexCoord> ToList() => [HexCoord1, HexCoord2];
+    public List<HexCoord> HexCoords() => [HexCoord1, HexCoord2];
 }

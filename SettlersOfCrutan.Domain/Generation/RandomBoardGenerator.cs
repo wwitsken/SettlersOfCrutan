@@ -11,14 +11,6 @@ public class RandomBoardGenerator : IBoardGenerator
         ValidateConfig(config);
         var rng = new Random(seed);
 
-        var board = new Board
-        {
-            Hexes = [],
-            Roads = [],
-            PopulationCenters = [],
-            Ports = [],
-        };
-
         // Build axial coordinates within radius
         var coords = GetHexCoords(config.Radius).ToList();
         var hexCount = coords.Count;
@@ -54,8 +46,6 @@ public class RandomBoardGenerator : IBoardGenerator
 
         AssignNumberTokens(hexes, numberTokens, rng);
 
-        board.Hexes = hexes;
-
         // Generate random ports on border edges
         var totalPorts = config.Ports.Sum(p => p.Value);
         var borderEdges = GetBorderEdges(coords).ToList();
@@ -73,7 +63,8 @@ public class RandomBoardGenerator : IBoardGenerator
         {
             ports.Add(new Port(chosenEdges[i]) { Type = portTypes[i] });
         }
-        board.Ports = ports;
+
+        var board = new Board();
 
         return board;
     }

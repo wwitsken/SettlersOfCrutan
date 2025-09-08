@@ -95,7 +95,7 @@ public class BoardGenerationTests
         foreach (var port in board.Ports)
         {
             var e = port.EdgeCoordinate;
-            List<Hex> hexes = board.Hexes.FindAll(h => h.Coordinate.Equals(e.HexCoord1) || h.Coordinate.Equals(e.HexCoord2));
+            IEnumerable<Hex> hexes = board.Hexes.Where(h => h.Coordinate.Equals(e.HexCoord1) || h.Coordinate.Equals(e.HexCoord2));
             Assert.Single(hexes); // exactly one of the two hexes is on the board
         }
 
