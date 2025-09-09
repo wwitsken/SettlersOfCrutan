@@ -25,7 +25,7 @@ public partial class Game
         {
             GamePhase.Setup => EndTurnDuringSetup(playerId, clock, turnDuration),
             GamePhase.TradeBuild => EndTurnDuringTradeBuild(playerId, clock, turnDuration),
-            _ => Result.Failure<PlayerId>(new Error("EndTurn", "Invalid game phase"))
+            _ => throw new InvalidOperationException()
         };
     }
 

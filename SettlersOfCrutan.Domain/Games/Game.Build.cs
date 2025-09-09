@@ -6,7 +6,7 @@ using SettlersOfCrutan.Domain.Games.DomainEvents;
 namespace SettlersOfCrutan.Domain.Games;
 public partial class Game
 {
-    public Result<(PopulationCenter, Road)> PlaceInitial(PlayerId playerId, Vertex settlementVertex, Edge roadEdge)
+    public Result<(PopulationCenter, Road)> PlaceInitial(PlayerId playerId, Vertex settlementVertex, Edge roadEdge, IDateTimeProvider clock)
     {
         if (CurrentPlayerId() != playerId) return Result.Failure<(PopulationCenter, Road)>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.Setup) return Result.Failure<(PopulationCenter, Road)>(DomainErrors.DomainError.WrongGamePhase);
@@ -20,6 +20,8 @@ public partial class Game
 
         playerBag.Roads -= 1;
         playerBag.Settlements -= 1;
+
+        EndTurn(playerId, clock);
 
         AddDomainEvent(new InitialSettlementAndRoadPlacedDomainEvent(Id, playerId, result.Value.Item1, result.Value.Item2));
 

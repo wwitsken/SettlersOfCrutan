@@ -64,7 +64,7 @@ public class RandomBoardGenerator : IBoardGenerator
             ports.Add(new Port(chosenEdges[i]) { Type = portTypes[i] });
         }
 
-        var board = new Board();
+        var board = Board.Create(hexes, ports);
 
         return board;
     }

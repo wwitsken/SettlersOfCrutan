@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SettlersOfCrutan.Application.Games.Commands.Build;
 using SettlersOfCrutan.Application.Games.Commands.Lifecycle;
+using SettlersOfCrutan.Application.Games.Commands.TurnFlow;
 using SettlersOfCrutan.Application.Games.Queries;
-using SettlersOfCrutan.Application.Todos;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games.PriceCalculators;
 using SettlersOfCrutan.Domain.Generation;
@@ -16,12 +17,17 @@ public static class DependencyInjection
 
         // App services
         services.AddScoped<IBoardGenerator, RandomBoardGenerator>();
-        services.AddScoped<CreateTodoListCommandHandler>();
-        services.AddScoped<GetTodoListByIdQueryHandler>();
+        services.AddSingleton<StandardPriceCalculator>();
+
+        //services.AddScoped<CreateTodoListCommandHandler>();
+        //services.AddScoped<GetTodoListByIdQueryHandler>();
+
         services.AddScoped<GetGameByIdQueryHandler>();
         services.AddScoped<CreateGameCommandHandler>();
         services.AddScoped<JoinGameCommandHandler>();
-        services.AddSingleton<StandardPriceCalculator>();
+        services.AddScoped<BuildInitialCommandHandler>();
+        services.AddScoped<RollDiceCommandHandler>();
+
 
         // Scan and register all domain event handlers as Scoped
         services.Scan(scan => scan
