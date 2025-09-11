@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using SettlersOfCrutan.Application.Games.Commands.Build;
 using SettlersOfCrutan.Application.Games.Commands.Lifecycle;
 using SettlersOfCrutan.Application.Games.Commands.TurnFlow;
-using SettlersOfCrutan.Application.Games.Queries;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Presentation.Dtos;
@@ -14,10 +13,9 @@ public static class GamePlayEndpoints
 {
     public static IEndpointRouteBuilder MapGamePlayEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/games")
-                       .WithTags("Games");
+        var group = app.MapGroup("/games/{id:guid}/play").WithTags("Games", "Play");
 
-        group.MapPost("/", async Task<Results<Created, ValidationProblem>> (
+        group.MapPost("/create", async Task<Results<Created, ValidationProblem>> (
             [FromBody] CreateGameRequest command,
             CreateGameCommandHandler handler,
             CancellationToken ct) =>
@@ -28,28 +26,6 @@ public static class GamePlayEndpoints
             return result.IsSuccess
                 ? TypedResults.Created($"/games/{result.Value.Value}")
                 : TypedResults.ValidationProblem(new Dictionary<string, string[]> { [result.Error.Code] = [result.Error.Message] });
-        });
-
-        group.MapGet("/{id:guid}", async Task<Results<Ok<Game>, NotFound, ValidationProblem>> (
-            Guid id,
-            GetGameByIdQueryHandler handler,
-            CancellationToken ct) =>
-        {
-            var query = new GetGameByIdQuery(new GameId { Value = id });
-            var result = await handler.Handle(query, ct);
-
-            if (result.IsSuccess && result.Value is not null)
-                return TypedResults.Ok(result.Value);
-
-            if (result.IsFailure && result.Error.Code == "Validation")
-            {
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    [result.Error.Code] = [result.Error.Message]
-                });
-            }
-
-            return TypedResults.NotFound();
         });
 
         group.MapPost("/{id:guid}/join", async Task<Results<Ok, NotFound, ValidationProblem>> (

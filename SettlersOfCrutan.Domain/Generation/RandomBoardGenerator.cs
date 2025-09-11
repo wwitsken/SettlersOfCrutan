@@ -1,6 +1,6 @@
-using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
+using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Domain.Generation;
 
@@ -33,15 +33,15 @@ public class RandomBoardGenerator : IBoardGenerator
         }
 
         // Place robber on the first desert if any
-        var desertHex = hexes.FirstOrDefault(x => x.Resource == ResourceType.Desert);
+        var desertHex = hexes.FirstOrDefault(x => x.Resource == ResourceCardType.Desert);
         if (desertHex is not null) desertHex.HasRobber = true;
 
         // Assign number tokens to non-desert hexes with 6/8 adjacency constraint
         var numberTokens = config.NumberTokens.ToList();
-        if (numberTokens.Count != hexes.Count(h => h.Resource != ResourceType.Desert))
+        if (numberTokens.Count != hexes.Count(h => h.Resource != ResourceCardType.Desert))
         {
             // best-effort: if mismatch, we will only fill up to min count
-            numberTokens = numberTokens.Take(hexes.Count(h => h.Resource != ResourceType.Desert)).ToList();
+            numberTokens = numberTokens.Take(hexes.Count(h => h.Resource != ResourceCardType.Desert)).ToList();
         }
 
         AssignNumberTokens(hexes, numberTokens, rng);
@@ -78,7 +78,7 @@ public class RandomBoardGenerator : IBoardGenerator
         {
             throw new ArgumentException($"ResourceCounts sum {resourceSum} does not match expected hex count {expectedHexes}.");
         }
-        var nonDesert = resourceSum - (config.ResourceCounts.TryGetValue(ResourceType.Desert, out var desert) ? desert : 0);
+        var nonDesert = resourceSum - (config.ResourceCounts.TryGetValue(ResourceCardType.Desert, out var desert) ? desert : 0);
         if (config.NumberTokens.Count != nonDesert)
         {
             // allow mismatch but warn via exception for generator correctness
@@ -87,9 +87,9 @@ public class RandomBoardGenerator : IBoardGenerator
         }
     }
 
-    private static List<ResourceType> BuildResourceBag(IReadOnlyDictionary<ResourceType, int> counts, int expected)
+    private static List<ResourceCardType> BuildResourceBag(IReadOnlyDictionary<ResourceCardType, int> counts, int expected)
     {
-        var bag = new List<ResourceType>(expected);
+        var bag = new List<ResourceCardType>(expected);
         foreach (var kvp in counts)
         {
             for (int i = 0; i < kvp.Value; i++) bag.Add(kvp.Key);
@@ -126,7 +126,7 @@ public class RandomBoardGenerator : IBoardGenerator
 
     private static void AssignNumberTokens(List<Hex> hexes, List<int> tokens, Random rng)
     {
-        var nonDesertIndexes = hexes.Select((h, idx) => (h, idx)).Where(x => x.h.Resource != ResourceType.Desert).Select(x => x.idx).ToList();
+        var nonDesertIndexes = hexes.Select((h, idx) => (h, idx)).Where(x => x.h.Resource != ResourceCardType.Desert).Select(x => x.idx).ToList();
         var high = tokens.Where(t => t == 6 || t == 8).ToList();
         var others = tokens.Where(t => t != 6 && t != 8).ToList();
 

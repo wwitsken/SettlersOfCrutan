@@ -1,75 +1,89 @@
 ﻿using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
+using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Domain.Games;
 public partial class Game
 {
     public void ClearTradeOffer() => CurrentTradeOffer = null;
-    public Result<Nothing> Maritime4to1Trade(PlayerId playerId, ResourceType discardResource, ResourceType requestResource)
+
+    private Result<Nothing> CanMaritime(PlayerId playerId, int ratio, ResourceCardType discard, ResourceCardType request)
     {
-        if (CurrentPlayerId() != playerId) return Result<Nothing>.Failure(DomainErrors.DomainError.WrongTurn);
-        if (GamePhase != GamePhase.TradeBuild) return Result<Nothing>.Failure(DomainErrors.DomainError.WrongGamePhase);
-        return BaseMaritimeTrade(playerId, discardResource, requestResource, 4);
-    }
-
-    public Result<Nothing> Maritime3to1Trade(PlayerId playerId, ResourceType discardResource, ResourceType requestResource)
-    {
-        if (CurrentPlayerId() != playerId) return Result<Nothing>.Failure(DomainErrors.DomainError.WrongTurn);
-        if (GamePhase != GamePhase.TradeBuild) return Result<Nothing>.Failure(DomainErrors.DomainError.WrongGamePhase);
-        if (!Board.PopulationCenters.Any(pc =>
-                pc.PlayerOwner == playerId &&
-                Board.Ports
-                    .Where(p => p.Type == PortType.Generic3to1)
-                    .SelectMany(p => p.EdgeCoordinate.HexCoords())
-                    .Intersect(pc.VertexCoordinate.HexCoords())
-                    .Any()
-            ))
-            return Result<Nothing>.Failure(DomainErrors.DomainError.Missing3to1Port);
-
-        return BaseMaritimeTrade(playerId, discardResource, requestResource, 3);
-    }
-
-    public Result<Nothing> Maritime2to1Trade(PlayerId playerId, ResourceType discardResource, ResourceType requestResource)
-    {
-        if (CurrentPlayerId() != playerId) return Result<Nothing>.Failure(DomainErrors.DomainError.WrongTurn);
-        if (GamePhase != GamePhase.TradeBuild) return Result<Nothing>.Failure(DomainErrors.DomainError.WrongGamePhase);
-
-        var requiredPortType = discardResource switch
+        if (CurrentPlayerId() != playerId) return Result.Failure<Nothing>(DomainErrors.DomainError.WrongTurn);
+        if (GamePhase != GamePhase.TradeBuild) return Result.Failure<Nothing>(DomainErrors.DomainError.WrongGamePhase);
+        var player = Players.First(p => p.Id == playerId);
+        if (!player.ResourceHand.HasAtLeast(discard, ratio))
+            return Result.Failure<Nothing>(DomainErrors.DomainError.InsufficientResources);
+        if (!BankResourceHand.HasAtLeast(new ResourceCardAmount(request, 1)))
+            return Result.Failure<Nothing>(DomainErrors.DomainError.InsufficientResources);
+        // Port validation by ratio
+        if (ratio == 3)
         {
-            ResourceType.Brick => PortType.Brick2to1,
-            ResourceType.Lumber => PortType.Lumber2to1,
-            ResourceType.Wool => PortType.Wool2to1,
-            ResourceType.Grain => PortType.Grain2to1,
-            ResourceType.Ore => PortType.Ore2to1,
-            _ => PortType.None
-        };
-
-        if (!Board.PopulationCenters.Any(pc =>
-        pc.PlayerOwner == playerId &&
-            Board.Ports
-                .Where(p => p.Type == requiredPortType)
-                .SelectMany(p => p.EdgeCoordinate.HexCoords())
-                .Intersect(pc.VertexCoordinate.HexCoords())
-                .Any()
-            ))
-            return Result<Nothing>.Failure(DomainErrors.DomainError.Missing2to1Port);
-
-        return BaseMaritimeTrade(playerId, discardResource, requestResource, 2);
+            bool has3to1 = Board.PopulationCenters.Any(pc => pc.PlayerOwner == playerId && Board.Ports.Where(p => p.Type == PortType.Generic3to1).SelectMany(p => p.EdgeCoordinate.HexCoords()).Intersect(pc.VertexCoordinate.HexCoords()).Any());
+            if (!has3to1) return Result.Failure<Nothing>(DomainErrors.DomainError.Missing3to1Port);
+        }
+        if (ratio == 2)
+        {
+            var required = discard switch
+            {
+                ResourceCardType.Brick => PortType.Brick2to1,
+                ResourceCardType.Lumber => PortType.Lumber2to1,
+                ResourceCardType.Wool => PortType.Wool2to1,
+                ResourceCardType.Grain => PortType.Grain2to1,
+                ResourceCardType.Ore => PortType.Ore2to1,
+                _ => PortType.None
+            };
+            bool has2to1 = Board.PopulationCenters.Any(pc => pc.PlayerOwner == playerId && Board.Ports.Where(p => p.Type == required).SelectMany(p => p.EdgeCoordinate.HexCoords()).Intersect(pc.VertexCoordinate.HexCoords()).Any());
+            if (!has2to1) return Result.Failure<Nothing>(DomainErrors.DomainError.Missing2to1Port);
+        }
+        return Result.Success();
     }
 
-    public Result<Nothing> ProposeTrade(PlayerId playerId, List<ResourceAmount> requested, List<ResourceAmount> offered)
+    private void ApplyMaritimeNoFail(PlayerId playerId, int ratio, ResourceCardType discard, ResourceCardType request)
     {
-        if (CurrentPlayerId() != playerId) return Result<Nothing>.Failure(DomainErrors.DomainError.WrongTurn);
-        if (GamePhase != GamePhase.TradeBuild) return Result<Nothing>.Failure(DomainErrors.DomainError.WrongGamePhase);
+        var player = Players.First(p => p.Id == playerId);
+        player.ResourceHand.Transfer(BankResourceHand, discard, ratio); // send discard to bank
+        BankResourceHand.Transfer(player.ResourceHand, request, 1);     // bank gives requested
+        AddDomainEvent(new MaritimeTradeExecutedDomainEvent(Id, playerId, [new ResourceCardAmount(request, 1), new ResourceCardAmount(discard, -ratio)]));
+    }
+
+    public Result<Nothing> Maritime4to1Trade(PlayerId playerId, ResourceCardType discardResource, ResourceCardType requestResource)
+    {
+        var can = CanMaritime(playerId, 4, discardResource, requestResource);
+        if (can.IsFailure) return can;
+        ApplyMaritimeNoFail(playerId, 4, discardResource, requestResource);
+        return Result.Success();
+    }
+
+    public Result<Nothing> Maritime3to1Trade(PlayerId playerId, ResourceCardType discardResource, ResourceCardType requestResource)
+    {
+        var can = CanMaritime(playerId, 3, discardResource, requestResource);
+        if (can.IsFailure) return can;
+        ApplyMaritimeNoFail(playerId, 3, discardResource, requestResource);
+        return Result.Success();
+    }
+
+    public Result<Nothing> Maritime2to1Trade(PlayerId playerId, ResourceCardType discardResource, ResourceCardType requestResource)
+    {
+        var can = CanMaritime(playerId, 2, discardResource, requestResource);
+        if (can.IsFailure) return can;
+        ApplyMaritimeNoFail(playerId, 2, discardResource, requestResource);
+        return Result.Success();
+    }
+
+    public Result<Nothing> ProposeTrade(PlayerId playerId, List<ResourceCardAmount> requested, List<ResourceCardAmount> offered)
+    {
+        if (CurrentPlayerId() != playerId) return Result.Failure<Nothing>(DomainErrors.DomainError.WrongTurn);
+        if (GamePhase != GamePhase.TradeBuild) return Result.Failure<Nothing>(DomainErrors.DomainError.WrongGamePhase);
         if (CurrentTradeOffer is not null && !CurrentTradeOffer.IsAccepted)
-            return Result<Nothing>.Failure(new Error("TradeOffer", "Another trade offer is already active"));
+            return Result.Failure<Nothing>(new Error("TradeOffer", "Another trade offer is already active"));
 
         var proposer = Players.FirstOrDefault(p => p.Id == playerId);
-        if (proposer is null) return Result<Nothing>.Failure(DomainErrors.DomainError.NotFound);
+        if (proposer is null) return Result.Failure<Nothing>(DomainErrors.DomainError.NotFound);
 
         var create = TradeOffer.Create(proposer, requested, offered);
-        if (create.IsFailure) return Result<Nothing>.Failure(create.Error);
+        if (create.IsFailure) return Result.Failure<Nothing>(create.Error);
 
         CurrentTradeOffer = create.Value;
         AddDomainEvent(new TradeOfferPostedDomainEvent(Id, CurrentTradeOffer.Id, playerId, requested, offered));
@@ -78,16 +92,18 @@ public partial class Game
 
     public Result<Nothing> AcceptTrade(PlayerId playerId, TradeOfferId tradeOfferId)
     {
-        if (GamePhase != GamePhase.TradeBuild) return Result<Nothing>.Failure(DomainErrors.DomainError.WrongGamePhase);
+        if (GamePhase != GamePhase.TradeBuild) return Result.Failure<Nothing>(DomainErrors.DomainError.WrongGamePhase);
         if (CurrentTradeOffer is null || CurrentTradeOffer.Id != tradeOfferId)
-            return Result<Nothing>.Failure(DomainErrors.DomainError.NotFound);
+            return Result.Failure<Nothing>(DomainErrors.DomainError.NotFound);
 
         var proposer = Players.FirstOrDefault(p => p.Id == CurrentTradeOffer.ProposerId);
         var acceptor = Players.FirstOrDefault(p => p.Id == playerId);
-        if (proposer is null || acceptor is null) return Result<Nothing>.Failure(DomainErrors.DomainError.NotFound);
+        if (proposer is null || acceptor is null) return Result.Failure<Nothing>(DomainErrors.DomainError.NotFound);
 
-        var accept = CurrentTradeOffer.AcceptAndTradeResources(acceptor, proposer);
-        if (accept.IsFailure) return accept;
+        var can = CurrentTradeOffer.CanAccept(acceptor, proposer);
+        if (can.IsFailure) return can;
+
+        CurrentTradeOffer.ApplyTradeNoFail(acceptor, proposer);
 
         AddDomainEvent(new TradeExecutedDomainEvent(
             Id,
@@ -97,30 +113,7 @@ public partial class Game
             CurrentTradeOffer.OfferedResources,
             CurrentTradeOffer.RequestedResources));
 
-        // Clear the active offer after a successful trade
         ClearTradeOffer();
         return Result.Success();
-    }
-
-    private Result<Nothing> BaseMaritimeTrade(PlayerId playerId, ResourceType discardResource, ResourceType requestResource, int discardAmount)
-    {
-        var player = Players.First(p => p.Id == playerId);
-        var playerOffer = new ResourceAmount(discardResource, discardAmount);
-        var bankOffer = new ResourceAmount(requestResource, 1);
-
-        if (!CanTrade(player.ResourceBag, Bank, playerOffer, bankOffer))
-            return Result<Nothing>.Failure(DomainErrors.DomainError.InsufficientResources);
-
-        player.ResourceBag.ApplyResourceAmounts([playerOffer.Invert(), bankOffer]);
-        Bank.ApplyResourceAmounts([playerOffer, bankOffer.Invert()]);
-
-        AddDomainEvent(new MaritimeTradeExecutedDomainEvent(Id, playerId, [bankOffer, playerOffer.Invert()]));
-
-        return Result.Success();
-    }
-    private static bool CanTrade(ResourceBag playerBag, ResourceBag otherBag, ResourceAmount playerOfferAmount, ResourceAmount otherOfferAmount)
-    {
-        return playerBag.HasAtLeast(playerOfferAmount.Type, playerOfferAmount.Quantity) &&
-               otherBag.HasAtLeast(otherOfferAmount.Type, otherOfferAmount.Quantity);
     }
 }

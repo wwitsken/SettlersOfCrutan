@@ -46,10 +46,13 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGameViewEndpoints();
 app.MapGamePlayEndpoints();
-//app.MapGameBuildEndpoints();
+app.MapGameBuildEndpoints();
+app.MapGameTradeEndpoints();
+app.MapGameDevelopmentCardEndpoints();
+app.MapGameTurnFlowEndpoints();
 app.MapAuthEndpoints();
-//app.MapTodoListEndpoints();
 
 app.MapHub<GameHub>("/hubs/game");
 

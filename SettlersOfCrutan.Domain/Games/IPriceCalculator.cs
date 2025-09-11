@@ -1,8 +1,10 @@
-﻿namespace SettlersOfCrutan.Domain.Games;
+﻿using SettlersOfCrutan.Domain.Games.Resources;
+
+namespace SettlersOfCrutan.Domain.Games;
 public interface IPriceCalculator
 {
-    List<ResourceAmount> SettlementPrice();
-    List<ResourceAmount> CityPrice();
-    List<ResourceAmount> RoadPrice();
-    List<ResourceAmount> DevelopmentCardPrice();
+    List<ResourceCardAmount> SettlementPrice();
+    List<ResourceCardAmount> CityPrice();
+    List<ResourceCardAmount> RoadPrice();
+    List<ResourceCardAmount> DevelopmentCardPrice();
 }

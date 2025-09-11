@@ -1,4 +1,5 @@
 using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Domain.Games.DomainEvents;
 public record TradeExecutedDomainEvent(
@@ -6,6 +7,6 @@ public record TradeExecutedDomainEvent(
     TradeOfferId TradeOfferId,
     PlayerId ProposerId,
     PlayerId AcceptorId,
-    List<ResourceAmount> Offered,
-    List<ResourceAmount> Requested
+    List<ResourceCardAmount> Offered,
+    List<ResourceCardAmount> Requested
 ) : IDomainEvent;

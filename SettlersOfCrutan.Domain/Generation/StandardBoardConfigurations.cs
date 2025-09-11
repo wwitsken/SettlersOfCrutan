@@ -1,5 +1,5 @@
-﻿using SettlersOfCrutan.Domain.Games;
-using SettlersOfCrutan.Domain.Games.Boards;
+﻿using SettlersOfCrutan.Domain.Games.Boards;
+using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Domain.Generation;
 public static class StandardBoardConfigurations
@@ -7,14 +7,14 @@ public static class StandardBoardConfigurations
     public static BoardConfig DefaultBaseGame => new
         (
         Radius: 2,
-        ResourceCounts: new Dictionary<ResourceType, int>
+        ResourceCounts: new Dictionary<ResourceCardType, int>
         {
-            [ResourceType.Brick] = 3,
-            [ResourceType.Lumber] = 4,
-            [ResourceType.Wool] = 4,
-            [ResourceType.Grain] = 4,
-            [ResourceType.Ore] = 3,
-            [ResourceType.Desert] = 1,
+            [ResourceCardType.Brick] = 3,
+            [ResourceCardType.Lumber] = 4,
+            [ResourceCardType.Wool] = 4,
+            [ResourceCardType.Grain] = 4,
+            [ResourceCardType.Ore] = 3,
+            [ResourceCardType.Desert] = 1,
         },
         NumberTokens: [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12],
         Ports: new Dictionary<PortType, int>

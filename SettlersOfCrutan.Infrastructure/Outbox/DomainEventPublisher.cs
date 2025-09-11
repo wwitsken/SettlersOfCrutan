@@ -1,4 +1,5 @@
-﻿using SettlersOfCrutan.Domain.Core;
+﻿using SettlersOfCrutan.Application.Abstractions;
+using SettlersOfCrutan.Domain.Core;
 using System.Collections;
 
 namespace SettlersOfCrutan.Infrastructure.Outbox;

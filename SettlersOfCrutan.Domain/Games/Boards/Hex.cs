@@ -1,5 +1,6 @@
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
+using SettlersOfCrutan.Domain.Games.Resources;
 using System.Text.Json.Serialization;
 
 namespace SettlersOfCrutan.Domain.Games.Boards;
@@ -11,8 +12,8 @@ public class Hex(HexCoord coordinate)
 {
     [JsonIgnore]
     public override HexId Id { get; init; } = new() { Value = coordinate };
-    public ResourceType Resource { get; set; }
+    public HexCoord Coordinate { get; init; } = coordinate;
+    public ResourceCardType Resource { get; set; }
     public int? NumberToken { get; set; }
     public bool HasRobber { get; set; }
-    public HexCoord Coordinate { get; init; } = coordinate;
 }

@@ -1,7 +1,9 @@
 ﻿using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
+using SettlersOfCrutan.Domain.Games.Resources;
 using SettlersOfCrutan.Domain.Generation;
+using System.Text.Json.Serialization;
 
 namespace SettlersOfCrutan.Domain.Games;
 
@@ -10,34 +12,61 @@ public enum PlayerDirection { Clockwise, CounterClockwise }
 public partial class Game : AggregateRoot<GameId>
 {
     public override GameId Id { get; init; } = new() { Value = Guid.NewGuid() };
-    public required GameType GameType { get; set; }
-    public required string Name { get; set; }
-    public required Board Board { get; set; }
-    public required GamePhase GamePhase { get; set; }
-    public required ResourceBag Bank { get; set; } = ResourceBag.StandardBank();
+    public GameType GameType { get; set; }
+    public string Name { get; set; }
+    public Board Board { get; set; }
 
-    private List<Player> _players = [];
-    public List<Player> Players
-    {
-        get => [.. _players.OrderBy(p => p.Id.Value)];
-        set => _players = value;
-    }
+    // Separate bank stocks
+    public ResourceHand BankResourceHand { get; private set; } = ResourceHand.StandardBankResources();
+    public DevCardHand BankDevCardHand { get; private set; } = DevCardHand.StandardBankDeck();
 
-    private List<DiscardHalfRequirement> _discardHalfRequirements = [];
-    public List<DiscardHalfRequirement> DiscardHalfRequirements
-    {
-        get => [.. _discardHalfRequirements];
-        set => _discardHalfRequirements = value;
-    }
-
+    public bool AllPlayersJoined() => Players.All(p => p.JoinedAt is not null);
     public PlayerId CurrentPlayerId() => Players[PlayerIndex].Id;
     public DateTimeOffset? TurnExpiresAt { get; set; }
     public PlayerDirection PlayerDirection { get; set; } = PlayerDirection.Clockwise;
+    public GamePhase GamePhase { get; set; }
     public int Round { get; set; } = 1;
     public int PlayerIndex { get; set; } = 0;
     public TradeOffer? CurrentTradeOffer { get; set; } = null;
 
-    public bool AllPlayersJoined() => Players.All(p => p.JoinedAt is not null);
+    private readonly List<Player> _players = [];
+    public IReadOnlyList<Player> Players => [.. _players];
+
+    private readonly List<DiscardHalfRequirement> _discardHalfRequirements = [];
+    public IReadOnlyList<DiscardHalfRequirement> DiscardHalfRequirements => [.. _discardHalfRequirements];
+
+    [JsonConstructor]
+    private Game(
+        GameType gameType,
+        string name,
+        Board board,
+        GamePhase gamePhase,
+        ResourceHand bankResourceHand,
+        DevCardHand bankDevCardHand,
+        IReadOnlyList<Player> players,
+        IReadOnlyList<DiscardHalfRequirement> discardHalfRequirements,
+        PlayerDirection playerDirection = PlayerDirection.Clockwise,
+        int round = 1,
+        int playerIndex = 0,
+        TradeOffer? currentTradeOffer = null,
+        DateTimeOffset? turnExpiresAt = null
+    )
+    {
+        GameType = gameType;
+        Name = name;
+        Board = board;
+        GamePhase = gamePhase;
+        BankResourceHand = bankResourceHand;
+        BankDevCardHand = bankDevCardHand;
+        _players = [.. players];
+        _discardHalfRequirements = [.. discardHalfRequirements];
+        PlayerDirection = playerDirection;
+        Round = round;
+        PlayerIndex = playerIndex;
+        CurrentTradeOffer = currentTradeOffer;
+        TurnExpiresAt = turnExpiresAt;
+    }
+
     public Result<PlayerId> JoinPlayer(PlayerId playerId, DateTimeOffset when)
     {
         var p = _players.SingleOrDefault(x => x.Id == playerId);
@@ -49,15 +78,19 @@ public partial class Game : AggregateRoot<GameId>
 
     public static Result<Game> CreateGame(string gameName, string[] userIds, IBoardGenerator boardGenerator)
     {
-        Game game = new()
-        {
-            GameType = GameType.BaseGame,
-            GamePhase = GamePhase.Setup,
-            Name = gameName,
-            Bank = ResourceBag.StandardBank(),
-            Players = [.. userIds.Select(id => Player.Create(id, ResourceBag.StandardPlayerStartingBag()))],
-            Board = boardGenerator.Generate(StandardBoardConfigurations.DefaultBaseGame, Environment.TickCount)
-        };
+        Game game = new(
+            GameType.BaseGame,
+            gameName,
+            boardGenerator.Generate(StandardBoardConfigurations.DefaultBaseGame, Environment.TickCount),
+            GamePhase.Setup,
+            ResourceHand.StandardBankResources(),
+            DevCardHand.StandardBankDeck(),
+            [.. userIds.Select(Player.Create)],
+            [],
+            PlayerDirection.Clockwise,
+            1,
+            0
+        );
 
         game.AddDomainEvent(new GameCreatedDomainEvent(game.Id, [.. game.Players.Select(p => p.Id.Value)]));
 

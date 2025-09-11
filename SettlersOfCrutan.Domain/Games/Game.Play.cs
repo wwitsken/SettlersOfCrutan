@@ -1,6 +1,7 @@
 ﻿using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
+using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Domain.Games;
 public partial class Game
@@ -20,7 +21,6 @@ public partial class Game
         if (CurrentPlayerId() != playerId)
             return Result.Failure<PlayerId>(DomainErrors.DomainError.WrongTurn);
 
-        // Only valid during Setup or TradeBuild phases
         return GamePhase switch
         {
             GamePhase.Setup => EndTurnDuringSetup(playerId, clock, turnDuration),
@@ -53,7 +53,6 @@ public partial class Game
         return Result.Success((d1, d2));
     }
 
-    // ------------ HELPERS ------------ //
     private Result<PlayerId> EndTurnDuringSetup(PlayerId playerId, IDateTimeProvider clock, TimeSpan? turnDuration = null)
     {
         if (PlayerIndex < Players.Count - 1 && PlayerDirection == PlayerDirection.Clockwise)
@@ -109,9 +108,9 @@ public partial class Game
             AddDomainEvent(new RobPlayerStartedDomainEvent(Id));
     }
 
-    private Dictionary<PlayerId, List<ResourceAmount>> DistributeProduction(int diceTotal)
+    private Dictionary<PlayerId, List<ResourceCardAmount>> DistributeProduction(int diceTotal)
     {
-        var distResources = new Dictionary<PlayerId, List<ResourceAmount>>();
+        var distResources = new Dictionary<PlayerId, List<ResourceCardAmount>>();
 
         foreach (var hex in Board.Hexes.Where(h => h.NumberToken == diceTotal && !h.HasRobber))
         {
@@ -126,42 +125,39 @@ public partial class Game
                 if (amountToGive <= 0) continue;
 
                 distResources.TryAdd(pop.PlayerOwner, []);
-                distResources[pop.PlayerOwner].Add(new ResourceAmount(hex.Resource, amountToGive));
+                distResources[pop.PlayerOwner].Add(new ResourceCardAmount(hex.Resource, amountToGive));
             }
         }
 
-        // Group all resources by type and sum quantities
         var groupedAmounts = distResources.Values
             .SelectMany(ra => ra)
             .GroupBy(ra => ra.Type)
-            .Select(g => new ResourceAmount(g.Key, g.Sum(ra => ra.Quantity)))
+            .Select(g => new ResourceCardAmount(g.Key, g.Sum(ra => ra.Quantity)))
             .ToList();
 
-        // Remove resources if bank doesn't have enough
-        foreach (var amount in groupedAmounts.Where(amount => !Bank.HasAtLeast(amount)))
+        foreach (var amount in groupedAmounts.Where(amount => !BankResourceHand.HasAtLeast(amount)))
         {
             foreach (var resources in distResources.Values)
                 resources.RemoveAll(ra => ra.Type == amount.Type);
         }
 
-        // Apply resources to players and bank
-        foreach (var (playerId, resources) in distResources)
+        foreach (var (pid, resources) in distResources)
         {
-            var totalToGive = resources
-                .GroupBy(ra => ra.Type)
-                .Select(g => new ResourceAmount(g.Key, g.Sum(ra => ra.Quantity)))
+            var totalToGive = resources.GroupBy(r => r.Type)
+                .Select(g => new ResourceCardAmount(g.Key, g.Sum(x => x.Quantity)))
                 .ToList();
 
-            Players.First(p => p.Id == playerId).ResourceBag.ApplyResourceAmounts(totalToGive);
-            Bank.ApplyResourceAmounts(totalToGive.Invert());
+            var hand = Players.First(p => p.Id == pid).ResourceHand;
+            if (!hand.HasAtLeast(totalToGive.Select(a => new ResourceCardAmount(a.Type, 0)))) { }
+            foreach (var ra in totalToGive) hand.Add(ra.Type, ra.Quantity);
+            foreach (var ra in totalToGive) BankResourceHand.Subtract(ra.Type, ra.Quantity);
         }
 
         GamePhase = GamePhase.TradeBuild;
-
         return distResources;
     }
 
-    private void HandleProductionEvents(int d1, int d2, Dictionary<PlayerId, List<ResourceAmount>> distResources)
+    private void HandleProductionEvents(int d1, int d2, Dictionary<PlayerId, List<ResourceCardAmount>> distResources)
     {
         AddDomainEvent(new DiceRolledDomainEvent(Id, d1, d2));
         AddDomainEvent(new ResourcesDistributedDomainEvent(Id, distResources));
@@ -173,12 +169,11 @@ public partial class Game
         int playersNeedingToDiscard = 0;
         foreach (var player in Players)
         {
-            player.ResourceBag ??= new ResourceBag();
-            int totalResources = player.ResourceBag.TotalResourceCards;
+            int totalResources = player.ResourceHand.Total;
             if (totalResources > 7)
             {
                 int toDiscard = totalResources / 2;
-                DiscardHalfRequirements.Add(new DiscardHalfRequirement
+                _discardHalfRequirements.Add(new DiscardHalfRequirement
                 {
                     PlayerId = player.Id,
                     ResourceAmount = toDiscard

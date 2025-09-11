@@ -1,23 +1,26 @@
-﻿namespace SettlersOfCrutan.Domain.Games.PriceCalculators;
+﻿using SettlersOfCrutan.Domain.Games;
+using SettlersOfCrutan.Domain.Games.Resources;
+
+namespace SettlersOfCrutan.Application.Games.Policies;
 public class StandardPriceCalculator : IPriceCalculator
 {
-    public List<ResourceAmount> CityPrice() => [
-        new ResourceAmount(ResourceType.Ore, 3),
-        new ResourceAmount(ResourceType.Grain, 2)
+    public List<ResourceCardAmount> CityPrice() => [
+        new ResourceCardAmount(ResourceCardType.Ore, 3),
+        new ResourceCardAmount(ResourceCardType.Grain, 2)
         ];
-    public List<ResourceAmount> DevelopmentCardPrice() => [
-        new ResourceAmount(ResourceType.Ore, 1),
-        new ResourceAmount(ResourceType.Wool, 1),
-        new ResourceAmount(ResourceType.Grain, 1)
+    public List<ResourceCardAmount> DevelopmentCardPrice() => [
+        new ResourceCardAmount(ResourceCardType.Ore, 1),
+        new ResourceCardAmount(ResourceCardType.Wool, 1),
+        new ResourceCardAmount(ResourceCardType.Grain, 1)
         ];
-    public List<ResourceAmount> RoadPrice() => [
-        new ResourceAmount(ResourceType.Brick, 1),
-        new ResourceAmount(ResourceType.Lumber, 1)
+    public List<ResourceCardAmount> RoadPrice() => [
+        new ResourceCardAmount(ResourceCardType.Brick, 1),
+        new ResourceCardAmount(ResourceCardType.Lumber, 1)
         ];
-    public List<ResourceAmount> SettlementPrice() => [
-        new ResourceAmount(ResourceType.Brick, 1),
-        new ResourceAmount(ResourceType.Lumber, 1),
-        new ResourceAmount(ResourceType.Wool, 1),
-        new ResourceAmount(ResourceType.Grain, 1)
+    public List<ResourceCardAmount> SettlementPrice() => [
+        new ResourceCardAmount(ResourceCardType.Brick, 1),
+        new ResourceCardAmount(ResourceCardType.Lumber, 1),
+        new ResourceCardAmount(ResourceCardType.Wool, 1),
+        new ResourceCardAmount(ResourceCardType.Grain, 1)
         ];
 }

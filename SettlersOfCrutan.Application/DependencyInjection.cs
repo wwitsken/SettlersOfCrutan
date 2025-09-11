@@ -1,10 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using SettlersOfCrutan.Application.Games.Commands.Build;
-using SettlersOfCrutan.Application.Games.Commands.Lifecycle;
-using SettlersOfCrutan.Application.Games.Commands.TurnFlow;
-using SettlersOfCrutan.Application.Games.Queries;
+using SettlersOfCrutan.Application.Abstractions;
+using SettlersOfCrutan.Application.Games.Policies;
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.Games.PriceCalculators;
 using SettlersOfCrutan.Domain.Generation;
 
 namespace SettlersOfCrutan.Application;
@@ -15,26 +12,29 @@ public static class DependencyInjection
         // Concrete singletons
         services.AddSingleton<IDateTimeProvider, SystemClock>();
 
-        // App services
+        // App services / policies
         services.AddScoped<IBoardGenerator, RandomBoardGenerator>();
         services.AddSingleton<StandardPriceCalculator>();
 
-        //services.AddScoped<CreateTodoListCommandHandler>();
-        //services.AddScoped<GetTodoListByIdQueryHandler>();
-
-        services.AddScoped<GetGameByIdQueryHandler>();
-        services.AddScoped<CreateGameCommandHandler>();
-        services.AddScoped<JoinGameCommandHandler>();
-        services.AddScoped<BuildInitialCommandHandler>();
-        services.AddScoped<RollDiceCommandHandler>();
-
-
-        // Scan and register all domain event handlers as Scoped
+        // Scan and register command handlers, query handlers, and domain event handlers
         services.Scan(scan => scan
             .FromApplicationDependencies(a => a.GetName().Name!.StartsWith("SettlersOfCrutan"))
-            .AddClasses(c => c.AssignableTo(typeof(IDomainEventHandler<>)))
-            .AsImplementedInterfaces()
-            .WithScopedLifetime());
+                // Command handlers (no result)
+                .AddClasses(c => c.AssignableTo(typeof(ICommandHandler<>)))
+                    .AsSelfWithInterfaces()
+                    .WithScopedLifetime()
+                // Command handlers (with result)
+                .AddClasses(c => c.AssignableTo(typeof(ICommandHandler<,>)))
+                    .AsSelfWithInterfaces()
+                    .WithScopedLifetime()
+                // Query handlers
+                .AddClasses(c => c.AssignableTo(typeof(IQueryHandler<,>)))
+                    .AsSelfWithInterfaces()
+                    .WithScopedLifetime()
+                // Domain event handlers
+                .AddClasses(c => c.AssignableTo(typeof(IDomainEventHandler<>)))
+                    .AsSelfWithInterfaces()
+                    .WithScopedLifetime());
 
         return services;
     }
