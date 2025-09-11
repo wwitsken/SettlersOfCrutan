@@ -10,8 +10,8 @@ public partial class Game
 
     private Result<Nothing> CanMaritime(PlayerId playerId, int ratio, ResourceCardType discard, ResourceCardType request)
     {
-        if (CurrentPlayerId() != playerId) return Result.Failure<Nothing>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild) return Result.Failure<Nothing>(DomainErrors.DomainError.WrongGamePhase);
+        if (CurrentPlayerId() != playerId) return Result.Failure<Nothing>(DomainErrors.DomainError.WrongTurn);
         var player = Players.First(p => p.Id == playerId);
         if (!player.ResourceHand.HasAtLeast(discard, ratio))
             return Result.Failure<Nothing>(DomainErrors.DomainError.InsufficientResources);
@@ -74,8 +74,8 @@ public partial class Game
 
     public Result<Nothing> ProposeTrade(PlayerId playerId, List<ResourceCardAmount> requested, List<ResourceCardAmount> offered)
     {
-        if (CurrentPlayerId() != playerId) return Result.Failure<Nothing>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild) return Result.Failure<Nothing>(DomainErrors.DomainError.WrongGamePhase);
+        if (CurrentPlayerId() != playerId) return Result.Failure<Nothing>(DomainErrors.DomainError.WrongTurn);
         if (CurrentTradeOffer is not null && !CurrentTradeOffer.IsAccepted)
             return Result.Failure<Nothing>(new Error("TradeOffer", "Another trade offer is already active"));
 

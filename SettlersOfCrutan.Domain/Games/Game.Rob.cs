@@ -6,8 +6,25 @@ using SettlersOfCrutan.Domain.Games.Resources;
 namespace SettlersOfCrutan.Domain.Games;
 public partial class Game
 {
+    public Result<ResourceCardType> ResolveRobber(PlayerId robbingPlayerId, HexCoord newRobberHexCoord, PlayerId victimId)
+    {
+        var can = CanResolveRobber(robbingPlayerId, newRobberHexCoord, victimId);
+        if (can.IsFailure) return Result.Failure<ResourceCardType>(can.Error);
+        var stolen = ResolveRobberNoFail(robbingPlayerId, newRobberHexCoord, victimId);
+        return Result.Success(stolen);
+    }
+
+    private static List<ResourceCardType> ListResourceType(ResourceCardType resourceType, ResourceHand hand)
+    {
+        List<ResourceCardType> resources = [];
+        for (int i = 0; i < hand.Count(resourceType); i++) resources.Add(resourceType);
+        return resources;
+    }
+
     private Result<Nothing> CanResolveRobber(PlayerId robbingPlayerId, HexCoord newRobberHexCoord, PlayerId victimId)
     {
+        if (GamePhase != GamePhase.ResolveRobber)
+            return Result.Failure<Nothing>(new Error("Robber", "Cannot resolve robber in the current game phase"));
         if (CurrentPlayerId() != robbingPlayerId)
             return Result.Failure<Nothing>(DomainErrors.DomainError.WrongTurn);
         if (!Board.CanMoveRobberTo(newRobberHexCoord))
@@ -33,20 +50,5 @@ public partial class Game
         playerHand.Add(stolenResource, 1);
         AddDomainEvent(new RobberResolvedDomainEvent(Id, newRobberHexCoord, stolenResource, robbingPlayerId, victimId));
         return stolenResource;
-    }
-
-    public Result<ResourceCardType> ResolveRobber(PlayerId robbingPlayerId, HexCoord newRobberHexCoord, PlayerId victimId)
-    {
-        var can = CanResolveRobber(robbingPlayerId, newRobberHexCoord, victimId);
-        if (can.IsFailure) return Result.Failure<ResourceCardType>(can.Error);
-        var stolen = ResolveRobberNoFail(robbingPlayerId, newRobberHexCoord, victimId);
-        return Result.Success(stolen);
-    }
-
-    private static List<ResourceCardType> ListResourceType(ResourceCardType resourceType, ResourceHand hand)
-    {
-        List<ResourceCardType> resources = [];
-        for (int i = 0; i < hand.Count(resourceType); i++) resources.Add(resourceType);
-        return resources;
     }
 }

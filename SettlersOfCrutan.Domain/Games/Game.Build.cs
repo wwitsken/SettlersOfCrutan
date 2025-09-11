@@ -9,8 +9,8 @@ public partial class Game
 {
     public Result<(PopulationCenter, Road)> PlaceInitial(PlayerId playerId, Vertex settlementVertex, Edge roadEdge, IDateTimeProvider clock)
     {
-        if (CurrentPlayerId() != playerId) return Result.Failure<(PopulationCenter, Road)>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.Setup) return Result.Failure<(PopulationCenter, Road)>(DomainErrors.DomainError.WrongGamePhase);
+        if (CurrentPlayerId() != playerId) return Result.Failure<(PopulationCenter, Road)>(DomainErrors.DomainError.WrongTurn);
 
         var reserve = Players.First(p => p.Id == playerId).PieceReserve;
         if (!reserve.CanConsume(BuildableType.Settlement) || !reserve.CanConsume(BuildableType.Road))
@@ -30,8 +30,8 @@ public partial class Game
 
     public Result<Road> BuildRoad(IPriceCalculator priceCalculator, PlayerId playerId, Edge edge)
     {
-        if (CurrentPlayerId() != playerId) return Result.Failure<Road>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild) return Result.Failure<Road>(DomainErrors.DomainError.WrongGamePhase);
+        if (CurrentPlayerId() != playerId) return Result.Failure<Road>(DomainErrors.DomainError.WrongTurn);
 
         var player = Players.First(p => p.Id == playerId);
         var reserve = player.PieceReserve;
@@ -53,8 +53,8 @@ public partial class Game
 
     public Result<PopulationCenter> BuildSettlement(IPriceCalculator priceCalculator, PlayerId playerId, Vertex vertex)
     {
-        if (CurrentPlayerId() != playerId) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.WrongGamePhase);
+        if (CurrentPlayerId() != playerId) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.WrongTurn);
 
         var player = Players.First(p => p.Id == playerId);
         var reserve = player.PieceReserve;
@@ -76,8 +76,8 @@ public partial class Game
 
     public Result<PopulationCenter> BuildCity(IPriceCalculator priceCalculator, PlayerId playerId, Vertex vertex)
     {
-        if (CurrentPlayerId() != playerId) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.WrongGamePhase);
+        if (CurrentPlayerId() != playerId) return Result.Failure<PopulationCenter>(DomainErrors.DomainError.WrongTurn);
 
         var player = Players.First(p => p.Id == playerId);
         var reserve = player.PieceReserve;
@@ -100,8 +100,8 @@ public partial class Game
 
     public Result<DevelopmentCardType> BuyDevelopmentCard(IPriceCalculator priceCalculator, PlayerId playerId)
     {
-        if (CurrentPlayerId() != playerId) return Result.Failure<DevelopmentCardType>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild) return Result.Failure<DevelopmentCardType>(DomainErrors.DomainError.WrongGamePhase);
+        if (CurrentPlayerId() != playerId) return Result.Failure<DevelopmentCardType>(DomainErrors.DomainError.WrongTurn);
 
         var player = Players.First(p => p.Id == playerId);
         var hand = player.ResourceHand;

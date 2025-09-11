@@ -23,7 +23,7 @@ if (builder.Environment.IsDevelopment())
     api.WithScalar();
 }
 
-var frontend = builder.AddNpmApp("frontend", "../SettlersOfCrutan.Frontend")
+builder.AddNpmApp("frontend", "../SettlersOfCrutan.Frontend")
     .WithReference(api)
     .WaitFor(api)
     .WithEnvironment("BROWSER", "none")

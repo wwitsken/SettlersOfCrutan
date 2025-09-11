@@ -14,14 +14,14 @@ public class DomainError(string code, string message) : Error(code, message)
     public static DomainError WrongTurnStatus => new("WrongTurnStatus", "The turn status is not currently active.");
     public static DomainError WrongGamePhase => new("WrongGamePhase", "Action cannot be performed at this turn step.");
 
-    public static Error MissingRoad => new("MissingRoad", "Player has no remaining roads to build.");
-    public static Error MissingSettlement => new("MissingSettlement", "Player has no remaining settlements to build.");
-    public static Error MissingCity => new("MissingSettlement", "Player has no remaining cities to build.");
+    public static DomainError MissingRoad => new("MissingRoad", "Player has no remaining roads to build.");
+    public static DomainError MissingSettlement => new("MissingSettlement", "Player has no remaining settlements to build.");
+    public static DomainError MissingCity => new("MissingSettlement", "Player has no remaining cities to build.");
 
-    public static Error TooManyDevelopmentCards => new("TooManyDevelopmentCards", "Can't have more than 3 development cards at a time.");
-    public static Error InsufficientBankDevelopmentCards => new("InsufficientBankDevelopmentCards", "There are not enough bank development cards to satisfy the purchase.");
+    public static DomainError TooManyDevelopmentCards => new("TooManyDevelopmentCards", "Can't have more than 3 development cards at a time.");
+    public static DomainError InsufficientBankDevelopmentCards => new("InsufficientBankDevelopmentCards", "There are not enough bank development cards to satisfy the purchase.");
 
-    public static Error Missing3to1Port => new("MaritimeTrade", "Player does not have a 3:1 maritime trade port");
-    public static Error Missing2to1Port => new("MaritimeTrade", "Player does not have the matching 2:1 maritime trade port");
+    public static DomainError Missing3to1Port => new("MaritimeTrade", "Player does not have a 3:1 maritime trade port");
+    public static DomainError Missing2to1Port => new("MaritimeTrade", "Player does not have the matching 2:1 maritime trade port");
 
 }

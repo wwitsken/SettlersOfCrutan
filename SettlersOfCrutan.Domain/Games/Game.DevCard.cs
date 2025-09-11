@@ -9,10 +9,10 @@ public partial class Game
 {
     public Result<(Road r1, Road r2)> PlayRoadBuilding(PlayerId playerId, Edge edge1, Edge edge2)
     {
-        if (CurrentPlayerId() != playerId)
-            return Result.Failure<(Road, Road)>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild)
             return Result.Failure<(Road, Road)>(DomainErrors.DomainError.WrongGamePhase);
+        if (CurrentPlayerId() != playerId)
+            return Result.Failure<(Road, Road)>(DomainErrors.DomainError.WrongTurn);
 
         var player = Players.First(p => p.Id == playerId);
         var devHand = player.DevCardHand;
@@ -45,8 +45,8 @@ public partial class Game
 
     public Result<int> PlayMonopoly(PlayerId playerId, ResourceCardType resourceType)
     {
-        if (CurrentPlayerId() != playerId) return Result.Failure<int>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild) return Result.Failure<int>(DomainErrors.DomainError.WrongGamePhase);
+        if (CurrentPlayerId() != playerId) return Result.Failure<int>(DomainErrors.DomainError.WrongTurn);
 
         var player = Players.First(p => p.Id == playerId);
         var devHand = player.DevCardHand;
@@ -71,8 +71,8 @@ public partial class Game
 
     public Result<(ResourceCardType t1, ResourceCardType t2)> PlayYearOfPlenty(PlayerId playerId, ResourceCardType t1, ResourceCardType t2)
     {
-        if (CurrentPlayerId() != playerId) return Result.Failure<(ResourceCardType, ResourceCardType)>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild) return Result.Failure<(ResourceCardType, ResourceCardType)>(DomainErrors.DomainError.WrongGamePhase);
+        if (CurrentPlayerId() != playerId) return Result.Failure<(ResourceCardType, ResourceCardType)>(DomainErrors.DomainError.WrongTurn);
 
         var player = Players.First(p => p.Id == playerId);
         var devHand = player.DevCardHand;
@@ -100,8 +100,8 @@ public partial class Game
 
     public Result<HexCoord> PlayKnight(PlayerId playerId, HexCoord newRobberHexCoord, PlayerId victimId)
     {
-        if (CurrentPlayerId() != playerId) return Result.Failure<HexCoord>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.TradeBuild) return Result.Failure<HexCoord>(DomainErrors.DomainError.WrongGamePhase);
+        if (CurrentPlayerId() != playerId) return Result.Failure<HexCoord>(DomainErrors.DomainError.WrongTurn);
 
         var player = Players.First(p => p.Id == playerId);
         var devHand = player.DevCardHand;

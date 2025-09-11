@@ -18,6 +18,8 @@ public partial class Game
 
     public Result<PlayerId> EndTurn(PlayerId playerId, IDateTimeProvider clock, TimeSpan? turnDuration = null)
     {
+        if (GamePhase != GamePhase.Setup && GamePhase != GamePhase.TradeBuild) return Result<PlayerId>.Failure(DomainErrors.DomainError.WrongGamePhase);
+
         if (CurrentPlayerId() != playerId)
             return Result.Failure<PlayerId>(DomainErrors.DomainError.WrongTurn);
 
@@ -25,16 +27,17 @@ public partial class Game
         {
             GamePhase.Setup => EndTurnDuringSetup(playerId, clock, turnDuration),
             GamePhase.TradeBuild => EndTurnDuringTradeBuild(playerId, clock, turnDuration),
-            _ => throw new InvalidOperationException()
+            _ => throw new InvalidOperationException("Invalid game phase for ending turn")
         };
     }
 
+
     public Result<(int, int)> RollAndResolveProduction(PlayerId playerId)
     {
-        if (CurrentPlayerId() != playerId)
-            return Result.Failure<(int, int)>(DomainErrors.DomainError.WrongTurn);
         if (GamePhase != GamePhase.RollDice)
             return Result.Failure<(int, int)>(new Error("Roll", "Cannot roll in the current game phase"));
+        if (CurrentPlayerId() != playerId)
+            return Result.Failure<(int, int)>(DomainErrors.DomainError.WrongTurn);
 
         int d1 = Random.Shared.Next(1, 7);
         int d2 = Random.Shared.Next(1, 7);

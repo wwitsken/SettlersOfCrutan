@@ -19,19 +19,15 @@ public static class DependencyInjection
         // Scan and register command handlers, query handlers, and domain event handlers
         services.Scan(scan => scan
             .FromApplicationDependencies(a => a.GetName().Name!.StartsWith("SettlersOfCrutan"))
-                // Command handlers (no result)
                 .AddClasses(c => c.AssignableTo(typeof(ICommandHandler<>)))
                     .AsSelfWithInterfaces()
                     .WithScopedLifetime()
-                // Command handlers (with result)
                 .AddClasses(c => c.AssignableTo(typeof(ICommandHandler<,>)))
                     .AsSelfWithInterfaces()
                     .WithScopedLifetime()
-                // Query handlers
                 .AddClasses(c => c.AssignableTo(typeof(IQueryHandler<,>)))
                     .AsSelfWithInterfaces()
                     .WithScopedLifetime()
-                // Domain event handlers
                 .AddClasses(c => c.AssignableTo(typeof(IDomainEventHandler<>)))
                     .AsSelfWithInterfaces()
                     .WithScopedLifetime());
