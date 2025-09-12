@@ -1,4 +1,5 @@
 ﻿using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
 using SettlersOfCrutan.Domain.Games.Resources;
@@ -6,22 +7,12 @@ using SettlersOfCrutan.Domain.Games.Resources;
 namespace SettlersOfCrutan.Domain.Games;
 public partial class Game
 {
-    public Result<PlayerId> StartGame(IDateTimeProvider clock, TimeSpan? turnDuration = null)
-    {
-        GamePhase = GamePhase.Setup;
-        PlayerIndex = 0;
-        Round = 1;
-        TurnExpiresAt = turnDuration.HasValue ? clock.UtcNow.Add(turnDuration.Value) : null;
-        AddDomainEvent(new GameStartedDomainEvent(Id, CurrentPlayerId()));
-        return Result.Success(CurrentPlayerId());
-    }
-
     public Result<PlayerId> EndTurn(PlayerId playerId, IDateTimeProvider clock, TimeSpan? turnDuration = null)
     {
-        if (GamePhase != GamePhase.Setup && GamePhase != GamePhase.TradeBuild) return Result<PlayerId>.Failure(DomainErrors.DomainError.WrongGamePhase);
+        if (GamePhase != GamePhase.Setup && GamePhase != GamePhase.TradeBuild) return Result<PlayerId>.Failure(DomainError.WrongGamePhase);
 
         if (CurrentPlayerId() != playerId)
-            return Result.Failure<PlayerId>(DomainErrors.DomainError.WrongTurn);
+            return Result.Failure<PlayerId>(DomainError.WrongTurn);
 
         return GamePhase switch
         {
@@ -35,9 +26,9 @@ public partial class Game
     public Result<(int, int)> RollAndResolveProduction(PlayerId playerId)
     {
         if (GamePhase != GamePhase.RollDice)
-            return Result.Failure<(int, int)>(new Error("Roll", "Cannot roll in the current game phase"));
+            return Result.Failure<(int, int)>(DomainError.CannotRollInCurrentPhase);
         if (CurrentPlayerId() != playerId)
-            return Result.Failure<(int, int)>(DomainErrors.DomainError.WrongTurn);
+            return Result.Failure<(int, int)>(DomainError.WrongTurn);
 
         int d1 = Random.Shared.Next(1, 7);
         int d2 = Random.Shared.Next(1, 7);
@@ -78,7 +69,7 @@ public partial class Game
         }
         else
         {
-            return Result.Failure<PlayerId>(new Error("EndTurn", "Invalid player index or direction"));
+            return Result.Failure<PlayerId>(DomainError.InvalidEndTurn);
         }
 
         TurnExpiresAt = turnDuration.HasValue ? clock.UtcNow.Add(turnDuration.Value) : null;
@@ -146,14 +137,18 @@ public partial class Game
 
         foreach (var (pid, resources) in distResources)
         {
-            var totalToGive = resources.GroupBy(r => r.Type)
+            var totalToGive = resources
+                .GroupBy(r => r.Type)
                 .Select(g => new ResourceCardAmount(g.Key, g.Sum(x => x.Quantity)))
                 .ToList();
 
-            var hand = Players.First(p => p.Id == pid).ResourceHand;
-            if (!hand.HasAtLeast(totalToGive.Select(a => new ResourceCardAmount(a.Type, 0)))) { }
-            foreach (var ra in totalToGive) hand.Add(ra.Type, ra.Quantity);
-            foreach (var ra in totalToGive) BankResourceHand.Subtract(ra.Type, ra.Quantity);
+            var player = Players.First(p => p.Id == pid);
+            // Add resources to player & subtract from bank
+            foreach (var ra in totalToGive)
+            {
+                player.AddResource(ra.Type, ra.Quantity);
+                BankResourceHand.Subtract(ra.Type, ra.Quantity);
+            }
         }
 
         GamePhase = GamePhase.TradeBuild;
@@ -172,7 +167,7 @@ public partial class Game
         int playersNeedingToDiscard = 0;
         foreach (var player in Players)
         {
-            int totalResources = player.ResourceHand.Total;
+            int totalResources = player.TotalResources;
             if (totalResources > 7)
             {
                 int toDiscard = totalResources / 2;

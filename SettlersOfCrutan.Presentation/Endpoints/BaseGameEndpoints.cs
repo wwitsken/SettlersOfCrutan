@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using SettlersOfCrutan.Application.Games.Commands.Lifecycle;
 using SettlersOfCrutan.Application.Games.Queries;
 using SettlersOfCrutan.Domain.Games;
@@ -8,7 +7,7 @@ using SettlersOfCrutan.Presentation.Extensions;
 
 namespace SettlersOfCrutan.Presentation.Endpoints;
 
-public static class GameViewEndpoints
+public static class BaseGameEndpoints
 {
     public static IEndpointRouteBuilder MapGameViewEndpoints(this IEndpointRouteBuilder app)
     {
@@ -26,26 +25,14 @@ public static class GameViewEndpoints
                         : result.Error.ToHttpResult();
                 });
 
-        group.MapGet("/{id:guid}", async Task<Results<Ok<Game>, NotFound, ValidationProblem>> (
+        group.MapGet("/{id:guid}", async Task<IResult> (
             Guid id,
             [FromServices] GetGameByIdQueryHandler handler,
             CancellationToken ct) =>
         {
             var query = new GetGameByIdQuery(new GameId { Value = id });
             var result = await handler.Handle(query, ct);
-
-            if (result.IsSuccess && result.Value is not null)
-                return TypedResults.Ok(result.Value);
-
-            if (result.IsFailure && result.Error.Code == "Validation")
-            {
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    [result.Error.Code] = [result.Error.Message]
-                });
-            }
-
-            return TypedResults.NotFound();
+            return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToHttpResult();
         });
 
         return app;

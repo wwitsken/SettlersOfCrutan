@@ -21,6 +21,7 @@ public partial class Game : AggregateRoot<GameId>
     public DevCardHand BankDevCardHand { get; private set; } = DevCardHand.StandardBankDeck();
 
     public bool AllPlayersJoined() => Players.All(p => p.JoinedAt is not null);
+    public bool AllPlayersReady() => Players.All(p => p.Ready);
     public PlayerId CurrentPlayerId() => Players[PlayerIndex].Id;
     public DateTimeOffset? TurnExpiresAt { get; set; }
     public PlayerDirection PlayerDirection { get; set; } = PlayerDirection.Clockwise;
@@ -65,15 +66,6 @@ public partial class Game : AggregateRoot<GameId>
         PlayerIndex = playerIndex;
         CurrentTradeOffer = currentTradeOffer;
         TurnExpiresAt = turnExpiresAt;
-    }
-
-    public Result<PlayerId> JoinPlayer(PlayerId playerId, DateTimeOffset when)
-    {
-        var p = _players.SingleOrDefault(x => x.Id == playerId);
-        if (p is null) return Result.Failure<PlayerId>(new("PlayerNotFound", $"Player with id {playerId} not found in game {Id}"));
-        p.JoinedAt ??= when;
-        AddDomainEvent(new PlayerJoinedDomainEvent(Id, playerId, when));
-        return Result.Success(playerId);
     }
 
     public static Result<Game> CreateGame(string gameName, string[] userIds, IBoardGenerator boardGenerator)

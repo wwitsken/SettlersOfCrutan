@@ -1,3 +1,3 @@
 ﻿namespace SettlersOfCrutan.Presentation.Dtos;
 
-public record RollDiceRequest(Guid GameId, string PlayerId);
+public record RollDiceRequest(string PlayerId);

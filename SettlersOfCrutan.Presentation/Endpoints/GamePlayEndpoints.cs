@@ -15,8 +15,6 @@ public static class GamePlayEndpoints
     {
         var group = app.MapGroup("/games/{id:guid}/play").WithTags("Game:Play");
 
-
-
         group.MapPost("/join", async Task<IResult> (
             Guid id,
             [FromBody] JoinGameRequest request,

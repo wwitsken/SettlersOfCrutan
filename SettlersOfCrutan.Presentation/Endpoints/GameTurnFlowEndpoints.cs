@@ -26,7 +26,7 @@ public static class GameTurnFlowEndpoints
             return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToHttpResult();
         });
 
-        group.MapPost("/robber/resolve", async Task<IResult> (
+        group.MapPost("/resolve-robber", async Task<IResult> (
             Guid id,
             [FromBody] ResolveRobberRequest request,
             ResolveRobberCommandHandler handler,

@@ -1,4 +1,5 @@
 ﻿using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
 using SettlersOfCrutan.Domain.Games.Resources;
@@ -14,23 +15,23 @@ public partial class Game
         return Result.Success(stolen);
     }
 
-    private static List<ResourceCardType> ListResourceType(ResourceCardType resourceType, ResourceHand hand)
+    private static List<ResourceCardType> ListResourceType(ResourceCardType resourceType, Player victim)
     {
         List<ResourceCardType> resources = [];
-        for (int i = 0; i < hand.Count(resourceType); i++) resources.Add(resourceType);
+        for (int i = 0; i < victim.CountResource(resourceType); i++) resources.Add(resourceType);
         return resources;
     }
 
     private Result<Nothing> CanResolveRobber(PlayerId robbingPlayerId, HexCoord newRobberHexCoord, PlayerId victimId)
     {
         if (GamePhase != GamePhase.ResolveRobber)
-            return Result.Failure<Nothing>(new Error("Robber", "Cannot resolve robber in the current game phase"));
+            return Result.Failure<Nothing>(DomainError.CannotResolveRobberInCurrentPhase);
         if (CurrentPlayerId() != robbingPlayerId)
-            return Result.Failure<Nothing>(DomainErrors.DomainError.WrongTurn);
+            return Result.Failure<Nothing>(DomainError.WrongTurn);
         if (!Board.CanMoveRobberTo(newRobberHexCoord))
-            return Result.Failure<Nothing>(new Error("Robber", "Invalid robber move"));
+            return Result.Failure<Nothing>(DomainError.InvalidRobberMove);
         if (!Board.IsPlayerExposedToHex(newRobberHexCoord, victimId))
-            return Result.Failure<Nothing>(new Error("Robber", "Victim player is not exposed to the new robber hex"));
+            return Result.Failure<Nothing>(DomainError.VictimNotExposedToRobberHex);
         return Result.Success();
     }
 
@@ -40,14 +41,14 @@ public partial class Game
         if (moved.IsFailure) throw new InvalidOperationException("Precondition failed: robber move invalid");
 
         var rng = new Random();
-        var victimHand = Players.First(p => p.Id == victimId).ResourceHand;
-        List<ResourceCardType> victimResourceTypes = [.. Enum.GetValues<ResourceCardType>().SelectMany(rt => ListResourceType(rt, victimHand))];
+        var victim = Players.First(p => p.Id == victimId);
+        List<ResourceCardType> victimResourceTypes = [.. Enum.GetValues<ResourceCardType>().SelectMany(rt => ListResourceType(rt, victim))];
         if (victimResourceTypes.Count == 0) return ResourceCardType.None;
 
         var stolenResource = victimResourceTypes[rng.Next(victimResourceTypes.Count)];
-        victimHand.Subtract(stolenResource, 1);
-        var playerHand = Players.First(p => p.Id == robbingPlayerId).ResourceHand;
-        playerHand.Add(stolenResource, 1);
+        victim.SubtractResource(stolenResource, 1);
+        var player = Players.First(p => p.Id == robbingPlayerId);
+        player.AddResource(stolenResource, 1);
         AddDomainEvent(new RobberResolvedDomainEvent(Id, newRobberHexCoord, stolenResource, robbingPlayerId, victimId));
         return stolenResource;
     }

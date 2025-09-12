@@ -1,4 +1,5 @@
 ﻿using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
 using SettlersOfCrutan.Domain.Games.Resources;
 
@@ -10,24 +11,24 @@ public partial class Game
     public Result<Nothing> DiscardHalf(PlayerId playerId, List<ResourceCardAmount> discards)
     {
         if (GamePhase != GamePhase.DiscardHalf)
-            return Result.Failure(new Error("Discard", "Cannot discard in the current game phase"));
+            return Result.Failure(DomainError.CannotDiscardInCurrentPhase);
 
         var req = _discardHalfRequirements.FirstOrDefault(r => r.PlayerId.Equals(playerId));
-        if (req is null) return Result.Failure(new Error("PlayerNotRequired", "Player not required to discard"));
-        if (discards is null || discards.Count == 0) return Result.Failure(new Error("InvalidDiscardsPayload", "Invalid discards payload"));
+        if (req is null) return Result.Failure(DomainError.PlayerNotRequiredToDiscard);
+        if (discards is null || discards.Count == 0) return Result.Failure(DomainError.InvalidDiscardsPayload);
 
         int toDiscardTotal = discards.Sum(ra => Math.Max(0, ra.Quantity));
-        if (toDiscardTotal != req.ResourceAmount) return Result.Failure(new Error("IncorrectDiscardAmount", "Incorrect discard amount"));
+        if (toDiscardTotal != req.ResourceAmount) return Result.Failure(DomainError.IncorrectDiscardAmount);
 
         var player = Players.FirstOrDefault(p => p.Id.Equals(playerId));
-        if (player is null) return Result.Failure(DomainErrors.DomainError.NotFound);
+        if (player is null) return Result.Failure(DomainError.NotFound);
 
-        if (!player.ResourceHand.HasAtLeast(discards))
-            return Result.Failure(new Error("InsufficientResources", "Player does not have required resources to discard"));
+        if (!player.HasAtLeast(discards))
+            return Result.Failure(DomainError.PlayerInsufficientResourcesToDiscard);
 
         foreach (var (type, amount) in discards)
         {
-            player.ResourceHand.Subtract(type, amount);
+            player.SubtractResource(type, amount);
             BankResourceHand.Add(type, amount); // return to bank
         }
 
