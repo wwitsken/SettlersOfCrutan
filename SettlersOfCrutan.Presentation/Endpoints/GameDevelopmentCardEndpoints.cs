@@ -23,7 +23,7 @@ public static class GameDevelopmentCardEndpoints
             PlayerId playerId = new() { Value = request.PlayerId };
             var cmd = new UseRoadBuildingCommand(gameId, playerId, request.Edge1.ToDomain(), request.Edge2.ToDomain());
             var result = await handler.Handle(cmd, ct);
-            return result.IsSuccess ? Results.Ok() : result.Error.ToHttpResult();
+            return result.IsSuccess ? TypedResults.Ok() : result.Error.ToHttpResult();
         });
 
         group.MapPost("/monopoly", async Task<IResult> (
