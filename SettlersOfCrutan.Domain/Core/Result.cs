@@ -1,4 +1,5 @@
 ﻿namespace SettlersOfCrutan.Domain.Core;
+
 public record Result<T>
 {
     public bool IsSuccess { get; private set; }
@@ -9,8 +10,7 @@ public record Result<T>
 
     private readonly Error? _error;
     public Error Error => IsSuccess ? throw new InvalidOperationException("Cannot access Error when IsSuccess is true.") : _error!;
-
-    private Result(bool isSuccess, T? value, Error? error)
+    protected Result(bool isSuccess, T? value, Error? error)
     {
         IsSuccess = isSuccess;
         _value = value;

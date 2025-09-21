@@ -18,7 +18,7 @@ public partial class RedisRepository<TAgg, TId>(IDatabase db, IOptions<RedisOpti
     public async Task<TAgg?> GetAsync(TId id, CancellationToken ct = default)
     {
         var key = RedisKeys.Aggregate(_opts.KeyPrefix, _aggName, id);
-        var json = await _db.StringGetAsync(key).ConfigureAwait(false);
+        var json = await _db.StringGetAsync(key);
         if (json.IsNullOrEmpty) return default;
 
         return JsonSerializer.Deserialize<TAgg>(json!, JsonOptions.Default);

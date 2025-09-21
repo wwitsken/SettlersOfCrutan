@@ -32,7 +32,7 @@ public class DomainEventPublisher(IServiceProvider serviceProvider) : IDomainEve
             var taskObj = handleAsyncMethod.Invoke(handler, [domainEvent, ct]);
             if (taskObj is Task task)
             {
-                await task.ConfigureAwait(false);
+                await task;
             }
         }
     }

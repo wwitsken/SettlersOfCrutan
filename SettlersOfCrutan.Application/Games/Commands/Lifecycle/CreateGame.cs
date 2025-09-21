@@ -1,3 +1,4 @@
+using FluentValidation;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
@@ -6,7 +7,19 @@ using SettlersOfCrutan.Domain.Generation;
 
 namespace SettlersOfCrutan.Application.Games.Commands.Lifecycle;
 
-public record CreateGameCommand(string GameName, string[] UserIds, GameType GameType) : ICommand<GameId>;
+public sealed class CreateGameCommandValidator : AbstractValidator<CreateGameCommand>
+{
+    public CreateGameCommandValidator()
+    {
+        RuleFor(c => c.GameName).NotEmpty();
+        RuleForEach(c => c.UserIds).NotEmpty();
+        RuleFor(c => c.UserIds).Must(u => u.Length > 2).WithMessage("At least 2 players are required to start a game");
+        RuleFor(c => c.UserIds).Must(u => u.Length <= 4).WithMessage("A maximum of 4 players are allowed in a game");
+        RuleFor(c => c.GameType).IsEnumName(typeof(GameType));
+    }
+}
+
+public record CreateGameCommand(string GameName, string[] UserIds, string GameType) : ICommand<GameId>;
 
 public sealed class CreateGameCommandHandler(IGameRepository gameRepository, IBoardGenerator boardGenerator) : ICommandHandler<CreateGameCommand, GameId>
 {
@@ -15,14 +28,14 @@ public sealed class CreateGameCommandHandler(IGameRepository gameRepository, IBo
 
     public async Task<Result<GameId>> Handle(CreateGameCommand command, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(command.GameName))
-            return Result<GameId>.Failure(new Error("Validation", "Game name is required"));
+        //if (string.IsNullOrWhiteSpace(command.GameName))
+        //    return Result<GameId>.Failure(new Error("Validation", "Game name is required"));
 
-        if (command.GameType != GameType.BaseGame)
-            return Result<GameId>.Failure(new Error("Validation", "Unsupported game type"));
+        //if (command.GameType != GameType.BaseGame)
+        //    return Result<GameId>.Failure(new Error("Validation", "Unsupported game type"));
 
-        if (command.GameType == GameType.BaseGame && (command.UserIds.Length < 2 || command.UserIds.Length > 4))
-            return Result<GameId>.Failure(new Error("Validation", "Base game requires 2 to 4 players"));
+        //if (command.GameType == GameType.BaseGame && (command.UserIds.Length < 2 || command.UserIds.Length > 4))
+        //    return Result<GameId>.Failure(new Error("Validation", "Base game requires 2 to 4 players"));
 
         var shuffledUserIds = command.UserIds.OrderBy(_ => Random.Shared.Next()).ToArray();
 

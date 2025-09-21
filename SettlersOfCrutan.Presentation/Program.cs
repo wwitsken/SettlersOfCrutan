@@ -46,7 +46,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGameViewEndpoints();
+app.MapBaseGameEndpoints();
 app.MapGamePlayEndpoints();
 app.MapGameBuildEndpoints();
 app.MapGameTradeEndpoints();
