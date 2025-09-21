@@ -35,19 +35,19 @@ public class ProcessOutboxMessagesJob(IDomainEventPublisher publisher, IOptions<
         var poison = RedisKeys.OutboxPoison(_options.KeyPrefix);
         var attemptsHash = RedisKeys.OutboxAttemptsHash(_options.KeyPrefix);
 
-        await EnsureGroupAsync(db, outbox).ConfigureAwait(false);
+        await EnsureGroupAsync(db, outbox);
 
         // Main loop: block for new messages, then re-process idle PEL entries
         while (true)
         {
-            var newEntries = await ReadNewAsync(db, outbox).ConfigureAwait(false);
+            var newEntries = await ReadNewAsync(db, outbox);
             if (newEntries.Length > 0)
             {
                 foreach (var entry in newEntries)
-                    await ProcessNewAsync(db, outbox, poison, entry).ConfigureAwait(false);
+                    await ProcessNewAsync(db, outbox, poison, entry);
             }
 
-            await ReprocessIdlePendingAsync(db, outbox, poison, attemptsHash).ConfigureAwait(false);
+            await ReprocessIdlePendingAsync(db, outbox, poison, attemptsHash);
         }
     }
 
@@ -57,7 +57,7 @@ public class ProcessOutboxMessagesJob(IDomainEventPublisher publisher, IOptions<
     {
         try
         {
-            await db.StreamCreateConsumerGroupAsync(stream, Group, position: "$", createStream: true).ConfigureAwait(false);
+            await db.StreamCreateConsumerGroupAsync(stream, Group, position: "$", createStream: true);
         }
         catch (RedisServerException ex) when (ex.Message.Contains("BUSYGROUP", StringComparison.OrdinalIgnoreCase))
         {
@@ -69,7 +69,7 @@ public class ProcessOutboxMessagesJob(IDomainEventPublisher publisher, IOptions<
     {
         // XREADGROUP GROUP <group> <consumer> COUNT <n> BLOCK <ms> STREAMS <stream> >
         var args = new object?[] { "GROUP", Group, _consumer, "BLOCK", BlockMs, "COUNT", BatchSize, "STREAMS", stream, ">" };
-        var result = await db.ExecuteAsync("XREADGROUP", args).ConfigureAwait(false);
+        var result = await db.ExecuteAsync("XREADGROUP", args);
         if (result.IsNull) return [];
         return ParseXReadResult(result);
     }
@@ -80,22 +80,22 @@ public class ProcessOutboxMessagesJob(IDomainEventPublisher publisher, IOptions<
 
         if (!TryGetEnvelope(entry, out var envelope, out var reason))
         {
-            await DeadLetterAsync(db, poison, id, reason!, GetField(entry, "payload")).ConfigureAwait(false);
-            await AckAndDeleteAsync(db, stream, id).ConfigureAwait(false);
+            await DeadLetterAsync(db, poison, id, reason!, GetField(entry, "payload"));
+            await AckAndDeleteAsync(db, stream, id);
             return;
         }
 
         if (!TryDeserializeEvent(envelope, out var domainEvent, out var badType))
         {
-            await DeadLetterAsync(db, poison, id, $"UnknownEventType:{badType}", envelope.Payload).ConfigureAwait(false);
-            await AckAndDeleteAsync(db, stream, id).ConfigureAwait(false);
+            await DeadLetterAsync(db, poison, id, $"UnknownEventType:{badType}", envelope.Payload);
+            await AckAndDeleteAsync(db, stream, id);
             return;
         }
 
         try
         {
             await _publisher.PublishAsync(domainEvent!);
-            await AcknowledgeAsync(db, stream, id).ConfigureAwait(false);
+            await AcknowledgeAsync(db, stream, id);
         }
         catch
         {
@@ -105,7 +105,7 @@ public class ProcessOutboxMessagesJob(IDomainEventPublisher publisher, IOptions<
 
     private async Task ReprocessIdlePendingAsync(IDatabase db, RedisKey stream, RedisKey poison, RedisKey attemptsHash)
     {
-        var entries = await AutoClaimAsync(db, stream).ConfigureAwait(false);
+        var entries = await AutoClaimAsync(db, stream);
         if (entries.Length == 0) return;
 
         foreach (var entry in entries)
@@ -114,14 +114,14 @@ public class ProcessOutboxMessagesJob(IDomainEventPublisher publisher, IOptions<
 
             // Read attempts
             int attempts = 0;
-            var attemptsVal = await db.HashGetAsync(attemptsHash, id).ConfigureAwait(false);
+            var attemptsVal = await db.HashGetAsync(attemptsHash, id);
             if (attemptsVal.HasValue && int.TryParse(attemptsVal.ToString(), out var parsed)) attempts = parsed;
 
             if (attempts >= MaxAttempts)
             {
-                await DeadLetterAsync(db, poison, id, "MaxRetriesExceeded", GetField(entry, "payload")).ConfigureAwait(false);
-                await AckAndDeleteAsync(db, stream, id).ConfigureAwait(false);
-                await db.HashDeleteAsync(attemptsHash, id).ConfigureAwait(false);
+                await DeadLetterAsync(db, poison, id, "MaxRetriesExceeded", GetField(entry, "payload"));
+                await AckAndDeleteAsync(db, stream, id);
+                await db.HashDeleteAsync(attemptsHash, id);
                 continue;
             }
 
@@ -130,29 +130,29 @@ public class ProcessOutboxMessagesJob(IDomainEventPublisher publisher, IOptions<
             {
                 if (!TryGetEnvelope(entry, out var env, out var reason))
                 {
-                    await DeadLetterAsync(db, poison, id, reason!, GetField(entry, "payload")).ConfigureAwait(false);
-                    await AckAndDeleteAsync(db, stream, id).ConfigureAwait(false);
-                    await db.HashDeleteAsync(attemptsHash, id).ConfigureAwait(false);
+                    await DeadLetterAsync(db, poison, id, reason!, GetField(entry, "payload"));
+                    await AckAndDeleteAsync(db, stream, id);
+                    await db.HashDeleteAsync(attemptsHash, id);
                     continue;
                 }
 
                 if (!TryDeserializeEvent(env, out var ev, out var badType))
                 {
-                    await DeadLetterAsync(db, poison, id, $"UnknownEventType:{badType}", env.Payload).ConfigureAwait(false);
-                    await AckAndDeleteAsync(db, stream, id).ConfigureAwait(false);
-                    await db.HashDeleteAsync(attemptsHash, id).ConfigureAwait(false);
+                    await DeadLetterAsync(db, poison, id, $"UnknownEventType:{badType}", env.Payload);
+                    await AckAndDeleteAsync(db, stream, id);
+                    await db.HashDeleteAsync(attemptsHash, id);
                     continue;
                 }
 
-                await _publisher.PublishAsync(ev!).ConfigureAwait(false);
+                await _publisher.PublishAsync(ev!);
 
-                await AcknowledgeAsync(db, stream, id).ConfigureAwait(false);
-                await db.HashDeleteAsync(attemptsHash, id).ConfigureAwait(false);
+                await AcknowledgeAsync(db, stream, id);
+                await db.HashDeleteAsync(attemptsHash, id);
             }
             catch
             {
                 // Increment attempts and keep in PEL
-                await db.HashIncrementAsync(attemptsHash, id, 1).ConfigureAwait(false);
+                await db.HashIncrementAsync(attemptsHash, id, 1);
             }
         }
     }
@@ -201,7 +201,7 @@ public class ProcessOutboxMessagesJob(IDomainEventPublisher publisher, IOptions<
     {
         // XAUTOCLAIM <stream> <group> <consumer> <min-idle> 0-0 COUNT <batch>
         var args = new object?[] { stream, Group, ConsumerStatic, AutoClaimIdleMs, "0-0", "COUNT", AutoClaimBatch };
-        var result = await db.ExecuteAsync("XAUTOCLAIM", args).ConfigureAwait(false);
+        var result = await db.ExecuteAsync("XAUTOCLAIM", args);
         if (result.IsNull) return [];
         return ParseXAutoClaimResult(result);
     }
@@ -243,8 +243,8 @@ public class ProcessOutboxMessagesJob(IDomainEventPublisher publisher, IOptions<
 
     private static async Task AckAndDeleteAsync(IDatabase db, RedisKey stream, RedisValue id)
     {
-        await AcknowledgeAsync(db, stream, id).ConfigureAwait(false);
-        await db.StreamDeleteAsync(stream, [id]).ConfigureAwait(false);
+        await AcknowledgeAsync(db, stream, id);
+        await db.StreamDeleteAsync(stream, [id]);
     }
 
     private static async Task DeadLetterAsync(IDatabase db, RedisKey poison, RedisValue id, string reason, string? payload)

@@ -24,8 +24,11 @@ public class Player : Entity<PlayerId>
     public PlayerColor Color { get; private set; } = PlayerColor.None;
 
     // Encapsulated managers (internal for aggregate collaboration)
+    [JsonInclude]
     internal ResourceHand ResourceHand { get; private set; } = null!;
+    [JsonInclude]
     internal DevCardHand DevCardHand { get; private set; } = null!;
+    [JsonInclude]
     internal PieceReserve PieceReserve { get; private set; } = null!;
 
     public DateTimeOffset? JoinedAt { get; set; } = null;

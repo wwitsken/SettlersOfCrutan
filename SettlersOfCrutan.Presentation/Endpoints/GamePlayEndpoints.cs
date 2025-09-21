@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Games.Commands.Build;
 using SettlersOfCrutan.Application.Games.Commands.Lifecycle;
 using SettlersOfCrutan.Application.Games.Commands.TurnFlow;
@@ -18,20 +19,20 @@ public static class GamePlayEndpoints
         group.MapPost("/join", async Task<IResult> (
             Guid id,
             [FromBody] JoinGameRequest request,
-            JoinGameCommandHandler handler,
+            ICommandHandler<JoinGameCommand, GameId> handler,
             CancellationToken ct) =>
         {
             PlayerId playerId = new() { Value = request.PlayerId };
             GameId gameId = new() { Value = id };
             var cmd = new JoinGameCommand(gameId, playerId);
             var result = await handler.Handle(cmd, ct);
-            return result.IsSuccess ? TypedResults.Ok() : result.Error.ToHttpResult();
+            return result.ToHttpResult();
         });
 
         group.MapPost("/place-initial", async Task<IResult> (
             Guid id,
             [FromBody] BuildInitialRequest request,
-            BuildInitialCommandHandler handler,
+            ICommandHandler<BuildInitialCommand> handler,
             CancellationToken ct) =>
         {
             PlayerId playerId = new() { Value = request.PlayerId };
@@ -40,20 +41,22 @@ public static class GamePlayEndpoints
             Edge edgeCoordinate = request.RoadEdgeCoordinate.ToDomain();
             var cmd = new BuildInitialCommand(gameId, playerId, settlementCoordinate, edgeCoordinate);
             var result = await handler.Handle(cmd, ct);
-            return result.IsSuccess ? TypedResults.Created() : result.Error.ToHttpResult();
+            return result.ToHttpResult();
+
         });
 
         group.MapPost("/roll-dice", async Task<IResult> (
             Guid id,
             [FromBody] RollDiceRequest request,
-            RollDiceCommandHandler handler,
+            ICommandHandler<RollDiceCommand, (int d1, int d2)> handler,
             CancellationToken ct) =>
         {
             PlayerId playerId = new() { Value = request.PlayerId };
             GameId gameId = new() { Value = id };
             var cmd = new RollDiceCommand(gameId, playerId);
             var result = await handler.Handle(cmd, ct);
-            return result.IsSuccess ? TypedResults.Ok(result.Value.Item1 + result.Value.Item2) : result.Error.ToHttpResult();
+            return result.ToHttpResult();
+
         });
 
         return app;
