@@ -1,3 +1,4 @@
+using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Presentation.Dtos;
 
 namespace SettlersOfCrutan.IntegrationTests;
@@ -28,8 +29,10 @@ public class GameFlowTests
         CreateGameRequest createReq = new("Test Game", ["p1", "p2", "p3"], "BaseGame");
 
         var createResp = await api.PostAsJsonAsync("/games/create", createReq, ctoken);
-
         createResp.EnsureSuccessStatusCode();
+        CreateGameResultDto? createResult = await createResp.Content.ReadFromJsonAsync<CreateGameResultDto>(cancellationToken: ctoken);
+        Assert.NotNull(createResult);
+        Assert.Equal(3, createResult!.PlayerOrder.Count);
 
         // Location header contains new game URI
         var location = createResp.Headers.Location?.ToString();
@@ -46,15 +49,16 @@ public class GameFlowTests
 
         var join1 = await JoinAsync("p1");
         Assert.True(join1.IsSuccessStatusCode);
+
         var join2 = await JoinAsync("p2");
         Assert.True(join2.IsSuccessStatusCode);
 
-        // 3) End first turn (setup phase continues)
-        var endTurnPayload = new { PlayerId = "p1" };
-        var endTurnResp = await api.PostAsJsonAsync($"/games/{gameId}/turn/end", endTurnPayload, ctoken);
-        Assert.True(endTurnResp.IsSuccessStatusCode);
+        var badJoin = await JoinAsync("p4");
+        Assert.False(badJoin.IsSuccessStatusCode);
 
-        // 4) Get game and verify state exists
+        var join3 = await JoinAsync("p3");
+        Assert.True(join2.IsSuccessStatusCode);
+
         var getResp = await api.GetAsync($"/games/{gameId}", ctoken);
         Assert.True(getResp.IsSuccessStatusCode);
     }

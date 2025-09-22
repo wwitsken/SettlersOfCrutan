@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Games.Commands.Lifecycle;
+using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Application.Games.Queries;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Presentation.Dtos;
@@ -16,12 +17,12 @@ public static class BaseGameEndpoints
 
         group.MapPost("/create", async Task<IResult> (
             [FromBody] CreateGameRequest command,
-            ICommandHandler<CreateGameCommand, GameId> handler,
+            ICommandHandler<CreateGameCommand, CreateGameResultDto> handler,
             CancellationToken ct) =>
                 {
                     var cmd = new CreateGameCommand(command.GameName, [.. command.UserIds], command.GameType);
                     var result = await handler.Handle(cmd, ct);
-                    return result.ToHttpResult(created: true, createdUri: $"/games/{result.Value.Value}");
+                    return result.ToHttpResult(created: true, createdUri: $"/games/{result.Value.GameId}");
                 });
 
         group.MapGet("/{id:guid}", async Task<IResult> (
