@@ -4,26 +4,16 @@ using SettlersOfCrutan.Presentation.Dtos;
 namespace SettlersOfCrutan.IntegrationTests;
 
 [Collection("AppHost collection")]
-public class GameFlowTests
+public class GameFlowTests(AppHostFixture fixture)
 {
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
-    private readonly AppHostFixture _fixture;
-    public GameFlowTests(AppHostFixture fixture) => _fixture = fixture;
+    private readonly AppHostFixture _fixture = fixture;
 
     [Fact]
     public async Task CreateGame_ThenJoinPlayers_ThenEndTurn_Flow_Works()
     {
         var ctoken = new CancellationTokenSource(DefaultTimeout).Token;
-
-        await using var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.SettlersOfCrutan_AppHost>(ctoken);
-        appHost.Services.ConfigureHttpClientDefaults(builder => builder.AddStandardResilienceHandler());
-
-        await using var app = await appHost.BuildAsync(ctoken).WaitAsync(DefaultTimeout, ctoken);
-        await app.StartAsync(ctoken).WaitAsync(DefaultTimeout, ctoken);
-
-        // API client
-        var api = app.CreateHttpClient("api");
-        await app.ResourceNotifications.WaitForResourceHealthyAsync("api", ctoken).WaitAsync(DefaultTimeout, ctoken);
+        var api = _fixture.ApiClient;
 
         // 1) Create game
         CreateGameRequest createReq = new("Test Game", ["p1", "p2", "p3"], "BaseGame");
@@ -62,4 +52,14 @@ public class GameFlowTests
         var getResp = await api.GetAsync($"/games/{gameId}", ctoken);
         Assert.True(getResp.IsSuccessStatusCode);
     }
+
+    /*
+    [Fact]
+    public async Task CreateExistingGame()
+    {
+        var ctoken = new CancellationTokenSource(DefaultTimeout).Token;
+
+        var api = _fixture.ApiClient;
+    }
+    */
 }

@@ -24,7 +24,7 @@ public static class GameTradeEndpoints
             PlayerId playerId = new() { Value = request.PlayerId };
             var cmd = new OfferTradeCommand(gameId, playerId, request.Requested.Select(r => new ResourceCardAmount(r.Type, r.Quantity)).ToList(), request.Offered.Select(o => new ResourceCardAmount(o.Type, o.Quantity)).ToList());
             var result = await handler.Handle(cmd, ct);
-            return result.ToHttpResult(true, $"/games/{id}");
+            return result.ToHttpResult();
         });
 
         group.MapPost("/accept", async Task<IResult> (

@@ -27,7 +27,7 @@ public static class GameBuildEndpoints
             Edge edge = request.EdgeCoordinate.ToDomain();
             var cmd = new BuildRoadCommand(gameId, playerId, edge);
             var result = await handler.Handle(cmd, ct);
-            return result.ToHttpResult(true, $"/games/{id}");
+            return result.ToHttpResult();
         });
 
         group.MapPost("/settlement", async Task<IResult> (
@@ -41,7 +41,7 @@ public static class GameBuildEndpoints
             Vertex vertex = request.VertexCoordinate.ToDomain();
             var cmd = new BuildSettlementCommand(gameId, playerId, vertex);
             var result = await handler.Handle(cmd, ct);
-            return result.ToHttpResult(true, $"/games/{id}");
+            return result.ToHttpResult();
 
         });
 
@@ -56,7 +56,7 @@ public static class GameBuildEndpoints
             Vertex vertex = request.VertexCoordinate.ToDomain();
             var cmd = new UpgradeSettlementToCityCommand(gameId, playerId, vertex);
             var result = await handler.Handle(cmd, ct);
-            return result.ToHttpResult(true, $"/games/{id}");
+            return result.ToHttpResult();
 
         });
 
@@ -70,7 +70,7 @@ public static class GameBuildEndpoints
             PlayerId playerId = new() { Value = request.PlayerId };
             var cmd = new BuyDevelopmentCardCommand(gameId, playerId);
             var result = await handler.Handle(cmd, ct);
-            return result.ToHttpResult(true, $"/games/{id}");
+            return result.ToHttpResult();
 
         });
 

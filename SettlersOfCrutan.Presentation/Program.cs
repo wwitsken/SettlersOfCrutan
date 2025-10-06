@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Scalar.AspNetCore;
 using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Infrastructure;
 using SettlersOfCrutan.Infrastructure.Redis;
 using SettlersOfCrutan.Infrastructure.SignalR;
 using SettlersOfCrutan.Presentation;
+using SettlersOfCrutan.Presentation.Auth;
 using SettlersOfCrutan.Presentation.Endpoints;
 using SettlersOfCrutan.Presentation.Identity;
 using SettlersOfCrutan.ServiceDefaults;
@@ -19,11 +22,15 @@ builder.Services.AddApplicationServices();
 builder.Services.Configure<RedisOptions>(builder.Configuration.GetSection("Redis"));
 builder.Services.AddInfrastructureServices();
 builder.Services.AddSignalR().AddStackExchangeRedis(builder.Configuration.GetConnectionString("redis")!);
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUserProvider, UserProvider>();
 
 // Flatten BaseId value objects in HTTP JSON (responses and requests)
 builder.Services.AddHttpJsonSettings();
+
 builder.Services.AddApplicationCookie();
 builder.Services.AddApplicationIdentity();
+
 
 builder.Services.AddAuthorization();
 
@@ -41,18 +48,26 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapBaseGameEndpoints();
-app.MapGamePlayEndpoints();
-app.MapGameBuildEndpoints();
-app.MapGameTradeEndpoints();
-app.MapGameDevelopmentCardEndpoints();
-app.MapGameTurnFlowEndpoints();
-app.MapAuthEndpoints();
+app.MapGroup("api/")
+    .MapBaseGameEndpoints()
+    .MapGamePlayEndpoints()
+    .MapGameBuildEndpoints()
+    .MapGameTradeEndpoints()
+    .MapGameDevelopmentCardEndpoints()
+    .MapGameTurnFlowEndpoints()
+    .MapAuthEndpoints()
+    .MapLobbyEndpoints();
+
+app.MapGet("/api/health", Results<Ok<string>, BadRequest> () => TypedResults.Ok($"OK at {DateTime.Now.ToShortTimeString()}"));
+app.MapPost("/api/echo", Results<Ok<string>, BadRequest> ([FromBody] string Message) => TypedResults.Ok($"Echo: {Message}"));
 
 app.MapHub<GameHub>("/hubs/game");
 

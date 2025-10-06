@@ -15,4 +15,10 @@
     <ProjectReference Include="..\SettlersOfCrutan.Domain\SettlersOfCrutan.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Contracts\Games\" />
+    <Folder Include="Lobbies\DomainEventHandlers\" />
+    <Folder Include="Lobbies\DTOs\" />
+  </ItemGroup>
+
 </Project>

@@ -1,43 +1,23 @@
 ﻿using SettlersOfCrutan.Application.Abstractions;
+using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
-using SettlersOfCrutan.Domain.Games.Boards;
-using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 
 namespace SettlersOfCrutan.Application.Games.Queries;
 
-public record GetGameForPlayerView(GameId Id) : IQuery<Game>;
+public record GetGameForPlayer(GameId GameId, string PlayerId) : IQuery<PlayerGameProjectionDto>;
 
-public class GetGameForPlayerViewHandler : IQueryHandler<GetGameForPlayerView, Game>
+public class GetGameForPlayerHandler(IGameRepository repository) : IQueryHandler<GetGameForPlayer, PlayerGameProjectionDto>
 {
-    private readonly IGameRepository _repository;
+    private readonly IGameRepository _repository = repository;
 
-    public GetGameForPlayerViewHandler(IGameRepository repository)
+    public async Task<Result<PlayerGameProjectionDto>> Handle(GetGameForPlayer query, CancellationToken ct = default)
     {
-        _repository = repository;
+        Game? game = await _repository.GetAsync(query.GameId, ct);
+        if (game is null) return Result<PlayerGameProjectionDto>.Failure(DomainError.NotFound);
+        if (game.Players.Any(p => p.Id.Value == query.PlayerId) == false)
+            return Result<PlayerGameProjectionDto>.Failure(DomainError.NotFound);
+        return Result.Success(PlayerGameProjectionDto.FromGame(game, query.PlayerId));
     }
-
-    public async Task<Result<Game>> Handle(GetGameForPlayerView query, CancellationToken ct = default)
-    {
-        Game? game = await _repository.GetAsync(query.Id, ct);
-        return game is not null
-            ? Result<Game>.Success(game)
-            : Result<Game>.Failure(DomainError.InvalidOperation);
-    }
-}
-
-public sealed record PlayerGameView
-{
-    public Guid Id { get; set; }
-    public string Name { get; set; }
-    public List<Hex> Hexes { get; set; }
-    public List<Road> Roads { get; set; }
-    public List<PopulationCenter> PopulationCenters { get; set; }
-}
-
-public sealed record Settlement
-{
-    public Vertex Vertex { get; set; }
-    public string Player { get; set; }
 }

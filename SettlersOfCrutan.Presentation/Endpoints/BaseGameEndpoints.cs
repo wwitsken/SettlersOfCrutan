@@ -22,8 +22,21 @@ public static class BaseGameEndpoints
                 {
                     var cmd = new CreateGameCommand(command.GameName, [.. command.UserIds], command.GameType);
                     var result = await handler.Handle(cmd, ct);
-                    return result.ToHttpResult(created: true, createdUri: $"/games/{result.Value.GameId}");
+                    return result.ToHttpResult();
                 });
+
+        group.MapPost("/{id:guid}/join", async Task<IResult> (
+            Guid id,
+            [FromBody] JoinGameRequest request,
+            ICommandHandler<JoinGameCommand, GameId> handler,
+            CancellationToken ct) =>
+        {
+            PlayerId playerId = new() { Value = request.PlayerId };
+            GameId gameId = new() { Value = id };
+            var cmd = new JoinGameCommand(gameId, playerId);
+            var result = await handler.Handle(cmd, ct);
+            return result.ToHttpResult();
+        });
 
         group.MapGet("/{id:guid}", async Task<IResult> (
             Guid id,

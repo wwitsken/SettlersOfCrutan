@@ -13,7 +13,7 @@ public partial class Game : AggregateRoot<GameId>
 {
     public override GameId Id { get; init; } = new() { Value = Guid.NewGuid() };
     public GameType GameType { get; set; }
-    public string Name { get; set; }
+    public string GameName { get; set; }
     public Board Board { get; set; }
 
     // Separate bank stocks
@@ -54,7 +54,7 @@ public partial class Game : AggregateRoot<GameId>
     )
     {
         GameType = gameType;
-        Name = name;
+        GameName = name;
         Board = board;
         GamePhase = gamePhase;
         BankResourceHand = bankResourceHand;

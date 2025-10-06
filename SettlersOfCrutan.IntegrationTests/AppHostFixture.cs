@@ -4,6 +4,7 @@ namespace SettlersOfCrutan.IntegrationTests;
 public class AppHostFixture : IAsyncLifetime
 {
     private DistributedApplication _app = default!;
+    public HttpClient ApiClient => _app.CreateHttpClient("api");
 
     public async Task InitializeAsync()
     {
@@ -11,6 +12,7 @@ public class AppHostFixture : IAsyncLifetime
             .CreateAsync<Projects.SettlersOfCrutan_AppHost>();
 
         _app = await appHost.BuildAsync();
+        await _app.StartAsync();
     }
 
     public async Task DisposeAsync() => await _app.DisposeAsync();

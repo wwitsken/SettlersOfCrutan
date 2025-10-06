@@ -36,6 +36,9 @@ public class Player : Entity<PlayerId>
     // Public read-only projections
     public int TotalResources => ResourceHand.Total;
     public int DevCardCount => DevCardHand.Total;
+    public IReadOnlyDictionary<BuildableType, int> GetBuildables() => PieceReserve.Pieces;
+    public IReadOnlyDictionary<ResourceCardType, int> GetResources() => ResourceHand.Cards;
+    public IReadOnlyDictionary<DevelopmentCardType, int> GetDevelopmentCards() => DevCardHand.Cards;
 
     public static Player Create(string userId)
         => new(new() { Value = userId },

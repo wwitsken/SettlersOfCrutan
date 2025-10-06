@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Games.Commands.Build;
-using SettlersOfCrutan.Application.Games.Commands.Lifecycle;
 using SettlersOfCrutan.Application.Games.Commands.TurnFlow;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
@@ -15,19 +14,6 @@ public static class GamePlayEndpoints
     public static IEndpointRouteBuilder MapGamePlayEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/games/{id:guid}/play").WithTags("Game:Play");
-
-        group.MapPost("/join", async Task<IResult> (
-            Guid id,
-            [FromBody] JoinGameRequest request,
-            ICommandHandler<JoinGameCommand, GameId> handler,
-            CancellationToken ct) =>
-        {
-            PlayerId playerId = new() { Value = request.PlayerId };
-            GameId gameId = new() { Value = id };
-            var cmd = new JoinGameCommand(gameId, playerId);
-            var result = await handler.Handle(cmd, ct);
-            return result.ToHttpResult();
-        });
 
         group.MapPost("/place-initial", async Task<IResult> (
             Guid id,
