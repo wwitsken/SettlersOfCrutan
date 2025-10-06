@@ -38,6 +38,7 @@ var app = builder.Build();
 
 if (app.Environment.IsProduction())
 {
+    app.UseHttpsRedirection();
 }
 
 if (app.Environment.IsDevelopment())
@@ -46,11 +47,6 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
     app.MapOpenApi();
     app.MapScalarApiReference();
-}
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
 }
 
 app.UseAuthentication();
