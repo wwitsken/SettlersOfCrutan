@@ -28,3 +28,6 @@ public sealed class InitialSettlementAndRoadPlacedDomainEventHandler(IRealtimePu
 }
 
 public record InitialSettlementAndRoadPlacedMessage(Guid GameId, string PlayerId, Vertex SettlementCoordinate, Edge RoadCoordinate);
+public record HexCoordDto(int Q, int R, int S);
+public record VertexDto(HexCoordDto HexCoord1, HexCoordDto HexCoord2, HexCoordDto HexCoord3);
+public record EdgeDto(HexCoordDto HexCoord1, HexCoordDto HexCoord2);

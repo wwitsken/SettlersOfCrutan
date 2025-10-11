@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Games.Commands.Build;
+using SettlersOfCrutan.Domain.Games;
+using SettlersOfCrutan.Domain.Games.Boards;
+using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.Resources;
-using SettlersOfCrutan.Presentation.Auth;
 using SettlersOfCrutan.Presentation.Dtos;
 using SettlersOfCrutan.Presentation.Extensions;
 
@@ -15,52 +16,62 @@ public static class GameBuildEndpoints
     {
         var group = app.MapGroup("/games/{id:guid}/build").WithTags("Game:Build");
 
-        group.MapPost("/road", async Task<Results<NoContent, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
+        group.MapPost("/road", async Task<IResult> (
             Guid id,
             [FromBody] BuildRoadRequest request,
-            IUserProvider userProvider,
-            ICommandHandler<BuildRoadCommand> handler,
+            ICommandHandler<BuildRoadCommand, Road> handler,
             CancellationToken ct) =>
         {
-            var cmd = new BuildRoadCommand(id, userProvider.GetUserId(), request.EdgeCoordinate);
+            GameId gameId = new() { Value = id };
+            PlayerId playerId = new() { Value = request.PlayerId };
+            Edge edge = request.EdgeCoordinate.ToDomain();
+            var cmd = new BuildRoadCommand(gameId, playerId, edge);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
 
-        group.MapPost("/settlement", async Task<Results<NoContent, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
+        group.MapPost("/settlement", async Task<IResult> (
             Guid id,
             [FromBody] BuildSettlementRequest request,
-            IUserProvider userProvider,
-            ICommandHandler<BuildSettlementCommand> handler,
+            ICommandHandler<BuildSettlementCommand, PopulationCenter> handler,
             CancellationToken ct) =>
         {
-            var cmd = new BuildSettlementCommand(id, userProvider.GetUserId(), request.VertexCoordinate);
+            GameId gameId = new() { Value = id };
+            PlayerId playerId = new() { Value = request.PlayerId };
+            Vertex vertex = request.VertexCoordinate.ToDomain();
+            var cmd = new BuildSettlementCommand(gameId, playerId, vertex);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
 
         });
 
-        group.MapPost("/city", async Task<Results<NoContent, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
+        group.MapPost("/city", async Task<IResult> (
             Guid id,
             [FromBody] UpgradeSettlementToCityRequest request,
-            IUserProvider userProvider,
-            ICommandHandler<UpgradeSettlementToCityCommand> handler,
+            ICommandHandler<UpgradeSettlementToCityCommand, PopulationCenter> handler,
             CancellationToken ct) =>
         {
-            var cmd = new UpgradeSettlementToCityCommand(id, userProvider.GetUserId(), request.VertexCoordinate);
+            GameId gameId = new() { Value = id };
+            PlayerId playerId = new() { Value = request.PlayerId };
+            Vertex vertex = request.VertexCoordinate.ToDomain();
+            var cmd = new UpgradeSettlementToCityCommand(gameId, playerId, vertex);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
+
         });
 
-        group.MapPost("/development-card", async Task<Results<Ok<DevelopmentCardType>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
+        group.MapPost("/development-card", async Task<IResult> (
             Guid id,
-            IUserProvider userProvider,
+            [FromBody] BuyDevelopmentCardRequest request,
             ICommandHandler<BuyDevelopmentCardCommand, DevelopmentCardType> handler,
             CancellationToken ct) =>
         {
-            var cmd = new BuyDevelopmentCardCommand(id, userProvider.GetUserId());
+            GameId gameId = new() { Value = id };
+            PlayerId playerId = new() { Value = request.PlayerId };
+            var cmd = new BuyDevelopmentCardCommand(gameId, playerId);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
+
         });
 
         return app;
