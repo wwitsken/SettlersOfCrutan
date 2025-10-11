@@ -5,10 +5,12 @@ public abstract record BaseId;
 
 // Generic BaseId that can hold any value type (e.g., Guid, custom value object)
 public abstract record BaseId<TValue>
-: BaseId
+    : BaseId
 {
     public required TValue Value { get; init; }
 
     public override string ToString() => Value?.ToString() ?? string.Empty;
 
+    // Implicit conversion to the underlying value
+    public static implicit operator TValue(BaseId<TValue> id) => id is null ? default! : id.Value;
 }

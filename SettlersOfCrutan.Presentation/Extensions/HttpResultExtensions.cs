@@ -9,8 +9,7 @@ namespace SettlersOfCrutan.Presentation.Extensions;
 public static class HttpResultExtensions
 {
     // One method, typed: Ok<T>, Created<T>, NoContent, NotFound, ValidationProblem, BadRequest<ProblemDetails>
-    public static Results<
-        Ok<T>, NotFound, ValidationProblem, BadRequest<ProblemDetails>
+    public static Results<Ok<T>, NotFound, ValidationProblem, BadRequest<ProblemDetails>
     > ToHttpResult<T>(this Result<T> result)
     {
         if (result.IsSuccess)

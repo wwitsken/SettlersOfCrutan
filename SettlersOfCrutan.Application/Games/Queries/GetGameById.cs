@@ -7,14 +7,9 @@ namespace SettlersOfCrutan.Application.Games.Queries;
 
 public record GetGameByIdQuery(GameId Id) : IQuery<Game>;
 
-public class GetGameByIdQueryHandler : IQueryHandler<GetGameByIdQuery, Game>
+public class GetGameByIdQueryHandler(IGameRepository repository) : IQueryHandler<GetGameByIdQuery, Game>
 {
-    private readonly IGameRepository _repository;
-
-    public GetGameByIdQueryHandler(IGameRepository repository)
-    {
-        _repository = repository;
-    }
+    private readonly IGameRepository _repository = repository;
 
     public async Task<Result<Game>> Handle(GetGameByIdQuery query, CancellationToken ct = default)
     {

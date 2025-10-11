@@ -1,3 +1,5 @@
-﻿namespace SettlersOfCrutan.Presentation.Dtos;
+﻿using SettlersOfCrutan.Domain.Games;
 
-public record CreateGameRequest(string GameName, List<string> UserIds, string GameType);
+namespace SettlersOfCrutan.Presentation.Dtos;
+
+public record CreateGameRequest(string GameName, List<string> UserIds, GameType GameType);

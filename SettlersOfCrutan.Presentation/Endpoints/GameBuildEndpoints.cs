@@ -1,8 +1,8 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Games.Commands.Build;
 using SettlersOfCrutan.Domain.Games;
-using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.Resources;
 using SettlersOfCrutan.Presentation.Dtos;
@@ -16,10 +16,10 @@ public static class GameBuildEndpoints
     {
         var group = app.MapGroup("/games/{id:guid}/build").WithTags("Game:Build");
 
-        group.MapPost("/road", async Task<IResult> (
+        group.MapPost("/road", async Task<Results<NoContent, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
             [FromBody] BuildRoadRequest request,
-            ICommandHandler<BuildRoadCommand, Road> handler,
+            ICommandHandler<BuildRoadCommand> handler,
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
@@ -30,10 +30,10 @@ public static class GameBuildEndpoints
             return result.ToHttpResult();
         });
 
-        group.MapPost("/settlement", async Task<IResult> (
+        group.MapPost("/settlement", async Task<Results<NoContent, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
             [FromBody] BuildSettlementRequest request,
-            ICommandHandler<BuildSettlementCommand, PopulationCenter> handler,
+            ICommandHandler<BuildSettlementCommand> handler,
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
@@ -45,10 +45,10 @@ public static class GameBuildEndpoints
 
         });
 
-        group.MapPost("/city", async Task<IResult> (
+        group.MapPost("/city", async Task<Results<NoContent, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
             [FromBody] UpgradeSettlementToCityRequest request,
-            ICommandHandler<UpgradeSettlementToCityCommand, PopulationCenter> handler,
+            ICommandHandler<UpgradeSettlementToCityCommand> handler,
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
@@ -60,7 +60,7 @@ public static class GameBuildEndpoints
 
         });
 
-        group.MapPost("/development-card", async Task<IResult> (
+        group.MapPost("/development-card", async Task<Results<Ok<DevelopmentCardType>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
             [FromBody] BuyDevelopmentCardRequest request,
             ICommandHandler<BuyDevelopmentCardCommand, DevelopmentCardType> handler,

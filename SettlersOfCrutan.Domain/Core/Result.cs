@@ -22,6 +22,15 @@ public record Result<T>
     public static Result<T> Failure(Error error) => new(false, default, error);
 }
 
+public static class ResultExtensions
+{
+    public static Result<TPrimitive> UnwrapId<TStrong, TPrimitive>(this Result<TStrong> result)
+    where TStrong : BaseId<TPrimitive>
+    => result.IsSuccess
+        ? Result.Success(result.Value.Value)
+        : Result.Failure<TPrimitive>(result.Error);
+}
+
 public static class Result
 {
     public static Result<Nothing> Success() => Result<Nothing>.Success();
