@@ -1,29 +1,37 @@
 ﻿using SettlersOfCrutan.Application.Abstractions;
+using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Application.Games.Policies;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
-using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 
 namespace SettlersOfCrutan.Application.Games.Commands.Build;
 
-public record BuildRoadCommand(GameId GameId, PlayerId PlayerId, Edge Edge) : ICommand<Road>;
+public record BuildRoadCommand(Guid GameId, string PlayerId, EdgeDto Edge) : ICommand;
 
-public sealed class BuildRoadCommandHandler(IGameRepository gameRepository, StandardPriceCalculator priceCalculator) : ICommandHandler<BuildRoadCommand, Road>
+public sealed class BuildRoadCommandHandler(IGameRepository gameRepository, StandardPriceCalculator priceCalculator) : ICommandHandler<BuildRoadCommand>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
     private readonly StandardPriceCalculator _priceCalculator = priceCalculator;
 
-    public async Task<Result<Road>> Handle(BuildRoadCommand command, CancellationToken ct = default)
+    public async Task<Result<Nothing>> Handle(BuildRoadCommand command, CancellationToken ct = default)
     {
-        var game = await _gameRepository.GetAsync(command.GameId, ct);
-        if (game is null) return Result<Road>.Failure(DomainError.NotFound);
+        var game = await _gameRepository.GetAsync(new GameId() { Value = command.GameId }, ct);
+        if (game is null) return Result.Failure(DomainError.NotFound);
 
-        var result = game.BuildRoad(_priceCalculator, command.PlayerId, command.Edge);
-        if (result.IsFailure) return Result<Road>.Failure(result.Error);
+        Edge edge = new(new HexCoord(
+            command.Edge.HexCoord1.Q,
+            command.Edge.HexCoord1.R,
+            command.Edge.HexCoord1.S), new HexCoord(
+            command.Edge.HexCoord2.Q,
+            command.Edge.HexCoord2.R,
+            command.Edge.HexCoord2.S));
+
+        var result = game.BuildRoad(_priceCalculator, new() { Value = command.PlayerId }, edge);
+        if (result.IsFailure) return Result.Failure(result.Error);
 
         var saved = await _gameRepository.SaveAsync(game, ct);
-        return saved ? Result<Road>.Success(result.Value) : Result<Road>.Failure(DomainError.InvalidOperation);
+        return saved ? Result.Success() : Result.Failure(DomainError.InvalidOperation);
     }
 }

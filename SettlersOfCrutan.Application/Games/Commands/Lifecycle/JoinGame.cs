@@ -1,25 +1,24 @@
 ﻿using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.Games;
 
 namespace SettlersOfCrutan.Application.Games.Commands.Lifecycle;
-public record JoinGameCommand(GameId GameId, PlayerId PlayerId) : ICommand<GameId>;
-public sealed class JoinGameCommandHandler(IGameRepository gameRepository, IDateTimeProvider clock) : ICommandHandler<JoinGameCommand, GameId>
+public record JoinGameCommand(Guid GameId, string PlayerId) : ICommand<Guid>;
+public sealed class JoinGameCommandHandler(IGameRepository gameRepository, IDateTimeProvider clock) : ICommandHandler<JoinGameCommand, Guid>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
     private readonly IDateTimeProvider _clock = clock;
 
-    public async Task<Result<GameId>> Handle(JoinGameCommand command, CancellationToken ct = default)
+    public async Task<Result<Guid>> Handle(JoinGameCommand command, CancellationToken ct = default)
     {
-        var game = await _gameRepository.GetAsync(command.GameId, ct);
+        var game = await _gameRepository.GetAsync(new() { Value = command.GameId }, ct);
 
         if (game is null)
-            return Result<GameId>.Failure(new Error("NotFound", "Game not found"));
+            return Result<Guid>.Failure(new Error("NotFound", "Game not found"));
 
-        var joinResult = game.JoinPlayer(command.PlayerId, DateTimeOffset.Now);
+        var joinResult = game.JoinPlayer(new() { Value = command.PlayerId }, DateTimeOffset.Now);
 
         if (joinResult.IsFailure)
-            return Result<GameId>.Failure(joinResult.Error);
+            return Result<Guid>.Failure(joinResult.Error);
 
         if (game.AllPlayersJoined())
         {
@@ -28,6 +27,6 @@ public sealed class JoinGameCommandHandler(IGameRepository gameRepository, IDate
 
         var saved = await _gameRepository.SaveAsync(game, ct);
 
-        return saved ? Result<GameId>.Success(game.Id) : Result<GameId>.Failure(new Error("Persistence", "Failed to save game state"));
+        return saved ? Result<Guid>.Success(game.Id.Value) : Result<Guid>.Failure(new Error("Persistence", "Failed to save game state"));
     }
 }

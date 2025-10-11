@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Games.Commands.Lifecycle;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Application.Games.Queries;
-using SettlersOfCrutan.Domain.Games;
+using SettlersOfCrutan.Presentation.Auth;
 using SettlersOfCrutan.Presentation.Dtos;
 using SettlersOfCrutan.Presentation.Extensions;
 
@@ -15,7 +16,7 @@ public static class BaseGameEndpoints
     {
         var group = app.MapGroup("/games").WithTags("Game:Lifecycle");
 
-        group.MapPost("/create", async Task<IResult> (
+        group.MapPost("/create", async Task<Results<Ok<CreateGameResultDto>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             [FromBody] CreateGameRequest command,
             ICommandHandler<CreateGameCommand, CreateGameResultDto> handler,
             CancellationToken ct) =>
@@ -25,25 +26,24 @@ public static class BaseGameEndpoints
                     return result.ToHttpResult();
                 });
 
-        group.MapPost("/{id:guid}/join", async Task<IResult> (
+        group.MapPost("/{id:guid}/join", async Task<Results<Ok<Guid>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
-            [FromBody] JoinGameRequest request,
-            ICommandHandler<JoinGameCommand, GameId> handler,
+            IUserProvider userProvider,
+            ICommandHandler<JoinGameCommand, Guid> handler,
             CancellationToken ct) =>
         {
-            PlayerId playerId = new() { Value = request.PlayerId };
-            GameId gameId = new() { Value = id };
-            var cmd = new JoinGameCommand(gameId, playerId);
+            var cmd = new JoinGameCommand(id, userProvider.GetUserId());
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
 
-        group.MapGet("/{id:guid}", async Task<IResult> (
+        group.MapGet("/{id:guid}", async Task<Results<Ok<PlayerGameProjectionDto>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
-            [FromServices] IQueryHandler<GetGameByIdQuery, Game> handler,
+            IUserProvider userProvider,
+            [FromServices] IQueryHandler<GetGameByIdQuery, PlayerGameProjectionDto> handler,
             CancellationToken ct) =>
         {
-            var query = new GetGameByIdQuery(new GameId { Value = id });
+            var query = new GetGameByIdQuery(id, userProvider.GetUserId());
             var result = await handler.Handle(query, ct);
             return result.ToHttpResult();
         });

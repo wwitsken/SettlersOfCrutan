@@ -1,3 +1,5 @@
+using SettlersOfCrutan.Application.Games.DTOs;
+
 namespace SettlersOfCrutan.Presentation.Dtos;
 
-public record BuildRoadRequest(string PlayerId, EdgeCoordDto EdgeCoordinate);
+public record BuildRoadRequest(EdgeDto EdgeCoordinate);
