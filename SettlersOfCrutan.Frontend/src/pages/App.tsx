@@ -16,7 +16,7 @@ function App() {
   const [echoResponse, setEchoResponse] = useState("");
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
+    <div className="bg-gray-100 flex flex-col items-center justify-center">
       <h1 className="text-4xl font-bold text-blue-600 mb-6">Vite + React</h1>
       <div className="card bg-white shadow-lg rounded-lg p-8 flex flex-col items-center">
         <button
@@ -26,8 +26,9 @@ function App() {
               const res = await fetch("api/health");
               const txt = await res.text();
               setStatusText(txt);
-            } catch (e: any) {
-              setStatusText(`Error: ${e?.message ?? String(e)}`);
+            } catch (e: unknown) {
+              const msg = e instanceof Error ? e.message : String(e);
+              setStatusText(`Error: ${msg}`);
             }
           }}
         >
@@ -56,8 +57,9 @@ function App() {
               try {
                 const data = await echo(inputText);
                 setEchoResponse(data ?? "");
-              } catch (e: any) {
-                setEchoResponse(`Request failed: ${e?.message ?? String(e)}`);
+              } catch (e: unknown) {
+                const msg = e instanceof Error ? e.message : String(e);
+                setEchoResponse(`Request failed: ${msg}`);
               }
             }}
           >

@@ -1,3 +1,3 @@
 namespace SettlersOfCrutan.Presentation.Dtos;
 
-public record AcceptTradeRequest(string PlayerId, Guid TradeOfferId);
+public record AcceptTradeRequest(Guid TradeOfferId);

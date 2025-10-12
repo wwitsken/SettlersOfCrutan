@@ -1,3 +1,3 @@
 namespace SettlersOfCrutan.Presentation.Dtos;
 
-public record DiscardHalfRequest(string PlayerId, List<ResourceCardAmountDto> Discards);
+public record DiscardHalfRequest(List<ResourceCardAmountDto> Discards);

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using SettlersOfCrutan.Presentation.Identity;
 using System.Security.Claims;
 
@@ -10,68 +11,60 @@ public static class AuthEndpoints
     {
         var group = app.MapGroup("/auth").WithTags("Auth");
 
-        group.MapPost("/login", async (
+        group.MapPost("/login", async Task<Results<NoContent, UnauthorizedHttpResult>> (
             LoginRequest req,
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager) =>
         {
             var user = await userManager.FindByEmailAsync(req.Email);
             if (user is null)
-                return Results.Unauthorized();
+                return TypedResults.Unauthorized();
 
             var pwOk = await userManager.CheckPasswordAsync(user, req.Password);
             if (!pwOk)
-                return Results.Unauthorized();
+                return TypedResults.Unauthorized();
 
             await signInManager.SignInAsync(user, isPersistent: false);
 
-            return Results.Ok(new
-            {
-                Message = "Logged in successfully"
-            });
+            return TypedResults.NoContent();
         });
 
-        group.MapPost("/logout", async (
+        group.MapPost("/logout", async Task<Results<NoContent, UnauthorizedHttpResult>> (
             SignInManager<ApplicationUser> signInManager) =>
         {
             await signInManager.SignOutAsync();
-            return Results.Ok(new { Message = "Logged out successfully" });
+            return TypedResults.NoContent();
         });
 
-        group.MapGet("/me", async (ClaimsPrincipal principal, UserManager<ApplicationUser> userManager) =>
+        group.MapGet("/me", async Task<Results<Ok<UserInfoResponse>, UnauthorizedHttpResult>> (ClaimsPrincipal principal, UserManager<ApplicationUser> userManager) =>
         {
             var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return TypedResults.Unauthorized();
 
             var user = await userManager.FindByIdAsync(userId);
-            if (user is null) return Results.Unauthorized();
+            if (user is null) return TypedResults.Unauthorized();
 
-            return Results.Ok(new
-            {
-                user.Id,
-                user.Email,
-                user.UserName
-            });
+            return TypedResults.Ok(new UserInfoResponse(user.Id, user.Email ?? ""));
         })
         .RequireAuthorization();
 
-        group.MapPost("/change-password", async (ChangePasswordRequest req, ClaimsPrincipal principal, UserManager<ApplicationUser> userManager) =>
+        group.MapPost("/change-password", async Task<Results<NoContent, UnauthorizedHttpResult>> (ChangePasswordRequest req, ClaimsPrincipal principal, UserManager<ApplicationUser> userManager) =>
         {
             var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return TypedResults.Unauthorized();
 
             var user = await userManager.FindByIdAsync(userId);
             if (user is null || !await userManager.CheckPasswordAsync(user, req.CurrentPassword))
-                return Results.Unauthorized();
+                return TypedResults.Unauthorized();
 
             await userManager.ChangePasswordAsync(user, req.CurrentPassword, req.NewPassword);
 
-            return Results.Ok();
+            return TypedResults.NoContent();
         })
         .RequireAuthorization();
 
         // --- Admin: Create user with temporary password ---
-        group.MapPost("/admin/create-user", async (
+        group.MapPost("/admin/create-user", async Task<Results<Ok<string>, UnauthorizedHttpResult, ValidationProblem>> (
             AdminCreateUserRequest req,
             UserManager<ApplicationUser> userManager) =>
         {
@@ -84,38 +77,38 @@ public static class AuthEndpoints
                 EmailConfirmed = false
             };
 
-            var result = await userManager.CreateAsync(user, tempPassword);
+            IdentityResult result = await userManager.CreateAsync(user, tempPassword);
             if (!result.Succeeded)
             {
-                return Results.ValidationProblem(result.Errors
+                return TypedResults.ValidationProblem(result.Errors
                     .GroupBy(e => e.Code)
                     .ToDictionary(g => g.Key, g => g.Select(e => e.Description).ToArray()));
             }
 
-            return Results.Created($"/auth/users/{user.Id}", new { user.Id, user.Email, TemporaryPassword = tempPassword });
+            return TypedResults.Ok(tempPassword);
         })
         .RequireAuthorization(policy => policy.RequireRole("Admin"));
 
         // --- Admin: Reset user password ---
-        group.MapPost("/admin/reset-password", async (
+        group.MapPost("/admin/reset-password", async Task<Results<NoContent, NotFound, ValidationProblem>> (
             AdminResetPasswordRequest req,
             UserManager<ApplicationUser> userManager) =>
         {
             var user = await userManager.FindByEmailAsync(req.Email);
             if (user is null)
-                return Results.NotFound(new { Message = "User not found" });
+                return TypedResults.NotFound();
 
             var token = await userManager.GeneratePasswordResetTokenAsync(user);
             var result = await userManager.ResetPasswordAsync(user, token, req.NewPassword);
 
             if (!result.Succeeded)
             {
-                return Results.ValidationProblem(result.Errors
+                return TypedResults.ValidationProblem(result.Errors
                     .GroupBy(e => e.Code)
                     .ToDictionary(g => g.Key, g => g.Select(e => e.Description).ToArray()));
             }
 
-            return Results.Ok(new { Message = "Password reset successfully" });
+            return TypedResults.NoContent();
         })
         .RequireAuthorization(policy => policy.RequireRole("Admin"));
 
@@ -128,3 +121,5 @@ public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 public record LoginRequest(string Email, string Password);
 public record AdminCreateUserRequest(string Email);
 public record AdminResetPasswordRequest(string Email, string NewPassword);
+
+public record UserInfoResponse(string UserId, string Email);

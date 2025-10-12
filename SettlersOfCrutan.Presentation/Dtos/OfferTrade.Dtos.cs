@@ -2,7 +2,7 @@ using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Presentation.Dtos;
 
-public record OfferTradeRequest(string PlayerId, List<ResourceCardAmountDto> Requested, List<ResourceCardAmountDto> Offered);
+public record OfferTradeRequest(List<ResourceCardAmountDto> Requested, List<ResourceCardAmountDto> Offered);
 public record ResourceCardAmountDto(ResourceCardType Type, int Quantity);
 public static class ResourceCardAmountDtoExtensions
 {

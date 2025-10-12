@@ -1,4 +1,5 @@
 using SettlersOfCrutan.Application.Games.DTOs;
+using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Presentation.Dtos;
 
 namespace SettlersOfCrutan.IntegrationTests;
@@ -16,7 +17,7 @@ public class GameFlowTests(AppHostFixture fixture)
         var api = _fixture.ApiClient;
 
         // 1) Create game
-        CreateGameRequest createReq = new("Test Game", ["p1", "p2", "p3"], "BaseGame");
+        CreateGameRequest createReq = new("Test Game", ["p1", "p2", "p3"], GameType.BaseGame);
 
         var createResp = await api.PostAsJsonAsync("/games/create", createReq, ctoken);
         createResp.EnsureSuccessStatusCode();

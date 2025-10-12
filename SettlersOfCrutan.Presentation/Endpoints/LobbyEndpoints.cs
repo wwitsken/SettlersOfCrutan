@@ -81,6 +81,8 @@ public static class LobbyEndpoints
             return result.ToHttpResult();
         });
 
+        group.RequireAuthorization();
+
         return app;
     }
 }

@@ -1,3 +1,3 @@
 namespace SettlersOfCrutan.Presentation.Dtos;
 
-public record UpgradeSettlementToCityRequest(string PlayerId, VertexCoordDto VertexCoordinate);
+public record UpgradeSettlementToCityRequest(VertexCoordDto VertexCoordinate);

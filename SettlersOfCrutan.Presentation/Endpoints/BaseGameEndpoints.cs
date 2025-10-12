@@ -52,6 +52,8 @@ public static class BaseGameEndpoints
             return result.ToHttpResult();
         });
 
+        group.RequireAuthorization();
+
         return app;
     }
 };
