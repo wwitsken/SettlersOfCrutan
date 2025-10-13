@@ -44,7 +44,9 @@ public static class AuthEndpoints
             var user = await userManager.FindByIdAsync(userId);
             if (user is null) return TypedResults.Unauthorized();
 
-            return TypedResults.Ok(new UserInfoResponse(user.Id, user.Email ?? ""));
+            IList<string> roles = await userManager.GetRolesAsync(user);
+
+            return TypedResults.Ok(new UserInfoResponse(user.Id, user.Email ?? "", roles));
         })
         .RequireAuthorization();
 
@@ -122,4 +124,4 @@ public record LoginRequest(string Email, string Password);
 public record AdminCreateUserRequest(string Email);
 public record AdminResetPasswordRequest(string Email, string NewPassword);
 
-public record UserInfoResponse(string UserId, string Email);
+public record UserInfoResponse(string UserId, string Email, IList<string> Roles);

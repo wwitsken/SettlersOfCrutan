@@ -1910,6 +1910,7 @@ export interface components {
         UserInfoResponse: {
             userId: string;
             email: string;
+            roles: string[];
         };
         UseRoadBuildingRequest: {
             playerId: string;
