@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
-import { api } from "../api/client";
+// import { api } from "../api/client";
+import { useAuthStore } from "../auth/store";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -9,15 +10,15 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const login = useAuthStore((s) => s.login);
+  // const status = useAuthStore(s => s.status)
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const { error } = await api.POST("/api/auth/login", {
-        body: { email, password },
-      });
-      if (error) throw error;
+      login({ email, password });
       navigate("/", { replace: true });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Login failed";

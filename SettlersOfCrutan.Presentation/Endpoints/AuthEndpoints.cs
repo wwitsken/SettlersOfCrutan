@@ -47,8 +47,7 @@ public static class AuthEndpoints
             IList<string> roles = await userManager.GetRolesAsync(user);
 
             return TypedResults.Ok(new UserInfoResponse(user.Id, user.Email ?? "", roles));
-        })
-        .RequireAuthorization();
+        });
 
         group.MapPost("/change-password", async Task<Results<NoContent, UnauthorizedHttpResult>> (ChangePasswordRequest req, ClaimsPrincipal principal, UserManager<ApplicationUser> userManager) =>
         {

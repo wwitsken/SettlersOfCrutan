@@ -1,42 +1,56 @@
-import { Outlet } from "react-router";
+import { Outlet, Link } from "react-router";
+import { useAuthStore } from "../auth/store";
 
 export default function AppLayout() {
+  // Select booleans so conditional rendering works correctly
+  const isAuthed = useAuthStore((s) => s.status === "authenticated");
+  const isAdmin = useAuthStore((s) => s.hasRole("Admin"));
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <header className="bg-white shadow">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-          <a href="/" className="text-lg font-semibold text-gray-900">
+          <Link to="/" className="text-lg font-semibold text-gray-900">
             Settlers Of Crutan
-          </a>
+          </Link>
           <nav className="flex items-center gap-4 text-sm">
-            <a href="/" className="text-gray-700 hover:text-gray-900">
+            <Link to="/" className="text-gray-700 hover:text-gray-900">
               Home
-            </a>
-            <a
-              href="/preferences"
-              className="text-gray-700 hover:text-gray-900"
-            >
-              Preferences
-            </a>
+            </Link>
+            {isAuthed && (
+              <Link
+                to="/preferences"
+                className="text-gray-700 hover:text-gray-900"
+              >
+                Preferences
+              </Link>
+            )}
             <span className="text-gray-300">|</span>
-            <a href="/login" className="text-gray-700 hover:text-gray-900">
-              Login
-            </a>
-            <a href="/logout" className="text-gray-700 hover:text-gray-900">
-              Logout
-            </a>
-            <a
-              href="/create-user"
-              className="text-gray-700 hover:text-gray-900"
-            >
-              Create User
-            </a>
-            <a
-              href="/reset-password"
-              className="text-gray-700 hover:text-gray-900"
-            >
-              Reset Password
-            </a>
+            {!isAuthed && (
+              <Link to="/login" className="text-gray-700 hover:text-gray-900">
+                Login
+              </Link>
+            )}
+            {isAuthed && (
+              <Link to="/logout" className="text-gray-700 hover:text-gray-900">
+                Logout
+              </Link>
+            )}
+            {isAdmin && (
+              <Link
+                to="/create-user"
+                className="text-gray-700 hover:text-gray-900"
+              >
+                Create User
+              </Link>
+            )}
+            {isAuthed && (
+              <Link
+                to="/reset-password"
+                className="text-gray-700 hover:text-gray-900"
+              >
+                Reset Password
+              </Link>
+            )}
           </nav>
         </div>
       </header>

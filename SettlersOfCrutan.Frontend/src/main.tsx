@@ -9,12 +9,15 @@ import CreateUser from "./pages/CreateUser";
 import ResetPassword from "./pages/ResetPassword";
 import Logout from "./pages/Logout";
 import AppLayout from "./layouts/AppLayout.tsx";
+import AppBootstrap from "./components/AppBootstrap.tsx";
+import Forbidden from "./pages/Forbidden.tsx";
 
 const router = createBrowserRouter([
   {
     Component: AppLayout,
     children: [
       { index: true, Component: App },
+      { path: "forbidden", Component: Forbidden },
       { path: "login", Component: Login },
       { path: "create-user", Component: CreateUser },
       { path: "reset-password", Component: ResetPassword },
@@ -34,6 +37,8 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />,
+    <AppBootstrap>
+      <RouterProvider router={router} />
+    </AppBootstrap>
   </StrictMode>
 );

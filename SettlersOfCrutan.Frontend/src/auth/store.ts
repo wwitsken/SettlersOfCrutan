@@ -55,16 +55,22 @@ export const useAuthStore = create<AuthState>()(
           // Avoid noisy re-fetch on every cold start: do a quick optimistic check
           if (get().status === "idle") set({ status: "loading" });
 
-          const { data, error } = await api.GET("/api/auth/me");
-          if (error) {
-            set({ status: "unauthenticated", user: null });
-            throw new Error(error);
+          try {
+            const { data, error } = await api.GET("/api/auth/me");
+            if (error) {
+              console.error("error with init ", error);
+              set({ status: "unauthenticated", user: null });
+              throw new Error(error);
+            }
+            set(
+              data
+                ? { status: "authenticated", user: { ...data } }
+                : { status: "unauthenticated", user: null }
+            );
+          } catch (e) {
+            console.error("error with init ", e);
+            throw e;
           }
-          set(
-            data
-              ? { status: "authenticated", user: { ...data } }
-              : { status: "unauthenticated", user: null }
-          );
         },
 
         refresh: async () => {
