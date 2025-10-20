@@ -1,8 +1,8 @@
 ﻿using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
+using SettlersOfCrutan.Domain.Games.Generation;
 using SettlersOfCrutan.Domain.Games.Resources;
-using SettlersOfCrutan.Domain.Generation;
 using System.Text.Json.Serialization;
 
 namespace SettlersOfCrutan.Domain.Games;

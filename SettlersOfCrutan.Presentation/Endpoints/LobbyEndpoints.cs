@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Contracts.Lobbies;
 using SettlersOfCrutan.Application.Lobbies.Commands;
 using SettlersOfCrutan.Application.Lobbies.Queries;
 using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Infrastructure.SignalR;
 using SettlersOfCrutan.Presentation.Auth;
 using SettlersOfCrutan.Presentation.Extensions;
 
@@ -41,8 +43,10 @@ public static class LobbyEndpoints
             Guid lobbyId,
             ICommandHandler<JoinLobbyCommand> handler,
             IUserProvider userProvider,
+            IHubContext<CrutanHub, ICrutanClient> hub,
             CancellationToken ct) =>
         {
+            /* TODO: Join the SignalR Group */
             var cmd = new JoinLobbyCommand(lobbyId, userProvider.GetUserId());
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
@@ -54,6 +58,7 @@ public static class LobbyEndpoints
             IUserProvider userProvider,
             CancellationToken ct) =>
         {
+            /* TODO: Leave the SignalR Group */
             var cmd = new LeaveLobbyCommand(lobbyId, userProvider.GetUserId());
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();

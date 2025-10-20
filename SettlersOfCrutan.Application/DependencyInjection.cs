@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Games.Policies;
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.Generation;
+using SettlersOfCrutan.Domain.Games.Generation;
 
 namespace SettlersOfCrutan.Application;
 public static class DependencyInjection

@@ -1,7 +1,7 @@
 ﻿using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Resources;
 
-namespace SettlersOfCrutan.Domain.Generation;
+namespace SettlersOfCrutan.Domain.Games.Generation;
 public static class StandardBoardConfigurations
 {
     public static BoardConfig DefaultBaseGame => new

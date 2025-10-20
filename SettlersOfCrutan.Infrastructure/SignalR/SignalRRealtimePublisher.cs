@@ -1,17 +1,20 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using SettlersOfCrutan.Application.Abstractions;
+using SettlersOfCrutan.Domain.Games;
+using SettlersOfCrutan.Domain.Lobbies;
 
 namespace SettlersOfCrutan.Infrastructure.SignalR;
-public sealed class SignalRRealtimePublisher<THub>(IHubContext<THub> hub) : IRealtimePublisher where THub : Hub
+public sealed class SignalRRealtimePublisher(IHubContext<CrutanHub, ICrutanClient> hub)
+        : IRealtimePublisher
 {
-    private readonly IHubContext<THub> _hub = hub;
+    private readonly IHubContext<CrutanHub, ICrutanClient> _hub = hub;
 
-    public Task PublishAsync<T>(string channel, T message, CancellationToken ct = default) =>
-        _hub.Clients.All.SendAsync(channel, message, ct);
+    public Task ToLobbyAsync(LobbyId lobbyId, string channel, object payload, CancellationToken ct = default) =>
+        _hub.Clients.Group($"crutan:lobby:{lobbyId.Value}").Receive(channel, payload);
 
-    public Task PublishToUserAsync<T>(string userId, T message, CancellationToken ct = default) =>
-        _hub.Clients.User(userId).SendAsync(typeof(T).Name, message, ct);
+    public Task ToGameAsync(GameId gameId, string channel, object payload, CancellationToken ct = default) =>
+        _hub.Clients.Group($"crutan:game:{gameId.Value}").Receive(channel, payload);
 
-    public Task PublishToGroupAsync<T>(string group, T message, CancellationToken ct = default) =>
-        _hub.Clients.Group(group).SendAsync(typeof(T).Name, message, ct);
+    public Task ToUserAsync(string userId, string channel, object payload, CancellationToken ct = default) =>
+        _hub.Clients.User(userId).Receive(channel, payload);
 }

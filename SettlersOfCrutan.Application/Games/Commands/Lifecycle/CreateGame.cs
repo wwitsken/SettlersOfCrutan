@@ -3,7 +3,7 @@ using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
-using SettlersOfCrutan.Domain.Generation;
+using SettlersOfCrutan.Domain.Games.Generation;
 
 namespace SettlersOfCrutan.Application.Games.Commands.Lifecycle;
 

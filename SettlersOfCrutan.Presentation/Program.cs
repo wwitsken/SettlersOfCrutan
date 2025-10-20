@@ -65,6 +65,6 @@ app.MapGroup("api/")
 app.MapGet("/api/health", Results<Ok<string>, BadRequest> () => TypedResults.Ok($"OK at {DateTime.Now.ToShortTimeString()}"));
 app.MapPost("/api/echo", Results<Ok<string>, BadRequest> ([FromBody] string Message) => TypedResults.Ok($"Echo: {Message}"));
 
-app.MapHub<GameHub>("/hubs/game");
+app.MapHub<CrutanHub>("/hubs/game");
 
 app.Run();

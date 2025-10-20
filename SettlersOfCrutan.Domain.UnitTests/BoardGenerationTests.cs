@@ -1,5 +1,6 @@
 ﻿using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
+using SettlersOfCrutan.Domain.Games.Generation;
 using SettlersOfCrutan.Domain.Games.Resources;
 using SettlersOfCrutan.Domain.Generation;
 

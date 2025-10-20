@@ -2,7 +2,7 @@ using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.Resources;
 
-namespace SettlersOfCrutan.Domain.Generation;
+namespace SettlersOfCrutan.Domain.Games.Generation;
 
 /// <summary>
 /// Generates a deterministic, standard Catan board layout for the base game (radius = 2).

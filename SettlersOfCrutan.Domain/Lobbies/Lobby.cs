@@ -1,4 +1,5 @@
 ﻿using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Lobbies.DomainEvents;
 using System.Text.Json.Serialization;
 
@@ -8,66 +9,93 @@ public record LobbyId : BaseId<Guid>;
 public class Lobby : AggregateRoot<LobbyId>
 {
     public override LobbyId Id { get; init; }
-
-    private readonly List<LobbyMember> _lobbyMembers = [];
-    public IReadOnlyList<LobbyMember> LobbyMembers => [.. _lobbyMembers];
-
     public DateTimeOffset DateCreated { get; init; }
-
     public bool IsOpen { get; private set; } = true;
+    public int Capacity { get; private set; } = 4;
+
+    private readonly Dictionary<PlayerId, MemberState> _members = [];
+    public IReadOnlyCollection<MemberState> Members => [.. _members.Values];
+    public bool IsHost(PlayerId pid) => _members.TryGetValue(pid, out var m) && m.IsHost;
 
     [JsonConstructor]
-    private Lobby(LobbyId id, List<LobbyMember> lobbyMembers, bool isOpen, DateTimeOffset dateCreated)
+    private Lobby(LobbyId id, Dictionary<PlayerId, MemberState> members, bool isOpen, DateTimeOffset dateCreated, int capacity)
     {
         Id = id;
-        _lobbyMembers = lobbyMembers;
+        _members = members ?? [];
         IsOpen = isOpen;
         DateCreated = dateCreated;
+        Capacity = capacity;
     }
-    public static Lobby Create(string hostUserId)
+
+    public static Lobby Create(PlayerId host)
     {
         var lobby = new Lobby(
-            new LobbyId() { Value = Guid.NewGuid() },
-            [new(hostUserId, true, false)],
+            new LobbyId { Value = Guid.NewGuid() },
+            [],
             true,
-            DateTimeOffset.Now);
+            DateTimeOffset.UtcNow,
+            capacity: 4);
+
+        lobby._members.Add(host, MemberState.Host());
+        lobby.AddDomainEvent(new LobbyMemberAddedDomainEvent(lobby.Id, host));
+        lobby.AddDomainEvent(new LobbyHostChangedDomainEvent(lobby.Id, host));
         return lobby;
     }
-    public Result<Nothing> AddMember(string userId)
+
+    /// <summary>
+    /// Admission rule: the application layer should already have verified the player's Presence:
+    /// - player is Online, and
+    /// - player is not in another lobby or is joining this one.
+    /// </summary>
+    public Result<Nothing> AddMember(PlayerId playerId)
     {
-        if (!IsOpen) return Result<Nothing>.Failure(new Error("LobbyClosed", "Lobby is closed."));
-        if (_lobbyMembers.Any(m => m.UserId == userId)) return Result<Nothing>.Failure(new Error("AlreadyJoinedLobby", "User is already in the lobby."));
-        if (_lobbyMembers.Count >= 4) return Result<Nothing>.Failure(new Error("LobbyFull", "Lobby is full."));
-        var member = new LobbyMember(userId, false, false);
-        _lobbyMembers.Add(member);
-        AddDomainEvent(new LobbyMemberAddedDomainEvent(Id, member));
+        if (!IsOpen) return Result<Nothing>.Failure(new("LobbyClosed", "Lobby is closed."));
+        if (_members.ContainsKey(playerId)) return Result<Nothing>.Failure(new("AlreadyJoinedLobby", "Player is already in the lobby."));
+        if (_members.Count >= Capacity) return Result<Nothing>.Failure(new("LobbyFull", "Lobby is full."));
+
+        _members[playerId] = MemberState.Regular();
+        AddDomainEvent(new LobbyMemberAddedDomainEvent(Id, playerId));
         return Result.Success();
     }
-    public Result<Nothing> RemoveMember(string userId)
+
+    public Result<Nothing> RemoveMember(PlayerId playerId)
     {
-        var member = _lobbyMembers.FirstOrDefault(m => m.UserId == userId);
-        if (member is null) return Result<Nothing>.Failure(new Error("NotInLobby", "User is not in the lobby."));
-        _lobbyMembers.Remove(member);
-        AddDomainEvent(new LobbyMemberRemovedDomainEvent(Id, member));
-        // If the host leaves, assign a new host if possible
-        if (member.IsHost && _lobbyMembers.Count > 0)
+        if (!_members.Remove(playerId, out var removed))
+            return Result<Nothing>.Failure(new("NotInLobby", "Player is not in the lobby."));
+
+        AddDomainEvent(new LobbyMemberRemovedDomainEvent(Id, playerId));
+
+        if (removed.IsHost && _members.Count > 0)
         {
-            var newHost = _lobbyMembers[0];
-            _lobbyMembers.RemoveAt(0);
-            _lobbyMembers.Add(new LobbyMember(newHost.UserId, true, newHost.IsReady));
-            AddDomainEvent(new LobbyHostChangedDomainEvent(Id, newHost.UserId));
+            // simple policy: next joiner becomes host
+            var next = _members.Keys.First();
+            _members[next] = _members[next] with { IsHost = true };
+            AddDomainEvent(new LobbyHostChangedDomainEvent(Id, next));
         }
+
         return Result.Success();
     }
-    public Result<Nothing> SetMemberReady(string userId, bool ready)
+
+    public Result<Nothing> SetReady(PlayerId playerId, bool ready)
     {
-        var index = _lobbyMembers.FindIndex(m => m.UserId == userId);
-        if (index == -1) return Result<Nothing>.Failure(new Error("NotInLobby", "User is not in the lobby."));
-        var member = _lobbyMembers[index];
-        _lobbyMembers[index] = member with { IsReady = ready };
-        AddDomainEvent(new LobbyMemberReadyStatusChangedDomainEvent(Id, userId, ready));
+        if (!_members.TryGetValue(playerId, out var m))
+            return Result<Nothing>.Failure(new("NotInLobby", "Player is not in the lobby."));
+        if (m.IsReady == ready) return Result.Success();
+
+        _members[playerId] = m with { IsReady = ready };
+        AddDomainEvent(new LobbyMemberReadyStatusChangedDomainEvent(Id, playerId, ready));
         return Result.Success();
     }
+
     public void CloseLobby() => IsOpen = false;
     public void OpenLobby() => IsOpen = true;
+
+    public bool AllReady() => _members.Count > 0 && _members.Values.All(m => m.IsReady);
+}
+
+// Lobby-local state only
+public readonly record struct MemberState(bool IsHost, bool IsReady, string? DisplayName = null)
+{
+    public static MemberState Host(string? displayName = default) => new(true, false, displayName);
+    public static MemberState Regular(string? displayName = default) => new(false, false, displayName);
 }
