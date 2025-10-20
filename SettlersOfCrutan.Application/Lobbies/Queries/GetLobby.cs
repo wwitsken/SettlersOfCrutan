@@ -20,12 +20,12 @@ public sealed class GetLobbyQueryHandler(ILobbyRepository lobbyRepository) : IQu
         var dto = new LobbyDto()
         {
             LobbyId = lobby.Id.Value,
-            LobbyPlayers = [.. lobby.LobbyMembers.Select(p => new LobbyPlayerDto
+            LobbyPlayers = [.. lobby.Members.Select(p => new LobbyPlayerDto
             {
-                GameName = p.GameName,
-                IsMe = p.UserId == query.UserId,
-                IsHost = p.IsHost,
-                IsReady = p.IsReady
+                GameName = p.Value.DisplayName ?? "",
+                IsMe = p.Key == query.UserId,
+                IsHost = p.Value.IsHost,
+                IsReady = p.Value.IsReady
             })]
         };
 

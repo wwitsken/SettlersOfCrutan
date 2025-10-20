@@ -2,10 +2,11 @@
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
+using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Lobbies;
 
 namespace SettlersOfCrutan.Application.Lobbies.Commands;
-public record JoinLobbyCommand(Guid LobbyId, string UserId) : ICommand;
+public record JoinLobbyCommand(Guid LobbyId, PlayerId PlayerId) : ICommand;
 public sealed class JoinLobbyCommandHandler(ILobbyRepository lobbyRepository) : ICommandHandler<JoinLobbyCommand>
 {
     private readonly ILobbyRepository _lobbyRepository = lobbyRepository;
@@ -16,7 +17,7 @@ public sealed class JoinLobbyCommandHandler(ILobbyRepository lobbyRepository) : 
 
         if (lobby is null) return Result<Nothing>.Failure(DomainError.NotFound);
 
-        var res = lobby.AddMember(command.UserId);
+        var res = lobby.AddMember(command.PlayerId);
 
         if (res.IsFailure) return Result<Nothing>.Failure(res.Error);
 

@@ -23,7 +23,7 @@ public static class LobbyEndpoints
             IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            Result<Guid> result = await handler.Handle(new CreateLobbyCommand(userProvider.GetUserId()), ct);
+            Result<Guid> result = await handler.Handle(new CreateLobbyCommand(new() { Value = userProvider.GetUserId() }), ct);
 
             return result.ToHttpResult();
         });
@@ -47,7 +47,7 @@ public static class LobbyEndpoints
             CancellationToken ct) =>
         {
             /* TODO: Join the SignalR Group */
-            var cmd = new JoinLobbyCommand(lobbyId, userProvider.GetUserId());
+            var cmd = new JoinLobbyCommand(lobbyId, new() { Value = userProvider.GetUserId() });
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
@@ -59,7 +59,7 @@ public static class LobbyEndpoints
             CancellationToken ct) =>
         {
             /* TODO: Leave the SignalR Group */
-            var cmd = new LeaveLobbyCommand(lobbyId, userProvider.GetUserId());
+            var cmd = new LeaveLobbyCommand(lobbyId, new() { Value = userProvider.GetUserId() });
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
@@ -70,7 +70,7 @@ public static class LobbyEndpoints
             IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            var cmd = new ChangeReadyStatusCommand(lobbyId, userProvider.GetUserId(), true);
+            var cmd = new ChangeReadyStatusCommand(lobbyId, new() { Value = userProvider.GetUserId() }, true);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
@@ -81,7 +81,7 @@ public static class LobbyEndpoints
             IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            var cmd = new ChangeReadyStatusCommand(lobbyId, userProvider.GetUserId(), false);
+            var cmd = new ChangeReadyStatusCommand(lobbyId, new() { Value = userProvider.GetUserId() }, false);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });

@@ -1,6 +1,7 @@
 ﻿using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Lobbies.DomainEvents;
+using System.Collections.Immutable;
 using System.Text.Json.Serialization;
 
 namespace SettlersOfCrutan.Domain.Lobbies;
@@ -14,7 +15,7 @@ public class Lobby : AggregateRoot<LobbyId>
     public int Capacity { get; private set; } = 4;
 
     private readonly Dictionary<PlayerId, MemberState> _members = [];
-    public IReadOnlyCollection<MemberState> Members => [.. _members.Values];
+    public IReadOnlyDictionary<PlayerId, MemberState> Members => _members.ToImmutableDictionary();
     public bool IsHost(PlayerId pid) => _members.TryGetValue(pid, out var m) && m.IsHost;
 
     [JsonConstructor]

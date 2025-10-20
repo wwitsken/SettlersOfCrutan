@@ -1,11 +1,12 @@
 ﻿using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
+using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Lobbies;
 
 namespace SettlersOfCrutan.Application.Lobbies.Commands;
 
-public record LeaveLobbyCommand(Guid LobbyId, string UserId) : ICommand;
+public record LeaveLobbyCommand(Guid LobbyId, PlayerId PlayerId) : ICommand;
 public sealed class LeaveLobbyCommandHandler(ILobbyRepository lobbyRepository) : ICommandHandler<LeaveLobbyCommand>
 {
     private readonly ILobbyRepository _lobbyRepository = lobbyRepository;
@@ -17,7 +18,7 @@ public sealed class LeaveLobbyCommandHandler(ILobbyRepository lobbyRepository) :
 
         if (lobby is null) return Result<Nothing>.Failure(DomainError.NotFound);
 
-        var res = lobby.RemoveMember(command.UserId);
+        var res = lobby.RemoveMember(command.PlayerId);
 
         if (res.IsFailure) return res;
 

@@ -8,9 +8,6 @@ public abstract record BaseId<TValue>
     : BaseId
 {
     public required TValue Value { get; init; }
-
     public override string ToString() => Value?.ToString() ?? string.Empty;
-
-    // Implicit conversion to the underlying value
     public static implicit operator TValue(BaseId<TValue> id) => id is null ? default! : id.Value;
 }
