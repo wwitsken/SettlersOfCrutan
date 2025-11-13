@@ -6,6 +6,7 @@ using SettlersOfCrutan.Application.Contracts.Lobbies;
 using SettlersOfCrutan.Application.Lobbies.Commands;
 using SettlersOfCrutan.Application.Lobbies.Queries;
 using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Infrastructure.SignalR;
 using SettlersOfCrutan.Presentation.Auth;
 using SettlersOfCrutan.Presentation.Extensions;
@@ -23,7 +24,7 @@ public static class LobbyEndpoints
             IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            Result<Guid> result = await handler.Handle(new CreateLobbyCommand(new() { Value = userProvider.GetUserId() }), ct);
+            Result<Guid> result = await handler.Handle(new CreateLobbyCommand(PlayerId.Create(userProvider.GetUserId())), ct);
 
             return result.ToHttpResult();
         });
@@ -47,7 +48,7 @@ public static class LobbyEndpoints
             CancellationToken ct) =>
         {
             /* TODO: Join the SignalR Group */
-            var cmd = new JoinLobbyCommand(lobbyId, new() { Value = userProvider.GetUserId() });
+            var cmd = new JoinLobbyCommand(lobbyId, PlayerId.Create(userProvider.GetUserId()));
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
@@ -59,7 +60,7 @@ public static class LobbyEndpoints
             CancellationToken ct) =>
         {
             /* TODO: Leave the SignalR Group */
-            var cmd = new LeaveLobbyCommand(lobbyId, new() { Value = userProvider.GetUserId() });
+            var cmd = new LeaveLobbyCommand(lobbyId, PlayerId.Create(userProvider.GetUserId()));
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
@@ -70,7 +71,7 @@ public static class LobbyEndpoints
             IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            var cmd = new ChangeReadyStatusCommand(lobbyId, new() { Value = userProvider.GetUserId() }, true);
+            var cmd = new ChangeReadyStatusCommand(lobbyId, PlayerId.Create(userProvider.GetUserId()), true);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
@@ -81,7 +82,7 @@ public static class LobbyEndpoints
             IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            var cmd = new ChangeReadyStatusCommand(lobbyId, new() { Value = userProvider.GetUserId() }, false);
+            var cmd = new ChangeReadyStatusCommand(lobbyId, PlayerId.Create(userProvider.GetUserId()), false);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });

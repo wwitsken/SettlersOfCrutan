@@ -25,7 +25,7 @@ public static class GamePlayEndpoints
             ICommandHandler<BuildInitialCommand> handler,
             CancellationToken ct) =>
         {
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             GameId gameId = new() { Value = id };
             Vertex settlementCoordinate = request.SettlementVertexCoordinate.ToDomain();
             Edge edgeCoordinate = request.RoadEdgeCoordinate.ToDomain();
@@ -41,7 +41,7 @@ public static class GamePlayEndpoints
             ICommandHandler<RollDiceCommand, RollDiceCommandResult> handler,
             CancellationToken ct) =>
         {
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             GameId gameId = new() { Value = id };
             var cmd = new RollDiceCommand(gameId, playerId);
             var result = await handler.Handle(cmd, ct);

@@ -24,7 +24,7 @@ public static class GameTurnFlowEndpoints
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             var cmd = new EndTurnCommand(gameId, playerId);
             Result<PlayerId> result = await handler.Handle(cmd, ct);
             return result.UnwrapId<PlayerId, string>().ToHttpResult();
@@ -38,7 +38,7 @@ public static class GameTurnFlowEndpoints
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             PlayerId victimId = new() { Value = request.VictimPlayerId };
             var cmd = new ResolveRobberCommand(gameId, playerId, request.NewRobberHex.ToDomain(), victimId);
             var result = await handler.Handle(cmd, ct);
@@ -53,7 +53,7 @@ public static class GameTurnFlowEndpoints
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             var cmd = new DiscardHalfCommand(gameId, playerId, request.Discards.Select(d => new ResourceCardAmount(d.Type, d.Quantity)).ToList());
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();

@@ -25,7 +25,7 @@ public static class GameBuildEndpoints
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             Edge edge = request.EdgeCoordinate.ToDomain();
             var cmd = new BuildRoadCommand(gameId, playerId, edge);
             var result = await handler.Handle(cmd, ct);
@@ -40,7 +40,7 @@ public static class GameBuildEndpoints
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             Vertex vertex = request.VertexCoordinate.ToDomain();
             var cmd = new BuildSettlementCommand(gameId, playerId, vertex);
             var result = await handler.Handle(cmd, ct);
@@ -56,7 +56,7 @@ public static class GameBuildEndpoints
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             Vertex vertex = request.VertexCoordinate.ToDomain();
             var cmd = new UpgradeSettlementToCityCommand(gameId, playerId, vertex);
             var result = await handler.Handle(cmd, ct);
@@ -71,7 +71,7 @@ public static class GameBuildEndpoints
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             var cmd = new BuyDevelopmentCardCommand(gameId, playerId);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();

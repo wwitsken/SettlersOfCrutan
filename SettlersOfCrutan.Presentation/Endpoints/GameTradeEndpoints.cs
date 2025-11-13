@@ -24,7 +24,7 @@ public static class GameTradeEndpoints
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             var cmd = new OfferTradeCommand(gameId, playerId, request.Requested.Select(r => new ResourceCardAmount(r.Type, r.Quantity)).ToList(), request.Offered.Select(o => new ResourceCardAmount(o.Type, o.Quantity)).ToList());
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
@@ -38,7 +38,7 @@ public static class GameTradeEndpoints
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             TradeOfferId tradeOfferId = new() { Value = request.TradeOfferId };
             var cmd = new AcceptTradeCommand(gameId, playerId, tradeOfferId);
             var result = await handler.Handle(cmd, ct);
@@ -53,7 +53,7 @@ public static class GameTradeEndpoints
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             var cmd = new MaritimeTrade4to1Command(gameId, playerId, request.Discard, request.Request);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
@@ -67,7 +67,7 @@ public static class GameTradeEndpoints
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             var cmd = new MaritimeTrade3to1Command(gameId, playerId, request.Discard, request.Request);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
@@ -81,7 +81,7 @@ public static class GameTradeEndpoints
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             var cmd = new MaritimeTrade2to1Command(gameId, playerId, request.Discard, request.Request);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../api/client";
+import { Link, redirect } from "react-router";
 
 async function echo(content: string) {
   const { data, error } = await api.POST("/api/echo", {
@@ -10,7 +11,45 @@ async function echo(content: string) {
   return data;
 }
 
-function App() {
+async function createLobby() {
+  const { data, error } = await api.POST("/api/lobby/create");
+  if (error) throw error;
+  if (data) throw redirect(`lobby/${data}`);
+  return data;
+}
+
+function Home() {
+  const [lobby, setLobby] = useState<string>("");
+  return (
+    <div className="bg-gray-100 flex flex-col items-center justify-center">
+      <h1 className="text-4xl font-bold text-blue-600 mb-6">
+        Settlers of Crutan
+      </h1>
+      <button onClick={() => createLobby}>Create a game</button>
+      <div className="flex flex-row space-x-2">
+        <input
+          value={lobby}
+          className="p-1 border border-gray-400 rounded-sm"
+          onChange={(e) => setLobby(e.target.value)}
+        ></input>
+        <Link
+          to={`lobby/${lobby}`}
+          className="p-1 border rounded-sm border-gray-600"
+        >
+          Join lobby
+        </Link>
+      </div>
+      <h2>My Games</h2>
+      <ul>
+        <ol>Game 1</ol>
+        <ol>Game 2</ol>
+      </ul>
+    </div>
+  );
+}
+
+/*
+function Home() {
   const [statusText, setStatusText] = useState("");
   const [inputText, setInputText] = useState("");
   const [echoResponse, setEchoResponse] = useState("");
@@ -89,5 +128,6 @@ function App() {
     </div>
   );
 }
+  */
 
-export default App;
+export default Home;

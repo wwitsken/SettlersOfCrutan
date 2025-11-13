@@ -34,7 +34,7 @@ public static class BaseGameEndpoints
             ICommandHandler<JoinGameCommand, GameId> handler,
             CancellationToken ct) =>
         {
-            PlayerId playerId = new() { Value = userProvider.GetUserId() };
+            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             GameId gameId = new() { Value = id };
             var cmd = new JoinGameCommand(gameId, playerId);
             var result = await handler.Handle(cmd, ct);

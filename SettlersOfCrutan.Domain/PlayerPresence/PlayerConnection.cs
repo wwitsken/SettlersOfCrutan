@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace SettlersOfCrutan.Domain.PlayerPresence;
 
-public sealed record PlayerPresenceId : BaseId<Guid>;
+public sealed record PlayerPresenceId : BaseId<string>;
 public sealed record ConnectionId : BaseId<string>;
 
 public enum PresenceState
@@ -22,8 +22,10 @@ public sealed class PlayerPresence : AggregateRoot<PlayerPresenceId>
 {
     private readonly HashSet<string> _activeConnectionIds = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// PlayerPresenceID is the PlayerID = the User
+    /// </summary>
     public override PlayerPresenceId Id { get; init; }
-    public PlayerId PlayerId { get; }
     public IReadOnlyCollection<string> ActiveConnectionIds => _activeConnectionIds;
     public LobbyId? LobbyId { get; private set; }
     public GameId? GameId { get; private set; }
@@ -41,18 +43,16 @@ public sealed class PlayerPresence : AggregateRoot<PlayerPresenceId>
     [JsonConstructor]
     private PlayerPresence(
         PlayerPresenceId id,
-        PlayerId playerId,
         bool clearMembershipOnZeroConnections,
         DateTime nowUtc)
     {
         Id = id;
-        PlayerId = playerId;
         ClearMembershipOnZeroConnections = clearMembershipOnZeroConnections;
         LastSeenUtc = nowUtc;
     }
 
     public static PlayerPresence CreateNew(PlayerId playerId, bool clearMembershipOnZeroConnections, DateTime nowUtc)
-        => new(new() { Value = Guid.NewGuid() }, playerId, clearMembershipOnZeroConnections, nowUtc);
+        => new(new() { Value = playerId.Value }, clearMembershipOnZeroConnections, nowUtc);
 
     // --- Behavior ---
 
@@ -67,8 +67,8 @@ public sealed class PlayerPresence : AggregateRoot<PlayerPresenceId>
         if (_activeConnectionIds.Add(connectionId.Value))
         {
             LastSeenUtc = nowUtc;
-            AddDomainEvent(new PlayerConnected(PlayerId, connectionId, nowUtc));
-            if (wasOffline) AddDomainEvent(new PlayerPresenceBecameOnline(PlayerId, nowUtc));
+            AddDomainEvent(new PlayerConnected(new() { Value = Id.Value }, connectionId, nowUtc));
+            if (wasOffline) AddDomainEvent(new PlayerPresenceBecameOnline(new() { Value = Id.Value }, nowUtc));
         }
     }
 
@@ -77,11 +77,11 @@ public sealed class PlayerPresence : AggregateRoot<PlayerPresenceId>
         if (_activeConnectionIds.Remove(connectionId.Value))
         {
             LastSeenUtc = nowUtc;
-            AddDomainEvent(new PlayerDisconnected(PlayerId, connectionId, nowUtc));
+            AddDomainEvent(new PlayerDisconnected(new() { Value = Id.Value }, connectionId, nowUtc));
 
             if (_activeConnectionIds.Count == 0)
             {
-                AddDomainEvent(new PlayerPresenceBecameOffline(PlayerId, nowUtc));
+                AddDomainEvent(new PlayerPresenceBecameOffline(new() { Value = Id.Value }, nowUtc));
 
                 if (ClearMembershipOnZeroConnections)
                 {
@@ -98,8 +98,8 @@ public sealed class PlayerPresence : AggregateRoot<PlayerPresenceId>
         if (nowUtc - LastSeenUtc > timeout)
         {
             _activeConnectionIds.Clear();
-            AddDomainEvent(new PlayerPresenceTimedOut(PlayerId, LastSeenUtc, nowUtc));
-            AddDomainEvent(new PlayerPresenceBecameOffline(PlayerId, nowUtc));
+            AddDomainEvent(new PlayerPresenceTimedOut(new() { Value = Id.Value }, LastSeenUtc, nowUtc));
+            AddDomainEvent(new PlayerPresenceBecameOffline(new() { Value = Id.Value }, nowUtc));
 
             if (ClearMembershipOnZeroConnections)
             {
@@ -121,12 +121,12 @@ public sealed class PlayerPresence : AggregateRoot<PlayerPresenceId>
         if (LobbyId is LobbyId current)
         {
             LobbyId = null;
-            AddDomainEvent(new PlayerLeftLobby(PlayerId, current, nowUtc));
+            AddDomainEvent(new PlayerLeftLobby(new() { Value = Id.Value }, current, nowUtc));
         }
 
         LobbyId = lobbyId;
         LastSeenUtc = nowUtc;
-        AddDomainEvent(new PlayerJoinedLobby(PlayerId, lobbyId, nowUtc));
+        AddDomainEvent(new PlayerJoinedLobby(new() { Value = Id.Value }, lobbyId, nowUtc));
     }
 
     public void LeaveLobby(DateTime nowUtc)
@@ -135,7 +135,7 @@ public sealed class PlayerPresence : AggregateRoot<PlayerPresenceId>
         {
             LobbyId = null;
             LastSeenUtc = nowUtc;
-            AddDomainEvent(new PlayerLeftLobby(PlayerId, current, nowUtc));
+            AddDomainEvent(new PlayerLeftLobby(new() { Value = Id.Value }, current, nowUtc));
         }
     }
 
@@ -147,7 +147,7 @@ public sealed class PlayerPresence : AggregateRoot<PlayerPresenceId>
         if (LobbyId is LobbyId currentLobby)
         {
             LobbyId = null;
-            AddDomainEvent(new PlayerLeftLobby(PlayerId, currentLobby, nowUtc));
+            AddDomainEvent(new PlayerLeftLobby(new() { Value = Id.Value }, currentLobby, nowUtc));
         }
 
         if (GameId == gameId) return;
@@ -157,7 +157,7 @@ public sealed class PlayerPresence : AggregateRoot<PlayerPresenceId>
 
         GameId = gameId;
         LastSeenUtc = nowUtc;
-        AddDomainEvent(new PlayerJoinedGame(PlayerId, gameId, nowUtc));
+        AddDomainEvent(new PlayerJoinedGame(new() { Value = Id.Value }, gameId, nowUtc));
     }
 
     public void LeaveGame(DateTime nowUtc)
@@ -166,7 +166,7 @@ public sealed class PlayerPresence : AggregateRoot<PlayerPresenceId>
         {
             GameId = null;
             LastSeenUtc = nowUtc;
-            AddDomainEvent(new PlayerLeftGame(PlayerId, current, nowUtc));
+            AddDomainEvent(new PlayerLeftGame(new() { Value = Id.Value }, current, nowUtc));
         }
     }
 
@@ -181,9 +181,9 @@ public sealed class PlayerPresence : AggregateRoot<PlayerPresenceId>
         GameId = toGame;
         LastSeenUtc = nowUtc;
 
-        AddDomainEvent(new PlayerPromotedFromLobbyToGame(PlayerId, fromLobby, toGame, nowUtc));
-        AddDomainEvent(new PlayerLeftLobby(PlayerId, fromLobby, nowUtc));
-        AddDomainEvent(new PlayerJoinedGame(PlayerId, toGame, nowUtc));
+        AddDomainEvent(new PlayerPromotedFromLobbyToGame(new() { Value = Id.Value }, fromLobby, toGame, nowUtc));
+        AddDomainEvent(new PlayerLeftLobby(new() { Value = Id.Value }, fromLobby, nowUtc));
+        AddDomainEvent(new PlayerJoinedGame(new() { Value = Id.Value }, toGame, nowUtc));
     }
 
     private void ClearMembershipInternal(DateTime nowUtc, string cause)
@@ -191,12 +191,12 @@ public sealed class PlayerPresence : AggregateRoot<PlayerPresenceId>
         if (GameId is GameId g)
         {
             GameId = null;
-            AddDomainEvent(new PlayerLeftGame(PlayerId, g, nowUtc));
+            AddDomainEvent(new PlayerLeftGame(new() { Value = Id.Value }, g, nowUtc));
         }
         if (LobbyId is LobbyId l)
         {
             LobbyId = null;
-            AddDomainEvent(new PlayerLeftLobby(PlayerId, l, nowUtc));
+            AddDomainEvent(new PlayerLeftLobby(new() { Value = Id.Value }, l, nowUtc));
         }
     }
 

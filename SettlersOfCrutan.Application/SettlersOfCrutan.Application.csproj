@@ -19,6 +19,9 @@
     <Folder Include="Contracts\Games\" />
     <Folder Include="Lobbies\DomainEventHandlers\" />
     <Folder Include="Lobbies\DTOs\" />
+    <Folder Include="PlayerPresence\Commands\" />
+    <Folder Include="PlayerPresence\DomainEventHandlers\" />
+    <Folder Include="PlayerPresence\Queries\" />
   </ItemGroup>
 
 </Project>

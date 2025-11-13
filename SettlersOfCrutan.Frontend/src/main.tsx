@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import App from "./pages/App.tsx";
+import Home from "./pages/Home.tsx";
 import "./index.css";
 
 import { createBrowserRouter, RouterProvider } from "react-router";
@@ -11,17 +11,34 @@ import Logout from "./pages/Logout";
 import AppLayout from "./layouts/AppLayout.tsx";
 import AppBootstrap from "./components/AppBootstrap.tsx";
 import Forbidden from "./pages/Forbidden.tsx";
+import Lobby, { type LobbyData } from "./pages/Lobby.tsx";
+import { api } from "./api/client.ts";
 
 const router = createBrowserRouter([
   {
     Component: AppLayout,
     children: [
-      { index: true, Component: App },
+      { index: true, Component: Home },
       { path: "forbidden", Component: Forbidden },
       { path: "login", Component: Login },
       { path: "create-user", Component: CreateUser },
       { path: "reset-password", Component: ResetPassword },
       { path: "logout", Component: Logout },
+      {
+        path: "lobby/:lobbyId",
+        loader: async ({ params }): Promise<LobbyData> => {
+          if (!params.lobbyId) return { status: 404 };
+          const response = await api.GET("/api/lobby/{lobbyId}", {
+            params: {
+              path: {
+                lobbyId: params.lobbyId,
+              },
+            },
+          });
+          return { data: response.data, status: response.response.status };
+        },
+        Component: Lobby,
+      },
       { path: "preferences", element: <p>User Preferences</p> },
     ],
   },

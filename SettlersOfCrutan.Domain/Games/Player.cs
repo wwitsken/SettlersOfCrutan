@@ -16,7 +16,10 @@ public enum PlayerColor
     Brown,
     Purple
 }
-public record PlayerId : BaseId<string>;
+public record PlayerId : BaseId<string>
+{
+    public static PlayerId Create(string id) => new() { Value = id };
+}
 public class Player : Entity<PlayerId>
 {
     public override PlayerId Id { get; init; }

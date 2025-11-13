@@ -7,6 +7,7 @@ using System.Text.Json.Serialization;
 namespace SettlersOfCrutan.Domain.Lobbies;
 
 public record LobbyId : BaseId<Guid>;
+
 public class Lobby : AggregateRoot<LobbyId>
 {
     public override LobbyId Id { get; init; }
