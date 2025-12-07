@@ -18,6 +18,6 @@ public sealed class UserProvider(IHttpContextAccessor httpContextAccessor) : IUs
         Claim? id = http.User.FindFirst(ClaimTypes.NameIdentifier)
                  ?? http.User.FindFirst("sub");
 
-        return id?.ToString() ?? throw new InvalidOperationException("User id claim not found.");
+        return id?.Value ?? throw new InvalidOperationException("User id claim not found.");
     }
 }

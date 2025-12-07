@@ -1,6 +1,7 @@
 ﻿using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Lobbies.DomainEvents;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text.Json.Serialization;
 
@@ -15,15 +16,15 @@ public class Lobby : AggregateRoot<LobbyId>
     public bool IsOpen { get; private set; } = true;
     public int Capacity { get; private set; } = 4;
 
-    private readonly Dictionary<PlayerId, MemberState> _members = [];
-    public IReadOnlyDictionary<PlayerId, MemberState> Members => _members.ToImmutableDictionary();
-    public bool IsHost(PlayerId pid) => _members.TryGetValue(pid, out var m) && m.IsHost;
+    private readonly List<LobbyMember> _members = [];
+    public IReadOnlyList<LobbyMember> Members => [.. _members];
+    public bool IsHost(PlayerId pid) => _members.Any(m => m.Id == pid && m.IsHost);
 
     [JsonConstructor]
-    private Lobby(LobbyId id, Dictionary<PlayerId, MemberState> members, bool isOpen, DateTimeOffset dateCreated, int capacity)
+    private Lobby(LobbyId id, IReadOnlyList<LobbyMember> members, bool isOpen, DateTimeOffset dateCreated, int capacity)
     {
         Id = id;
-        _members = members ?? [];
+        _members = [.. members];
         IsOpen = isOpen;
         DateCreated = dateCreated;
         Capacity = capacity;
@@ -38,7 +39,7 @@ public class Lobby : AggregateRoot<LobbyId>
             DateTimeOffset.UtcNow,
             capacity: 4);
 
-        lobby._members.Add(host, MemberState.Host());
+        lobby._members.Add(LobbyMember.CreateHost(host, DateTime.Now));
         lobby.AddDomainEvent(new LobbyMemberAddedDomainEvent(lobby.Id, host));
         lobby.AddDomainEvent(new LobbyHostChangedDomainEvent(lobby.Id, host));
         return lobby;
@@ -52,27 +53,34 @@ public class Lobby : AggregateRoot<LobbyId>
     public Result<Nothing> AddMember(PlayerId playerId)
     {
         if (!IsOpen) return Result<Nothing>.Failure(new("LobbyClosed", "Lobby is closed."));
-        if (_members.ContainsKey(playerId)) return Result<Nothing>.Failure(new("AlreadyJoinedLobby", "Player is already in the lobby."));
+        if (_members.Any(m => m.PlayerId == playerId)) return Result<Nothing>.Failure(new("AlreadyJoinedLobby", "Player is already in the lobby."));
         if (_members.Count >= Capacity) return Result<Nothing>.Failure(new("LobbyFull", "Lobby is full."));
 
-        _members[playerId] = MemberState.Regular();
+        _members.Add(LobbyMember.CreateRegular(playerId, DateTime.Now));
         AddDomainEvent(new LobbyMemberAddedDomainEvent(Id, playerId));
         return Result.Success();
     }
 
     public Result<Nothing> RemoveMember(PlayerId playerId)
     {
-        if (!_members.Remove(playerId, out var removed))
+        var idx = _members.FindIndex(m => m.PlayerId == playerId);
+        if (idx < 0)
             return Result<Nothing>.Failure(new("NotInLobby", "Player is not in the lobby."));
+
+        var removed = _members[idx];
+        _members.RemoveAt(idx);
 
         AddDomainEvent(new LobbyMemberRemovedDomainEvent(Id, playerId));
 
         if (removed.IsHost && _members.Count > 0)
         {
             // simple policy: next joiner becomes host
-            var next = _members.Keys.First();
-            _members[next] = _members[next] with { IsHost = true };
-            AddDomainEvent(new LobbyHostChangedDomainEvent(Id, next));
+            var nextPlayer = _members[0];
+            if (nextPlayer is not null)
+            {
+                nextPlayer.SetHost(true);
+                AddDomainEvent(new LobbyHostChangedDomainEvent(Id, nextPlayer.PlayerId!));
+            }
         }
 
         return Result.Success();
@@ -80,11 +88,14 @@ public class Lobby : AggregateRoot<LobbyId>
 
     public Result<Nothing> SetReady(PlayerId playerId, bool ready)
     {
-        if (!_members.TryGetValue(playerId, out var m))
+        var idx = _members.FindIndex(m => m.PlayerId == playerId);
+        if (idx < 0)
             return Result<Nothing>.Failure(new("NotInLobby", "Player is not in the lobby."));
+
+        var m = _members[idx];
         if (m.IsReady == ready) return Result.Success();
 
-        _members[playerId] = m with { IsReady = ready };
+        m.SetReady(ready);
         AddDomainEvent(new LobbyMemberReadyStatusChangedDomainEvent(Id, playerId, ready));
         return Result.Success();
     }
@@ -92,12 +103,33 @@ public class Lobby : AggregateRoot<LobbyId>
     public void CloseLobby() => IsOpen = false;
     public void OpenLobby() => IsOpen = true;
 
-    public bool AllReady() => _members.Count > 0 && _members.Values.All(m => m.IsReady);
+    public bool AllReady() => _members.Count > 0 && _members.All(m => m.IsReady);
 }
 
 // Lobby-local state only
-public readonly record struct MemberState(bool IsHost, bool IsReady, string? DisplayName = null)
+public record MemberState(PlayerId PlayerId, bool IsHost, bool IsReady, string? DisplayName = null)
 {
-    public static MemberState Host(string? displayName = default) => new(true, false, displayName);
-    public static MemberState Regular(string? displayName = default) => new(false, false, displayName);
+    public static MemberState Host(PlayerId playerId, string? displayName = default) => new(playerId, true, false, displayName);
+    public static MemberState Regular(PlayerId playerId, string? displayName = default) => new(playerId, false, false, displayName);
 }
+
+public class LobbyMember(LobbyMemberId lobbyMemberId, PlayerId? playerId, bool? isHost, bool? isReady, DateTimeOffset? joined, string? displayName = null) : Entity<LobbyMemberId>
+{
+    public override LobbyMemberId Id { get; init; } = lobbyMemberId;
+    public PlayerId? PlayerId { get; private set; } = playerId;
+    public bool IsHost { get; private set; } = isHost ?? false;
+    public bool IsReady { get; private set; } = isReady ?? false;
+    public string? DisplayName { get; private set; } = displayName;
+    public DateTimeOffset? Joined { get; private set; } = joined;
+    public void SetReady(bool ready) => IsReady = ready;
+    public void SetDisplayName(string displayName) => DisplayName = displayName;
+    public void SetHost(bool isHost) => IsHost = isHost;
+    public static LobbyMember CreateHost(PlayerId playerId, DateTimeOffset joined, string? displayName = default) =>
+        new(new() { Value = Guid.NewGuid() }, playerId, true, false, joined, displayName);
+    public static LobbyMember CreateRegular() =>
+        new(new() { Value = Guid.NewGuid() }, default, false, false, default, default);
+    public static LobbyMember CreateRegular(PlayerId playerId, DateTimeOffset joined, string? displayName = default) =>
+        new(new() { Value = Guid.NewGuid() }, playerId, false, false, joined, displayName);
+}
+
+public record LobbyMemberId() : BaseId<Guid>;
