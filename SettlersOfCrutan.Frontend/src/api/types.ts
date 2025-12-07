@@ -925,7 +925,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": number;
+                        "application/json": number | string;
                     };
                 };
                 /** @description Bad Request */
@@ -1827,19 +1827,19 @@ export interface components {
         GameType: "baseGame" | "seafarers" | "citiesAndKnights" | "tradersAndBarbarians" | "explorersAndPirates";
         HexCoordDto: {
             /** Format: int32 */
-            q: number;
+            q: number | string;
             /** Format: int32 */
-            r: number;
+            r: number | string;
             /** Format: int32 */
-            s: number;
+            s: number | string;
         };
         HttpValidationProblemDetails: {
-            type?: string | null;
-            title?: string | null;
+            type?: null | string;
+            title?: null | string;
             /** Format: int32 */
-            status?: number | null;
-            detail?: string | null;
-            instance?: string | null;
+            status?: null | number | string;
+            detail?: null | string;
+            instance?: null | string;
             errors?: {
                 [key: string]: string[];
             };
@@ -1868,15 +1868,15 @@ export interface components {
         };
         OfferTradeRequest: {
             requested: components["schemas"]["ResourceCardAmountDto"][];
-            offered: unknown[];
+            offered: components["schemas"]["ResourceCardAmountDto"][];
         };
         ProblemDetails: {
-            type?: string | null;
-            title?: string | null;
+            type?: null | string;
+            title?: null | string;
             /** Format: int32 */
-            status?: number | null;
-            detail?: string | null;
-            instance?: string | null;
+            status?: null | number | string;
+            detail?: null | string;
+            instance?: null | string;
         };
         ResolveRobberRequest: {
             victimPlayerId: string;
@@ -1885,15 +1885,15 @@ export interface components {
         ResourceCardAmountDto: {
             type: components["schemas"]["ResourceCardType"];
             /** Format: int32 */
-            quantity: number;
+            quantity: number | string;
         };
         /** @enum {unknown} */
         ResourceCardType: "none" | "brick" | "lumber" | "wool" | "grain" | "ore" | "desert";
         RollDiceCommandResult: {
             /** Format: int32 */
-            dice1: number;
+            dice1: number | string;
             /** Format: int32 */
-            dice2: number;
+            dice2: number | string;
         };
         UpgradeSettlementToCityRequest: {
             vertexCoordinate: components["schemas"]["VertexCoordDto"];

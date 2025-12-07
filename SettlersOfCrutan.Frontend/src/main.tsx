@@ -20,16 +20,11 @@ const router = createBrowserRouter([
     Component: AppLayout,
     children: [
       { index: true, Component: Home },
-      {
-        path: "Account",
-        children: [
-          { path: "AccessDenied", Component: Forbidden },
-          { path: "Login", Component: Login },
-          { path: "CreateUser", Component: CreateUser },
-          { path: "ResetPassword", Component: ResetPassword },
-          { path: "Logout", Component: Logout },
-        ],
-      },
+      { path: "forbidden", Component: Forbidden },
+      { path: "login", Component: Login },
+      { path: "create-user", Component: CreateUser },
+      { path: "reset-password", Component: ResetPassword },
+      { path: "logout", Component: Logout },
       { path: "game/:gameId", Component: Game },
       {
         path: "lobby/:lobbyId",

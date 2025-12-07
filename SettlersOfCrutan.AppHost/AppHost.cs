@@ -21,14 +21,22 @@ if (builder.Environment.IsDevelopment())
 {
     storage.RunAsEmulator();
     api.WithScalar();
+
+    builder.AddNpmApp("frontend", "../SettlersOfCrutan.Frontend", scriptName: "dev")
+        .WithReference(api)
+        .WaitFor(api)
+        .WithEnvironment("BROWSER", "none")
+        .WithHttpEndpoint(env: "VITE_PORT")
+        .WithExternalHttpEndpoints();
+} else
+{
+    builder.AddNpmApp("frontend", "../SettlersOfCrutan.Frontend")
+        .WithReference(api)
+        .WaitFor(api)
+        .WithEnvironment("BROWSER", "none")
+        .WithHttpEndpoint(env: "VITE_PORT")
+        .WithExternalHttpEndpoints();
 }
 
-builder.AddNpmApp("frontend", "../SettlersOfCrutan.Frontend")
-    .WithReference(api)
-    .WaitFor(api)
-    .WithEnvironment("BROWSER", "none")
-    .WithHttpEndpoint(env: "VITE_PORT")
-    .WithExternalHttpEndpoints()
-    .PublishAsDockerFile();
 
 builder.Build().Run();
