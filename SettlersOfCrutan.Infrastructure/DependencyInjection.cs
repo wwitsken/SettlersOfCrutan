@@ -25,7 +25,7 @@ public static class DependencyInjection
         //services.AddScoped<ITodoListRepository, RedisTodoListRepository>();
         services.AddScoped<IGameRepository, RedisGameRepository>();
         services.AddScoped<ILobbyRepository, RedisLobbyRepository>();
-        services.AddScoped<IPlayerPresenceRepository, RedisPlayerPresenceRepository>();
+        //services.AddScoped<IPlayerPresenceRepository, RedisPlayerPresenceRepository>();
 
         // SignalR
         services.AddScoped<IRealtimePublisher, SignalRRealtimePublisher>();

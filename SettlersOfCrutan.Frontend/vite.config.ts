@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
             process.env.services__api__http__0,
           changeOrigin: true,
           secure: false,
+          ws: true,
         },
       },
     },

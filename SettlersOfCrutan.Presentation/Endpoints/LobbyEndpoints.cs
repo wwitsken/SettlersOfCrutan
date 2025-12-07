@@ -47,7 +47,6 @@ public static class LobbyEndpoints
             IHubContext<CrutanHub, ICrutanClient> hub,
             CancellationToken ct) =>
         {
-            /* TODO: Join the SignalR Group */
             var cmd = new JoinLobbyCommand(lobbyId, PlayerId.Create(userProvider.GetUserId()));
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
@@ -59,7 +58,6 @@ public static class LobbyEndpoints
             IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            /* TODO: Leave the SignalR Group */
             var cmd = new LeaveLobbyCommand(lobbyId, PlayerId.Create(userProvider.GetUserId()));
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
