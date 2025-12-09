@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Scalar.AspNetCore;
@@ -28,10 +29,9 @@ builder.Services.AddScoped<IUserProvider, UserProvider>();
 // Flatten BaseId value objects in HTTP JSON (responses and requests)
 builder.Services.AddHttpJsonSettings();
 
-builder.Services.AddApplicationCookie();
 builder.Services.AddApplicationIdentity();
 
-
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
@@ -64,6 +64,7 @@ app.MapGroup("api/")
 
 app.MapGet("/api/health", Results<Ok<string>, BadRequest> () => TypedResults.Ok($"OK at {DateTime.Now.ToShortTimeString()}"));
 app.MapPost("/api/echo", Results<Ok<string>, BadRequest> ([FromBody] string Message) => TypedResults.Ok($"Echo: {Message}"));
+app.MapGet("/api/test", Results<Ok<string>, BadRequest> () => TypedResults.Ok("Test endpoint is working")).RequireAuthorization();
 
 app.MapHub<CrutanHub>("/api/realtime-hub");
 

@@ -1,8 +1,6 @@
 ﻿using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Lobbies.DomainEvents;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Text.Json.Serialization;
 
 namespace SettlersOfCrutan.Domain.Lobbies;
@@ -105,31 +103,3 @@ public class Lobby : AggregateRoot<LobbyId>
 
     public bool AllReady() => _members.Count > 0 && _members.All(m => m.IsReady);
 }
-
-// Lobby-local state only
-public record MemberState(PlayerId PlayerId, bool IsHost, bool IsReady, string? DisplayName = null)
-{
-    public static MemberState Host(PlayerId playerId, string? displayName = default) => new(playerId, true, false, displayName);
-    public static MemberState Regular(PlayerId playerId, string? displayName = default) => new(playerId, false, false, displayName);
-}
-
-public class LobbyMember(LobbyMemberId lobbyMemberId, PlayerId? playerId, bool? isHost, bool? isReady, DateTimeOffset? joined, string? displayName = null) : Entity<LobbyMemberId>
-{
-    public override LobbyMemberId Id { get; init; } = lobbyMemberId;
-    public PlayerId? PlayerId { get; private set; } = playerId;
-    public bool IsHost { get; private set; } = isHost ?? false;
-    public bool IsReady { get; private set; } = isReady ?? false;
-    public string? DisplayName { get; private set; } = displayName;
-    public DateTimeOffset? Joined { get; private set; } = joined;
-    public void SetReady(bool ready) => IsReady = ready;
-    public void SetDisplayName(string displayName) => DisplayName = displayName;
-    public void SetHost(bool isHost) => IsHost = isHost;
-    public static LobbyMember CreateHost(PlayerId playerId, DateTimeOffset joined, string? displayName = default) =>
-        new(new() { Value = Guid.NewGuid() }, playerId, true, false, joined, displayName);
-    public static LobbyMember CreateRegular() =>
-        new(new() { Value = Guid.NewGuid() }, default, false, false, default, default);
-    public static LobbyMember CreateRegular(PlayerId playerId, DateTimeOffset joined, string? displayName = default) =>
-        new(new() { Value = Guid.NewGuid() }, playerId, false, false, joined, displayName);
-}
-
-public record LobbyMemberId() : BaseId<Guid>;

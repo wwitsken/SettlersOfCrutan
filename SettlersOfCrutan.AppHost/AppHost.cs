@@ -7,9 +7,12 @@ var redis = builder.AddRedis("redis");
 var storage = builder.AddAzureStorage("storage");
 var tables = storage.AddTables("tables");
 
+var frontendUri = builder.AddParameter("FrontendUri");
+
 var api = builder.AddProject<Projects.SettlersOfCrutan_Presentation>("api")
     .WithReference(redis)
     .WithReference(tables)
+    .WithEnvironment("FRONTEND_URI", frontendUri)
     .WaitFor(redis)
     .WaitFor(tables);
 
@@ -26,7 +29,7 @@ if (builder.Environment.IsDevelopment())
         .WithReference(api)
         .WaitFor(api)
         .WithEnvironment("BROWSER", "none")
-        .WithHttpEndpoint(env: "VITE_PORT")
+        .WithHttpEndpoint(port: 3000, env: "VITE_PORT")
         .WithExternalHttpEndpoints();
 } else
 {

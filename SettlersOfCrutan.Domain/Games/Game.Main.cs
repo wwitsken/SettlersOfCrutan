@@ -39,7 +39,7 @@ public partial class Game : AggregateRoot<GameId>
     [JsonConstructor]
     private Game(
         GameType gameType,
-        string name,
+        string gameName,
         Board board,
         GamePhase gamePhase,
         ResourceHand bankResourceHand,
@@ -54,7 +54,7 @@ public partial class Game : AggregateRoot<GameId>
     )
     {
         GameType = gameType;
-        GameName = name;
+        GameName = gameName;
         Board = board;
         GamePhase = gamePhase;
         BankResourceHand = bankResourceHand;

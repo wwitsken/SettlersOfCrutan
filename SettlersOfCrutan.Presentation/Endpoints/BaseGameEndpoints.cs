@@ -25,7 +25,7 @@ public static class BaseGameEndpoints
             var cmd = new CreateGameCommand(command.GameName, [.. command.UserIds], command.GameType);
             Result<GameId> result = await handler.Handle(cmd, ct);
             return result.UnwrapId<GameId, Guid>().ToHttpResult();
-        });
+        }).RequireAuthorization();
 
         group.MapPost("/{id:guid}/join", async Task<Results<Ok<Guid>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
@@ -39,7 +39,7 @@ public static class BaseGameEndpoints
             var cmd = new JoinGameCommand(gameId, playerId);
             var result = await handler.Handle(cmd, ct);
             return result.UnwrapId<GameId, Guid>().ToHttpResult();
-        });
+        }).RequireAuthorization();
 
         group.MapGet("/{id:guid}", async Task<IResult> (
             Guid id,
@@ -50,9 +50,7 @@ public static class BaseGameEndpoints
             var query = new GetGameByIdQuery(new GameId { Value = id });
             var result = await handler.Handle(query, ct);
             return result.ToHttpResult();
-        });
-
-        group.RequireAuthorization();
+        }).RequireAuthorization();
 
         return app;
     }
