@@ -1,25 +1,32 @@
 ﻿using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
 
 namespace SettlersOfCrutan.Application.Games.DomainEventHandlers;
-public sealed class InitialSettlementAndRoadPlacedDomainEventHandler(IRealtimePublisher realtimePublisher, ILogger<InitialSettlementAndRoadPlacedDomainEventHandler> logger)
+public sealed class InitialSettlementAndRoadPlacedDomainEventHandler(IRealtimePublisher realtimePublisher, IGameRepository gameRepository, ILogger<InitialSettlementAndRoadPlacedDomainEventHandler> logger)
     : IDomainEventHandler<InitialSettlementAndRoadPlacedDomainEvent>
 {
+    private readonly IGameRepository _gameRepository = gameRepository;
     private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
     private readonly ILogger<InitialSettlementAndRoadPlacedDomainEventHandler> _logger = logger;
 
     public async Task<Result<InitialSettlementAndRoadPlacedDomainEvent>> HandleAsync(InitialSettlementAndRoadPlacedDomainEvent domainEvent, CancellationToken ct = default)
     {
+        var game = await _gameRepository.GetAsync(domainEvent.GameId, ct);
+        if (game is null) return Result.Failure<InitialSettlementAndRoadPlacedDomainEvent>(DomainError.NotFound);
+        IReadOnlyList<string> recipients = [.. game.Players
+            .Select(p => p.Id.ToString())];
+
         var message = new InitialSettlementAndRoadPlacedMessage(
             domainEvent.GameId.Value,
             domainEvent.PlayerId.Value,
             domainEvent.Settlement.VertexCoordinate,
             domainEvent.Road.EdgeCoordinate);
 
-        await _realtimePublisher.ToGameAsync(domainEvent.GameId, nameof(InitialSettlementAndRoadPlacedDomainEvent), message, ct);
+        await _realtimePublisher.ToGameUsersAsync(domainEvent.GameId, recipients, nameof(InitialSettlementAndRoadPlacedDomainEvent), message, ct);
 
         _logger.LogInformation("Player has placed initial road and settlmenet successfully");
 

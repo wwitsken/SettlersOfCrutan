@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useParams } from "react-router";
-import { useLobbyStore } from "../lobbies/store";
+import { useLobbyStore } from "../stores/lobbyStore";
 
 function Lobby() {
   const params = useParams();
@@ -9,25 +9,10 @@ function Lobby() {
   const status = useLobbyStore((s) => s.status);
   const error = useLobbyStore((s) => s.error);
   const currentLobby = useLobbyStore((s) => s.currentLobby);
-  const loadLobby = useLobbyStore((s) => s.loadLobby);
   const joinLobby = useLobbyStore((s) => s.joinLobby);
   const leaveLobby = useLobbyStore((s) => s.leaveLobby);
   const setReady = useLobbyStore((s) => s.setReady);
   const setUnready = useLobbyStore((s) => s.setUnready);
-  const startRealtime = useLobbyStore((s) => s.startRealtime);
-  const stopRealtime = useLobbyStore((s) => s.stopRealtime);
-
-  useEffect(() => {
-    if (lobbyId) loadLobby(lobbyId);
-  }, [lobbyId, loadLobby]);
-
-  useEffect(() => {
-    if (!lobbyId) return;
-    startRealtime(lobbyId);
-    return () => {
-      stopRealtime();
-    };
-  }, [lobbyId, startRealtime, stopRealtime]);
 
   const me = useMemo(
     () => currentLobby?.lobbyPlayers?.find((p) => p.isMe),
@@ -38,7 +23,7 @@ function Lobby() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Catan Lobby</h1>
+      <h1 className="text-2xl font-semibold">Crutan Lobby</h1>
       <div className="text-sm text-gray-600">
         Lobby: {currentLobby?.lobbyId ?? lobbyId}
       </div>

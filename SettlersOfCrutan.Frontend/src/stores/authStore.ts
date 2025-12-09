@@ -1,10 +1,6 @@
 // src/auth/store.ts
 import { create } from "zustand";
-import {
-  subscribeWithSelector,
-  persist,
-  createJSONStorage,
-} from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { api } from "../api/client";
 
 export type User = {
@@ -37,12 +33,24 @@ type AuthState = {
 };
 
 export const useAuthStore = create<AuthState>()(
-  subscribeWithSelector(
-    persist(
-      (set, get) => ({
+  persist(
+    (set, get) => {
+      const setFromMe = async () => {
+        const { data, error } = await api.GET("/api/auth/me");
+        if (error) {
+          set({ status: "unauthenticated", user: null });
+          throw new Error(error);
+        }
+        set(
+          data
+            ? { status: "authenticated", user: { ...data } }
+            : { status: "unauthenticated", user: null }
+        );
+      };
+
+      return {
         status: "idle",
         user: null,
-
         isAuthed: () => get().status === "authenticated",
         hasRole: (role: string) =>
           get().status === "authenticated" &&
@@ -52,39 +60,13 @@ export const useAuthStore = create<AuthState>()(
           roles.some((r) => get().user?.roles.includes(r)),
 
         init: async () => {
-          // Avoid noisy re-fetch on every cold start: do a quick optimistic check
           if (get().status === "idle") set({ status: "loading" });
-
-          try {
-            const { data, error } = await api.GET("/api/auth/me");
-            if (error) {
-              console.error("error with init ", error);
-              set({ status: "unauthenticated", user: null });
-              throw new Error(error);
-            }
-            set(
-              data
-                ? { status: "authenticated", user: { ...data } }
-                : { status: "unauthenticated", user: null }
-            );
-          } catch (e) {
-            console.error("error with init ", e);
-            throw e;
-          }
+          await setFromMe();
         },
 
         refresh: async () => {
           set({ status: "loading" });
-          const { data, error } = await api.GET("/api/auth/me");
-          if (error) {
-            set({ status: "unauthenticated", user: null });
-            throw new Error(error);
-          }
-          set(
-            data
-              ? { status: "authenticated", user: { ...data } }
-              : { status: "unauthenticated", user: null }
-          );
+          await setFromMe();
         },
 
         login: async (body) => {
@@ -94,28 +76,19 @@ export const useAuthStore = create<AuthState>()(
             set({ status: "unauthenticated", user: null });
             throw new Error(error);
           }
-          const meRes = await api.GET("/api/auth/me");
-          if (meRes.error) {
-            set({ status: "unauthenticated", user: null });
-            throw new Error(error);
-          }
-          set(
-            meRes.data
-              ? { status: "authenticated", user: { ...meRes.data } }
-              : { status: "unauthenticated", user: null }
-          );
+          await setFromMe();
         },
 
         logout: async () => {
           await api.POST("/api/auth/logout");
           set({ status: "unauthenticated", user: null });
         },
-      }),
-      {
-        name: "auth", // persisted key
-        storage: createJSONStorage(() => sessionStorage),
-        partialize: (s) => ({ user: s.user, status: s.status }),
-      }
-    )
+      };
+    },
+    {
+      name: "auth",
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (s) => ({ user: s.user, status: s.status }),
+    }
   )
 );

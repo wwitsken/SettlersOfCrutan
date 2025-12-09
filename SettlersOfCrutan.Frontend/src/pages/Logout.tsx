@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
-import { useAuthStore } from "../auth/store";
+import { useAuthStore } from "../stores/authStore";
 
 export default function Logout() {
   const navigate = useNavigate();

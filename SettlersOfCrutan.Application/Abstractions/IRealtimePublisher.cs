@@ -4,7 +4,8 @@ using SettlersOfCrutan.Domain.Lobbies;
 namespace SettlersOfCrutan.Application.Abstractions;
 public interface IRealtimePublisher
 {
-    Task ToLobbyAsync(LobbyId lobbyId, string channel, object payload, CancellationToken ct = default);
-    Task ToGameAsync(GameId gameId, string channel, object payload, CancellationToken ct = default);
-    Task ToUserAsync(string userId, string channel, object payload, CancellationToken ct = default);
+    Task ToLobbyUserAsync(LobbyId lobbyId, string userId, string eventName, object payload, CancellationToken ct = default);
+    Task ToGameUserAsync(GameId gameId, string userId, string eventName, object payload, CancellationToken ct = default);
+    Task ToLobbyUsersAsync(LobbyId lobbyId, IReadOnlyList<string> userIds, string eventName, object payload, CancellationToken ct = default);
+    Task ToGameUsersAsync(GameId gameId, IReadOnlyList<string> userIds, string eventName, object payload, CancellationToken ct = default);
 }

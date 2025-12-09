@@ -17,7 +17,7 @@ public static class DependencyInjection
         services.AddScoped<IBoardGenerator, RandomBoardGenerator>();
         services.AddSingleton<StandardPriceCalculator>();
 
-        // Scan and register command handlers, query handlers, and domain event handlers
+        // Scan and register command handlers, query handlers
 
         // Switch to Implemented Interfaces to allow for validators to get injected
         services.Scan(scan => scan

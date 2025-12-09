@@ -1,7 +1,7 @@
 // src/auth/guards.tsx
 import { Navigate, Outlet, useLocation } from "react-router";
 import type { PropsWithChildren } from "react";
-import { useAuthStore } from "../auth/store";
+import { useAuthStore } from "../stores/authStore";
 
 export function RequireAuth({ children }: PropsWithChildren) {
   const status = useAuthStore((s) => s.status);

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 // import { api } from "../api/client";
-import { useAuthStore } from "../auth/store";
+import { useAuthStore } from "../stores/authStore";
 
 export default function Login() {
   const navigate = useNavigate();

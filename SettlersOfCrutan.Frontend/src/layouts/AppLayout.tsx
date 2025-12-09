@@ -1,5 +1,5 @@
 import { Outlet, Link } from "react-router";
-import { useAuthStore } from "../auth/store";
+import { useAuthStore } from "../stores/authStore";
 
 export default function AppLayout() {
   // Select booleans so conditional rendering works correctly

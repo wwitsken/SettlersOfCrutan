@@ -14,6 +14,7 @@ import Forbidden from "./pages/Forbidden.tsx";
 import Lobby from "./pages/Lobby.tsx";
 import { api } from "./api/client.ts";
 import Game from "./pages/Game.tsx";
+import { LobbyLayout } from "./layouts/LobbyLayout.tsx";
 
 const router = createBrowserRouter([
   {
@@ -28,18 +29,24 @@ const router = createBrowserRouter([
       { path: "game/:gameId", Component: Game },
       {
         path: "lobby/:lobbyId",
-        loader: async ({ params }) => {
-          if (!params.lobbyId) return { status: 404 };
-          const response = await api.GET("/api/lobby/{lobbyId}", {
-            params: {
-              path: {
-                lobbyId: params.lobbyId,
-              },
+        Component: LobbyLayout,
+        children: [
+          {
+            index: true,
+            loader: async ({ params }) => {
+              if (!params.lobbyId) return { status: 404 };
+              const response = await api.GET("/api/lobby/{lobbyId}", {
+                params: {
+                  path: {
+                    lobbyId: params.lobbyId,
+                  },
+                },
+              });
+              return { data: response.data, status: response.response.status };
             },
-          });
-          return { data: response.data, status: response.response.status };
-        },
-        Component: Lobby,
+            Component: Lobby,
+          },
+        ],
       },
       { path: "preferences", element: <p>User Preferences</p> },
     ],
