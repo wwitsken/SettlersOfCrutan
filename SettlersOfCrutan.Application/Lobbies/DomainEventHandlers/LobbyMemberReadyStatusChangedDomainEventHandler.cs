@@ -5,7 +5,7 @@ using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Lobbies;
 using SettlersOfCrutan.Domain.Lobbies.DomainEvents;
 
-namespace SettlersOfCrutan.Application.Games.DomainEventHandlers;
+namespace SettlersOfCrutan.Application.Lobbies.DomainEventHandlers;
 
 public sealed class LobbyMemberReadyStatusChangedDomainEventHandler(IRealtimePublisher realtimePublisher, ILobbyRepository lobbyRepository, ILogger<LobbyMemberReadyStatusChangedDomainEventHandler> logger)
     : IDomainEventHandler<LobbyMemberReadyStatusChangedDomainEvent>
@@ -25,10 +25,7 @@ public sealed class LobbyMemberReadyStatusChangedDomainEventHandler(IRealtimePub
             .Select(m => m.PlayerId!.Value.ToString())];
 
         var message = new LobbyMemberReadyStatusChangedPayload(domainEvent.UserId.ToString(), domainEvent.IsReady);
-
         await _realtimePublisher.ToLobbyUsersAsync(domainEvent.LobbyId, recipients, nameof(LobbyMemberReadyStatusChangedDomainEvent), message, ct);
-
-        _logger.LogInformation("Player has set themselves as ready or unready successfully!");
 
         return Result<LobbyMemberReadyStatusChangedDomainEvent>.Success(domainEvent);
     }

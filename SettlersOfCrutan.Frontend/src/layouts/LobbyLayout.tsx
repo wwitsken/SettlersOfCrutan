@@ -1,8 +1,12 @@
-// GameAreaLayout.tsx
 import { Outlet } from "react-router";
 import { useSignalR } from "../hooks/useSignalR";
+// import { useLobbyStore } from "../stores/lobbyStore";
 
 export function LobbyLayout() {
+  // const joinLobby = useLobbyStore((s) => s.joinLobby);
+  // const leaveLobby = useLobbyStore((s) => s.leaveLobby);
+  // const setReady = useLobbyStore((s) => s.setReady);
+  // const setUnready = useLobbyStore((s) => s.setUnready);
   const { isConnected, isConnecting, error } = useSignalR("/api/realtime-hub", {
     autoConnect: true,
     handlers: {
