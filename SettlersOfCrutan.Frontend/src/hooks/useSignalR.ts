@@ -1,5 +1,6 @@
 // hooks/useSignalR.ts
 import { useEffect, useRef, useState, useCallback } from "react";
+import { acquireAccessToken } from "../../authConfig";
 import * as signalR from "@microsoft/signalr";
 
 type HandlerMap = Record<string, (...args: any[]) => void>;
@@ -34,7 +35,9 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
     if (typeof window === "undefined") return;
 
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl(hubUrl, { withCredentials: true })
+      .withUrl(hubUrl, {
+        accessTokenFactory: () => acquireAccessToken(),
+      })
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Information)
       .build();
@@ -87,7 +90,7 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
       })();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hubUrl]); // note: handlers intentionally not in deps so they don't re-subscribe on every render
+  }, [hubUrl, acquireAccessToken]); // note: handlers intentionally not in deps so they don't re-subscribe on every render
 
   const start = useCallback(async () => {
     if (!connectionRef.current) return;

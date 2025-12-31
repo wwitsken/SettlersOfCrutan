@@ -26,7 +26,7 @@ public sealed class InitialSettlementAndRoadPlacedDomainEventHandler(IRealtimePu
             domainEvent.Settlement.VertexCoordinate,
             domainEvent.Road.EdgeCoordinate);
 
-        await _realtimePublisher.ToGameUsersAsync(domainEvent.GameId, recipients, nameof(InitialSettlementAndRoadPlacedDomainEvent), message, ct);
+        await _realtimePublisher.UpdateGameAsync(domainEvent.GameId, recipients, DateTimeOffset.Now, nameof(InitialSettlementAndRoadPlacedDomainEvent), message, ct);
 
         _logger.LogInformation("Player has placed initial road and settlmenet successfully");
 

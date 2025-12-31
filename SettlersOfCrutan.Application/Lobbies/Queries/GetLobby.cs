@@ -1,5 +1,5 @@
 ﻿using SettlersOfCrutan.Application.Abstractions;
-using SettlersOfCrutan.Application.Contracts.Lobbies;
+using SettlersOfCrutan.Application.Lobbies.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Lobbies;
@@ -20,10 +20,10 @@ public sealed class GetLobbyQueryHandler(ILobbyRepository lobbyRepository) : IQu
         var dto = new LobbyDto()
         {
             LobbyId = lobby.Id.Value,
-            LobbyPlayers = [.. lobby.Members.Select(p => new LobbyPlayerDto
+            LobbyMembers = [.. lobby.Members.Select(p => new LobbyMemberDto
             {
-                GameName = p.DisplayName ?? "",
-                IsMe = p.PlayerId == query.UserId,
+                Id = p.Id.ToString(),
+                DisplayName = p.DisplayName ?? "",
                 IsHost = p.IsHost,
                 IsReady = p.IsReady
             })]

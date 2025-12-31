@@ -269,6 +269,24 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
+                    content: {
+                        "application/json": components["schemas"]["GameDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
                     content?: never;
                 };
             };
@@ -1271,249 +1289,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["LoginRequest"];
-                };
-            };
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["UserInfoResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/change-password": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["ChangePasswordRequest"];
-                };
-            };
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/admin/create-user": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["AdminCreateUserRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": string;
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/admin/reset-password": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["AdminResetPasswordRequest"];
-                };
-            };
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/lobby/create": {
         parameters: {
             query?: never;
@@ -1830,12 +1605,11 @@ export interface components {
             /** Format: uuid */
             tradeOfferId: string;
         };
-        AdminCreateUserRequest: {
-            email: string;
-        };
-        AdminResetPasswordRequest: {
-            email: string;
-            newPassword: string;
+        BoardDto: {
+            hexes?: components["schemas"]["HexDto"][];
+            populationCenters?: components["schemas"]["PopulationCenterDto"][];
+            roads?: components["schemas"]["RoadDto"][];
+            ports?: components["schemas"]["PortDto"][];
         };
         BuildInitialRequest: {
             settlementVertexCoordinate: components["schemas"]["VertexCoordDto"];
@@ -1846,10 +1620,6 @@ export interface components {
         };
         BuildSettlementRequest: {
             vertexCoordinate: components["schemas"]["VertexCoordDto"];
-        };
-        ChangePasswordRequest: {
-            currentPassword: string;
-            newPassword: string;
         };
         CreateGameRequest: {
             gameName: string;
@@ -1865,6 +1635,31 @@ export interface components {
             hexCoord1: components["schemas"]["HexCoordDto"];
             hexCoord2: components["schemas"]["HexCoordDto"];
         };
+        GameDto: {
+            /** Format: uuid */
+            id?: string;
+            gameType: string;
+            gameName: string;
+            board: components["schemas"]["BoardDto"];
+            bankResourceHand?: {
+                [key: string]: number | string;
+            };
+            bankDevCardHand?: {
+                [key: string]: number | string;
+            };
+            /** Format: date-time */
+            turnExpiresAt?: null | string;
+            playerDirection?: components["schemas"]["PlayerDirection"];
+            gamePhase?: components["schemas"]["GamePhase"];
+            /** Format: int32 */
+            round?: number | string;
+            /** Format: int32 */
+            playerIndex?: number | string;
+            currentTradeOffer?: null | components["schemas"]["TradeOfferDto"];
+            players?: components["schemas"]["PublicPlayerDto"][];
+        };
+        /** @enum {unknown} */
+        GamePhase: "pendingStart" | "setup" | "rollDice" | "discardHalf" | "resolveRobber" | "tradeBuild" | "gameEnd";
         /** @enum {unknown} */
         GameType: "baseGame" | "seafarers" | "citiesAndKnights" | "tradersAndBarbarians" | "explorersAndPirates";
         HexCoordDto: {
@@ -1875,16 +1670,18 @@ export interface components {
             /** Format: int32 */
             s: number | string;
         };
-        HttpValidationProblemDetails: {
-            type?: null | string;
-            title?: null | string;
+        HexCoordinateDto: {
             /** Format: int32 */
-            status?: null | number | string;
-            detail?: null | string;
-            instance?: null | string;
-            errors?: {
-                [key: string]: string[];
-            };
+            q?: number | string;
+            /** Format: int32 */
+            r?: number | string;
+        };
+        HexDto: {
+            coordinate?: components["schemas"]["HexCoordinateDto"];
+            resource?: string;
+            /** Format: int32 */
+            numberToken?: number | string;
+            hasRobber?: boolean;
         };
         JoinGameRequest: {
             playerId: string;
@@ -1892,17 +1689,13 @@ export interface components {
         LobbyDto: {
             /** Format: uuid */
             lobbyId?: string;
-            lobbyPlayers?: components["schemas"]["LobbyPlayerDto"][];
+            lobbyMembers?: components["schemas"]["LobbyMemberDto"][];
         };
-        LobbyPlayerDto: {
-            gameName?: string;
-            isMe?: boolean;
+        LobbyMemberDto: {
+            id: string;
+            displayName?: string;
             isHost?: boolean;
             isReady?: boolean;
-        };
-        LoginRequest: {
-            email: string;
-            password: string;
         };
         MaritimeTradeRequest: {
             discard: components["schemas"]["ResourceCardType"];
@@ -1912,6 +1705,19 @@ export interface components {
             requested: components["schemas"]["ResourceCardAmountDto"][];
             offered: components["schemas"]["ResourceCardAmountDto"][];
         };
+        /** @enum {unknown} */
+        PlayerColor: "none" | "red" | "blue" | "white" | "orange" | "green" | "yellow" | "brown" | "purple";
+        /** @enum {unknown} */
+        PlayerDirection: "clockwise" | "counterClockwise";
+        PopulationCenterDto: {
+            coordinates?: components["schemas"]["HexCoordinateDto"][];
+            type?: string;
+            ownerId?: string;
+        };
+        PortDto: {
+            coordinates?: components["schemas"]["HexCoordinateDto"][];
+            type?: string;
+        };
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -1919,6 +1725,23 @@ export interface components {
             status?: null | number | string;
             detail?: null | string;
             instance?: null | string;
+        };
+        PublicPlayerDto: {
+            id: string;
+            /** Format: int32 */
+            playOrder: number | string;
+            isPlaying?: boolean;
+            displayName?: string;
+            playerColor?: components["schemas"]["PlayerColor"];
+            /** Format: int32 */
+            resourceCardCount?: number | string;
+            /** Format: int32 */
+            developmentCardCount?: number | string;
+            pieceReserve?: {
+                [key: string]: number | string;
+            };
+            /** Format: int32 */
+            discardRequirement?: number | string;
         };
         ResolveRobberRequest: {
             victimPlayerId: string;
@@ -1931,11 +1754,26 @@ export interface components {
         };
         /** @enum {unknown} */
         ResourceCardType: "none" | "brick" | "lumber" | "wool" | "grain" | "ore" | "desert";
+        RoadDto: {
+            coordinates?: components["schemas"]["HexCoordinateDto"][];
+            ownerId?: string;
+        };
         RollDiceCommandResult: {
             /** Format: int32 */
             dice1: number | string;
             /** Format: int32 */
             dice2: number | string;
+        };
+        TradeOfferDto: {
+            proposerId?: string;
+            acceptorId?: null | string;
+            requestedResources?: {
+                [key: string]: number | string;
+            };
+            offeredResources?: {
+                [key: string]: number | string;
+            };
+            isAccepted?: boolean;
         };
         UpgradeSettlementToCityRequest: {
             vertexCoordinate: components["schemas"]["VertexCoordDto"];
@@ -1948,11 +1786,6 @@ export interface components {
         UseMonopolyRequest: {
             playerId: string;
             resourceType: components["schemas"]["ResourceCardType"];
-        };
-        UserInfoResponse: {
-            userId: string;
-            email: string;
-            roles: string[];
         };
         UseRoadBuildingRequest: {
             playerId: string;

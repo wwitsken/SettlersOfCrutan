@@ -1,42 +1,64 @@
 import { create } from "zustand";
-import type { components } from "../api/types";
 import { immer } from "zustand/middleware/immer";
+import type { Lobby } from "../domain/lobby/lobby";
+import type { LobbyMember } from "../domain/lobby/lobbyMembers";
 
 type Status = "idle" | "loading" | "loaded" | "error";
 
 type State = {
   status: Status;
-  error?: string | null;
+  error?: string;
 
-  currentLobbyId: string | null;
-  currentLobby: components["schemas"]["LobbyDto"] | null;
+  currentLobby?: Lobby;
 };
 
 type Actions = {
-  setLobby: (lobby: components["schemas"]["LobbyDto"]) => void;
-  addLobbyMember: (playerId: string) => void;
-  removeLobbyMember: (playerId: string) => void;
-  changeLobbyMemberReadyStatus: (playerId: string, status: boolean) => void;
+  setLobby: (lobby: Lobby) => void;
+  addLobbyMember: (lobbyMember: LobbyMember) => void;
+  removeLobbyMember: (lobbyMemberId: string) => void;
+  changeLobbyMemberReadyStatus: (
+    lobbyMemberId: string,
+    status: boolean
+  ) => void;
   clear: () => void;
 };
 
 export const useLobbyStore = create<State & Actions>()(
   immer((set) => ({
     status: "idle",
-    error: null,
-    currentLobbyId: null,
-    currentLobby: null,
+    error: undefined,
+    currentLobby: undefined,
 
-    setLobby: (lobby: components["schemas"]["LobbyDto"]) => {
-      set({ currentLobby: lobby, currentLobbyId: lobby.lobbyId });
+    setLobby: (lobby) => {
+      set({ currentLobby: lobby });
     },
-    addLobbyMember: (playerId: string) => {
+    addLobbyMember: (lobbyMember) => {
       set((state) => {
-        state.currentLobby?.lobbyPlayers?.push();
+        state.currentLobby?.lobbyMembers?.push(lobbyMember);
       });
     },
-    removeLobbyMember: (playerId) => {},
-    changeLobbyMemberReadyStatus: (playerId, status) => {},
+    removeLobbyMember: (lobbyMemberId) => {
+      set((state) => {
+        if (!state.currentLobby || !state.currentLobby.lobbyMembers) return;
+        const idx = state.currentLobby.lobbyMembers.findIndex(
+          (m) => m.id === lobbyMemberId
+        );
+        if (idx !== -1) {
+          state.currentLobby.lobbyMembers.splice(idx, 1);
+        }
+      });
+    },
+    changeLobbyMemberReadyStatus: (lobbyMemberId, status) => {
+      set((state) => {
+        if (!state.currentLobby || !state.currentLobby.lobbyMembers) return;
+        const idx = state.currentLobby.lobbyMembers.findIndex(
+          (m) => m.id === lobbyMemberId
+        );
+        if (idx !== -1) {
+          state.currentLobby.lobbyMembers[idx].isReady = status;
+        }
+      });
+    },
     clear: () => {},
   }))
 );

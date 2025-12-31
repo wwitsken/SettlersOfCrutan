@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Games.Commands.Lifecycle;
+using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Application.Games.Queries;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
@@ -41,14 +42,14 @@ public static class BaseGameEndpoints
             return result.UnwrapId<GameId, Guid>().ToHttpResult();
         }).RequireAuthorization();
 
-        group.MapGet("/{id:guid}", async Task<IResult> (
+        group.MapGet("/{id:guid}", async Task<Results<Ok<GameDto>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
-            [FromServices] IQueryHandler<GetGameByIdQuery, Game> handler,
+            [FromServices] IQueryHandler<GetGameByIdQuery, GameDto> handler,
             IUserProvider userProvider,
             CancellationToken ct) =>
         {
             var query = new GetGameByIdQuery(new GameId { Value = id });
-            var result = await handler.Handle(query, ct);
+            Result<GameDto> result = await handler.Handle(query, ct);
             return result.ToHttpResult();
         }).RequireAuthorization();
 

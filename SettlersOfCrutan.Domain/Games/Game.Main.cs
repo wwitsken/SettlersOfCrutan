@@ -20,9 +20,6 @@ public partial class Game : AggregateRoot<GameId>
     public ResourceHand BankResourceHand { get; private set; } = ResourceHand.StandardBankResources();
     public DevCardHand BankDevCardHand { get; private set; } = DevCardHand.StandardBankDeck();
 
-    public bool AllPlayersJoined() => Players.All(p => p.JoinedAt is not null);
-    public bool AllPlayersReady() => Players.All(p => p.Ready);
-    public PlayerId CurrentPlayerId() => Players[PlayerIndex].Id;
     public DateTimeOffset? TurnExpiresAt { get; set; }
     public PlayerDirection PlayerDirection { get; set; } = PlayerDirection.Clockwise;
     public GamePhase GamePhase { get; set; }
@@ -35,6 +32,11 @@ public partial class Game : AggregateRoot<GameId>
 
     private readonly List<DiscardHalfRequirement> _discardHalfRequirements = [];
     public IReadOnlyList<DiscardHalfRequirement> DiscardHalfRequirements => [.. _discardHalfRequirements];
+
+
+    public bool AllPlayersJoined() => Players.All(p => p.JoinedAt is not null);
+    public bool AllPlayersReady() => Players.All(p => p.Ready);
+    public PlayerId CurrentPlayerId() => Players[PlayerIndex].Id;
 
     [JsonConstructor]
     private Game(

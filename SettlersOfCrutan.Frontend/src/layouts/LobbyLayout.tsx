@@ -7,6 +7,7 @@ export function LobbyLayout() {
   // const leaveLobby = useLobbyStore((s) => s.leaveLobby);
   // const setReady = useLobbyStore((s) => s.setReady);
   // const setUnready = useLobbyStore((s) => s.setUnready);
+
   const { isConnected, isConnecting, error } = useSignalR("/api/realtime-hub", {
     autoConnect: true,
     handlers: {

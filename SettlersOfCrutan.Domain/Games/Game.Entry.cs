@@ -61,7 +61,7 @@ public partial class Game
         if (p is null) return Result.Failure<PlayerId>(DomainError.PlayerNotFound(Id, playerId));
         if (p.Color == PlayerColor.None && ready)
             return Result.Failure<PlayerId>(DomainError.ColorMustSetBeforeReady);
-        if (string.IsNullOrEmpty(p.Name) && ready)
+        if (string.IsNullOrEmpty(p.DisplayName) && ready)
             return Result.Failure<PlayerId>(DomainError.NameMustSetBeforeReady);
         p.SetReady(ready);
         AddDomainEvent(new PlayerSetReadyDomainEvent(Id, playerId, ready));

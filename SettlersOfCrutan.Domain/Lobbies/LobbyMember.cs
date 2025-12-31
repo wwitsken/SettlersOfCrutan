@@ -8,10 +8,10 @@ public record LobbyMemberId() : BaseId<Guid>;
 public class LobbyMember : Entity<LobbyMemberId>
 {
     [JsonConstructor]
-    public LobbyMember(LobbyMemberId id, PlayerId? playerId, bool isHost, bool isReady, string? displayName, DateTimeOffset? joined)
+    public LobbyMember(LobbyMemberId id, string? userId, bool isHost, bool isReady, string? displayName, DateTimeOffset? joined)
     {
         Id = id;
-        PlayerId = playerId;
+        UserId = userId;
         IsHost = isHost;
         IsReady = isReady;
         DisplayName = displayName;
@@ -19,7 +19,7 @@ public class LobbyMember : Entity<LobbyMemberId>
     }
 
     public override LobbyMemberId Id { get; init; }
-    public PlayerId? PlayerId { get; private set; }
+    public string? UserId { get; private set; }
     public bool IsHost { get; private set; }
     public bool IsReady { get; private set; }
     public string? DisplayName { get; private set; }
@@ -27,10 +27,10 @@ public class LobbyMember : Entity<LobbyMemberId>
     public void SetReady(bool ready) => IsReady = ready;
     public void SetDisplayName(string displayName) => DisplayName = displayName;
     public void SetHost(bool isHost) => IsHost = isHost;
-    public static LobbyMember CreateHost(PlayerId playerId, DateTimeOffset joined, string? displayName = default) =>
-        new(new() { Value = Guid.NewGuid() }, playerId, true, false, displayName, joined);
+    public static LobbyMember CreateHost(string userId, DateTimeOffset joined, string? displayName = default) =>
+        new(new() { Value = Guid.NewGuid() }, userId, true, false, displayName, joined);
     public static LobbyMember CreateRegular() =>
         new(new() { Value = Guid.NewGuid() }, default, false, false, default, default);
-    public static LobbyMember CreateRegular(PlayerId playerId, DateTimeOffset joined, string? displayName = default) =>
-        new(new() { Value = Guid.NewGuid() }, playerId, false, false, displayName, joined);
+    public static LobbyMember CreateRegular(string userId, DateTimeOffset joined, string? displayName = default) =>
+        new(new() { Value = Guid.NewGuid() }, userId, false, false, displayName, joined);
 }

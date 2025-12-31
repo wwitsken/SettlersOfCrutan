@@ -2,14 +2,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using SettlersOfCrutan.Application.Abstractions;
-using SettlersOfCrutan.Application.Contracts.Lobbies;
 using SettlersOfCrutan.Application.Lobbies.Commands;
+using SettlersOfCrutan.Application.Lobbies.DTOs;
 using SettlersOfCrutan.Application.Lobbies.Queries;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Infrastructure.SignalR;
-using SettlersOfCrutan.Presentation.Auth;
 using SettlersOfCrutan.Presentation.Extensions;
+using SettlersOfCrutan.Presentation.Auth;
 
 namespace SettlersOfCrutan.Presentation.Endpoints;
 

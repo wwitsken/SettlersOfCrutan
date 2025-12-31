@@ -2,4 +2,4 @@
 using SettlersOfCrutan.Domain.Games;
 
 namespace SettlersOfCrutan.Domain.Lobbies.DomainEvents;
-public record LobbyMemberAddedDomainEvent(LobbyId LobbyId, PlayerId PlayerId) : IDomainEvent;
+public record LobbyMemberAddedDomainEvent(LobbyId LobbyId, LobbyMemberId LobbyMemberId) : IDomainEvent;
