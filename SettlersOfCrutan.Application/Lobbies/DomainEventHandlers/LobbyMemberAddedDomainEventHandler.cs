@@ -20,12 +20,11 @@ public sealed class LobbyMemberAddedDomainEventHandler(IRealtimePublisher realti
         Lobby? lobby = await _lobbyRepository.GetAsync(domainEvent.LobbyId, ct);
         if (lobby is null) return Result.Failure<LobbyMemberAddedDomainEvent>(DomainError.NotFound);
 
-        IReadOnlyList<string> recipients = [.. lobby.Members.Select(m => m.UserId).OfType<string>()];
+        var messages = LobbyDto.UserViewsFromLobby(lobby)
+            .Select(d => _realtimePublisher.UpdateLobbyAsync(domainEvent.LobbyId, d.Key, DateTimeOffset.Now, nameof(LobbyMemberAddedDomainEvent), d.Value, ct));
 
-        await _realtimePublisher.UpdateLobbyAsync(domainEvent.LobbyId, recipients, DateTimeOffset.Now, nameof(LobbyMemberAddedDomainEvent), LobbyDto.FromLobby(lobby), ct);
+        Task.WaitAll(messages, ct);
 
         return Result<LobbyMemberAddedDomainEvent>.Success(domainEvent);
     }
 }
-
-public sealed record LobbyMemberAddedPayload(string UserId);

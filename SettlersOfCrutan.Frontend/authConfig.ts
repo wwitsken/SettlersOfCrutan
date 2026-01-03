@@ -25,7 +25,6 @@ export const msalInstance = new PublicClientApplication(msalConfig);
 const scopes = [`api://${import.meta.env.VITE_AUTH_AUDIENCE}/access_as_user`];
 
 export const acquireAccessToken = async () => {
-  await msalInstance.initialize();
   const activeAccount = msalInstance.getActiveAccount(); // This will only return a non-null value if you have logic somewhere else that calls the setActiveAccount API
   const accounts = msalInstance.getAllAccounts();
 

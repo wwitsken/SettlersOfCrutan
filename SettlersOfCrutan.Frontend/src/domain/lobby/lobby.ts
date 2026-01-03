@@ -1,4 +1,4 @@
-import type { LobbyMember } from "./lobbyMembers";
+import type { LobbyMember } from "./lobbyMember";
 
 export type Lobby = {
   lobbyId: string;

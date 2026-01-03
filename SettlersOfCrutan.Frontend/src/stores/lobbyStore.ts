@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import type { Lobby } from "../domain/lobby/lobby";
-import type { LobbyMember } from "../domain/lobby/lobbyMembers";
+import type { LobbyMember } from "../domain/lobby/lobbyMember";
 
 type Status = "idle" | "loading" | "loaded" | "error";
 

@@ -16,18 +16,11 @@ public sealed class JoinLobbyCommandHandler(ILobbyRepository lobbyRepository) : 
         var lobby = await _lobbyRepository.GetAsync(new LobbyId() { Value = command.LobbyId }, ct);
         if (lobby is null) return Result<Nothing>.Failure(DomainError.NotFound);
 
-        //PlayerPresence? presence = await _playerPresenceRepository.GetAsync(new PlayerPresenceId() { Value = command.PlayerId.Value }, ct);
-        //presence ??= PlayerPresence.CreateNew(command.PlayerId, true, DateTime.Now);
-
-        //presence.JoinLobby(lobby.Id, DateTime.Now);
         var res = lobby.AddMember(command.PlayerId);
 
         if (res.IsFailure) return Result<Nothing>.Failure(res.Error);
 
-        // Could be a point of failure - what happens if one saves and the other doesn't?
         await _lobbyRepository.SaveAsync(lobby, ct);
-        //await _playerPresenceRepository.SaveAsync(presence, ct);
-
         return Result.Success();
     }
 }

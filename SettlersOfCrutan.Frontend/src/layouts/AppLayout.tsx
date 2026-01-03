@@ -18,14 +18,6 @@ export default function AppLayout() {
             <Link to="/" className="text-gray-700 hover:text-gray-900">
               Home
             </Link>
-            <AuthenticatedTemplate>
-              <Link
-                to="/preferences"
-                className="text-gray-700 hover:text-gray-900"
-              >
-                Preferences
-              </Link>
-            </AuthenticatedTemplate>
             <span className="text-gray-300">|</span>
             <UnauthenticatedTemplate>
               <button
@@ -41,12 +33,6 @@ export default function AppLayout() {
                 onClick={async () => await instance.logout()}
               >
                 Logout
-              </button>
-              <button
-                className="text-gray-700 hover:text-gray-900 cursor-pointer"
-                onClick={async () => await instance.getActiveAccount()}
-              >
-                Manage Account
               </button>
             </AuthenticatedTemplate>
           </nav>

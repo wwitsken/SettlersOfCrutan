@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { useLobbyStore } from "../stores/lobbyStore";
 import {
   AuthenticatedTemplate,
@@ -7,7 +7,7 @@ import {
 } from "@azure/msal-react";
 import { api } from "../api/client";
 
-function Home() {
+function HomePage() {
   const [lobby, setLobby] = useState<string>("");
   const navigate = useNavigate();
   const status = useLobbyStore((s) => s.status);
@@ -23,7 +23,7 @@ function Home() {
             const { data } = await api.POST("/api/lobby/create");
             if (data) navigate(`/lobby/${data}`);
           }}
-          className="mb-4 px-3 py-2 border rounded bg-white hover:bg-gray-50"
+          className="mb-4 px-3 py-2 border rounded bg-white hover:bg-gray-50 cursor-pointer"
           disabled={status === "loading"}
         >
           {status === "loading" ? "Creating…" : "Create a game"}
@@ -40,20 +40,12 @@ function Home() {
               // await joinLobby(lobby);
               navigate(`/lobby/${lobby}`);
             }}
-            className="p-1 border rounded-sm border-gray-600 bg-white hover:bg-gray-50"
+            className="p-1 border rounded-sm border-gray-600 bg-white hover:bg-gray-50 cursor-pointer"
             disabled={!lobby || status === "loading"}
           >
             {status === "loading" ? "Joining…" : "Join lobby"}
           </button>
-          <Link to={`lobby/${lobby}`} className="p-1 underline text-blue-700">
-            Open lobby page
-          </Link>
         </div>
-        <h2>My Games</h2>
-        <ul>
-          <ol>Game 1</ol>
-          <ol>Game 2</ol>
-        </ul>
       </AuthenticatedTemplate>
       <UnauthenticatedTemplate>
         <p>You gotta log in, bud</p>
@@ -63,4 +55,4 @@ function Home() {
   );
 }
 
-export default Home;
+export default HomePage;

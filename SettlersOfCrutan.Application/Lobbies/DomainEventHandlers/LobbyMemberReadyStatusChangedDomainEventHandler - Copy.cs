@@ -5,6 +5,7 @@ using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Lobbies;
 using SettlersOfCrutan.Domain.Lobbies.DomainEvents;
+using System.Linq;
 
 namespace SettlersOfCrutan.Application.Lobbies.DomainEventHandlers;
 
@@ -21,14 +22,11 @@ public sealed class LobbyMemberReadyStatusChangedDomainEventHandler(IRealtimePub
 
         if (lobby is null) return Result.Failure<LobbyMemberReadyStatusChangedDomainEvent>(DomainError.NotFound);
 
-        IReadOnlyList<string> recipients = [.. lobby.Members
-            .Where(m => m.UserId is not null /* && m.PlayerId != domainEvent.UserId */)
-            .Select(m => m.UserId!)];
+        var tasks = LobbyDto.UserViewsFromLobby(lobby)
+            .Select(d => _realtimePublisher.UpdateLobbyAsync(domainEvent.LobbyId, d.Key, DateTimeOffset.Now, nameof(LobbyMemberReadyStatusChangedDomainEvent), d.Value, ct));
 
-        await _realtimePublisher.UpdateLobbyAsync(domainEvent.LobbyId, recipients, DateTimeOffset.Now, nameof(LobbyMemberReadyStatusChangedDomainEvent), LobbyDto.FromLobby(lobby), ct);
+        Task.WaitAll(tasks, ct);
 
         return Result<LobbyMemberReadyStatusChangedDomainEvent>.Success(domainEvent);
     }
 }
-
-public sealed record LobbyMemberReadyStatusChangedPayload(string UserId, bool IsReady);

@@ -1,7 +1,7 @@
 // src/pages/Forbidden.tsx
 import { useNavigate } from "react-router";
 
-export default function Forbidden() {
+export default function ForbiddenPage() {
   const navigate = useNavigate();
 
   return (

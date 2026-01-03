@@ -44,11 +44,6 @@ public class Lobby : AggregateRoot<LobbyId>
         return lobby;
     }
 
-    /// <summary>
-    /// Admission rule: the application layer should already have verified the player's Presence:
-    /// - player is Online, and
-    /// - player is not in another lobby or is joining this one.
-    /// </summary>
     public Result<Nothing> AddMember(string userId)
     {
         if (!IsOpen) return Result<Nothing>.Failure(new("LobbyClosed", "Lobby is closed."));
@@ -100,8 +95,19 @@ public class Lobby : AggregateRoot<LobbyId>
         return Result.Success();
     }
 
-    public void CloseLobby() => IsOpen = false;
-    public void OpenLobby() => IsOpen = true;
+    public Result<Nothing> CanStartGame(string userId)
+    {
+        var idx = _members.FindIndex(m => m.UserId == userId);
+        if (idx < 0)
+            return Result.Failure(new("NotInLobby", "Player is not in the lobby."));
+        var m = _members[idx];
+        if (!m.IsHost)
+            return Result.Failure(new("NotHost", "Only the host can start the game."));
+        if (!AllReady())
+            return Result.Failure(new("NotAllReady", "Not all players are ready."));
 
-    public bool AllReady() => _members.Count > 0 && _members.All(m => m.IsReady);
+        return Result.Success();
+    }
+
+    private bool AllReady() => _members.Count > 0 && _members.All(m => m.IsReady);
 }

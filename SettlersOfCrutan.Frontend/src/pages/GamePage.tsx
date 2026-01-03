@@ -1,4 +1,4 @@
-function Game() {
+function GamePage() {
   return (
     <div>
       <h1>Game</h1>
@@ -6,4 +6,4 @@ function Game() {
   );
 }
 
-export default Game;
+export default GamePage;

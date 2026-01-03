@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Infrastructure;
@@ -36,6 +37,35 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         jwtOptions.Authority = Environment.GetEnvironmentVariable("AUTH_AUTHORITY");
         jwtOptions.Audience = Environment.GetEnvironmentVariable("AUTH_AUDIENCE");
+
+        // We have to hook the OnMessageReceived event in order to
+        // allow the JWT authentication handler to read the access
+        // token from the query string when a WebSocket or 
+        // Server-Sent Events request comes in.
+
+        // Sending the access token in the query string is required when using WebSockets or ServerSentEvents
+        // due to a limitation in Browser APIs. We restrict it to only calls to the
+        // SignalR hub in this code.
+        // See https://docs.microsoft.com/aspnet/core/signalr/security#access-token-logging
+        // for more information about security considerations when using
+        // the query string to transmit the access token.
+        jwtOptions.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                // If the request is for our hub...
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    (path.StartsWithSegments("/api/realtime-hub")))
+                {
+                    // Read the token out of the query string
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 builder.Services.AddAuthorization();
 

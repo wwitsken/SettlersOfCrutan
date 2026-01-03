@@ -28,4 +28,9 @@ public sealed class SignalRRealtimePublisher(IHubContext<CrutanHub, ICrutanClien
     {
         return _hub.Clients.Users(userIds).GameReceive(gameId.Value.ToString(), timestamp, eventName, payload);
     }
+
+    public Task MoveFromLobbyToGameAsync(LobbyId lobbyId, GameId gameId, IReadOnlyList<string> userIds, DateTimeOffset timestamp, CancellationToken ct = default)
+    {
+        return _hub.Clients.Users(userIds).MoveFromLobbyToGame(lobbyId.Value.ToString(), gameId.Value.ToString(), timestamp);
+    }
 }

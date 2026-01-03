@@ -4,6 +4,7 @@ using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Games.Commands.Lifecycle;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Application.Games.Queries;
+using SettlersOfCrutan.Application.Lobbies.Commands;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Presentation.Auth;
@@ -17,16 +18,6 @@ public static class BaseGameEndpoints
     public static IEndpointRouteBuilder MapBaseGameEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/games").WithTags("Game:Lifecycle");
-
-        group.MapPost("/create", async Task<Results<Ok<Guid>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
-            [FromBody] CreateGameRequest command,
-            ICommandHandler<CreateGameCommand, GameId> handler,
-            CancellationToken ct) =>
-        {
-            var cmd = new CreateGameCommand(command.GameName, [.. command.UserIds], command.GameType);
-            Result<GameId> result = await handler.Handle(cmd, ct);
-            return result.UnwrapId<GameId, Guid>().ToHttpResult();
-        }).RequireAuthorization();
 
         group.MapPost("/{id:guid}/join", async Task<Results<Ok<Guid>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,

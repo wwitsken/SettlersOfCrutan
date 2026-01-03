@@ -134,61 +134,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/games/create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["CreateGameRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": string;
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/games/{id}/join": {
         parameters: {
             query?: never;
@@ -1597,6 +1542,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/lobby/{lobbyId}/start-game": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    lobbyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StartGameFromLobbyRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": string;
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1620,11 +1622,6 @@ export interface components {
         };
         BuildSettlementRequest: {
             vertexCoordinate: components["schemas"]["VertexCoordDto"];
-        };
-        CreateGameRequest: {
-            gameName: string;
-            userIds: string[];
-            gameType: components["schemas"]["GameType"];
         };
         /** @enum {unknown} */
         DevelopmentCardType: "knight" | "victoryPoint" | "roadBuilding" | "yearOfPlenty" | "monopoly";
@@ -1696,6 +1693,7 @@ export interface components {
             displayName?: string;
             isHost?: boolean;
             isReady?: boolean;
+            isMe?: boolean;
         };
         MaritimeTradeRequest: {
             discard: components["schemas"]["ResourceCardType"];
@@ -1763,6 +1761,11 @@ export interface components {
             dice1: number | string;
             /** Format: int32 */
             dice2: number | string;
+        };
+        StartGameFromLobbyRequest: {
+            gameType: components["schemas"]["GameType"];
+            /** @default Crutan Game */
+            gameName: null | string;
         };
         TradeOfferDto: {
             proposerId?: string;
