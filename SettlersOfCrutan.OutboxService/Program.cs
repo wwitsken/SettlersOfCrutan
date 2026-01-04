@@ -1,3 +1,4 @@
+using Quartz;
 using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Infrastructure;
 using SettlersOfCrutan.Infrastructure.Redis;
@@ -10,12 +11,31 @@ builder.Services.Configure<RedisOptions>(builder.Configuration.GetSection("Redis
 
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices();
-builder.Services.AddScoped<ProcessOutboxMessagesJob>();
-builder.Services.AddHostedService<OutboxBackgroundService>();
-builder.Services.AddSignalR().AddStackExchangeRedis(builder.Configuration.GetConnectionString("redis")!);
 
-builder.Services.AddOpenTelemetry()
-    .WithTracing(tracing => tracing.AddSource(OutboxBackgroundService.ActivitySourceName));
+// Outbox processing
+builder.Services.AddScoped<ProcessOutboxMessagesJob>();
+
+builder.Services.AddQuartz(q =>
+{
+    var jobKey = new JobKey(nameof(OutboxPollingQuartzJob));
+
+    q.AddJob<OutboxPollingQuartzJob>(opts => opts.WithIdentity(jobKey));
+
+    q.AddTrigger(opts => opts
+        .ForJob(jobKey)
+        .WithIdentity($"{nameof(OutboxPollingQuartzJob)}-trigger")
+        .StartNow()
+        .WithSimpleSchedule(x => x
+            .WithInterval(TimeSpan.FromSeconds(1))
+            .RepeatForever()));
+});
+
+builder.Services.AddQuartzHostedService(options =>
+{
+    options.WaitForJobsToComplete = true;
+});
+
+builder.Services.AddSignalR().AddStackExchangeRedis(builder.Configuration.GetConnectionString("redis")!);
 
 var host = builder.Build();
 host.Run();

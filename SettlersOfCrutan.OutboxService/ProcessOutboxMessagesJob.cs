@@ -8,266 +8,179 @@ using System.Text.Json;
 
 namespace SettlersOfCrutan.OutboxService;
 
-// Processes domain events from Redis Streams using consumer groups with:
-// - Blocking reads (XREADGROUP ... BLOCK) for low-latency event-driven consumption
-// - Retries via PEL + XAUTOCLAIM with attempts tracked in a Redis hash
-// - Poison-queue after exceeding max attempts
+// Processes domain events from the global outbox Redis Stream using intermittent polling.
+// - Intended to be triggered by a scheduler (Quartz)
+// - Tracks failures in a Redis hash for retries
+// - Dead-letters after exceeding max attempts
 public class ProcessOutboxMessagesJob(IDomainEventPublisher publisher, IOptions<RedisOptions> options)
 {
     private readonly IDomainEventPublisher _publisher = publisher;
     private readonly RedisOptions _options = options?.Value ?? new RedisOptions();
 
-    private const string Group = "outbox-consumers";
-    private readonly string _consumer = $"worker-{Environment.MachineName}-{Environment.ProcessId}";
-
     private const int BatchSize = 50;
     private const int MaxAttempts = 5;
 
-    private const int BlockMs = 4_000;   // XREADGROUP BLOCK time (must be < client command timeout)
-    private const int AutoClaimIdleMs = 60_000; // idle time before claiming from PEL
-    private const int AutoClaimBatch = 100;
-
-    public async Task Execute(IDatabase db)
+    public async Task ExecuteOnce(IDatabase db, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(db);
 
         var outbox = RedisKeys.Outbox(_options.KeyPrefix);
         var poison = RedisKeys.OutboxPoison(_options.KeyPrefix);
         var attemptsHash = RedisKeys.OutboxAttemptsHash(_options.KeyPrefix);
+        var cursorKey = GetCursorKey(_options.KeyPrefix);
 
-        await EnsureGroupAsync(db, outbox);
+        var lastId = await LoadCursorAsync(db, cursorKey, outbox);
+        var entries = await ReadBatchAsync(db, outbox, lastId);
 
-        // Main loop: block for new messages, then re-process idle PEL entries
-        while (true)
+        foreach (var entry in entries)
         {
-            var newEntries = await ReadNewAsync(db, outbox);
-            if (newEntries.Length > 0)
-            {
-                foreach (var entry in newEntries)
-                    await ProcessNewAsync(db, outbox, poison, entry);
-            }
+            ct.ThrowIfCancellationRequested();
 
-            await ReprocessIdlePendingAsync(db, outbox, poison, attemptsHash);
+            lastId = entry.Id;
+            await ProcessEntryAsync(db, outbox, poison, attemptsHash, entry);
         }
+
+        if (entries.Length > 0)
+            await SaveCursorAsync(db, cursorKey, lastId);
     }
 
-    // --- High-level steps ----------------------------------------------------
+    // --- Cursor --------------------------------------------------------------
 
-    private static async Task EnsureGroupAsync(IDatabase db, RedisKey stream)
+    private static RedisKey GetCursorKey(string prefix) => $"{prefix}:outbox:cursor";
+
+    private static async Task<RedisValue> LoadCursorAsync(IDatabase db, RedisKey cursorKey, RedisKey outboxStream)
+    {
+        var existing = await db.StringGetAsync(cursorKey);
+        if (existing.HasValue) return existing;
+
+        var latest = await GetLatestIdAsync(db, outboxStream);
+        await db.StringSetAsync(cursorKey, latest);
+        return latest;
+    }
+
+    private static Task<bool> SaveCursorAsync(IDatabase db, RedisKey cursorKey, RedisValue lastId)
+        => db.StringSetAsync(cursorKey, lastId);
+
+    // --- Polling -------------------------------------------------------------
+
+    private static async Task<RedisValue> GetLatestIdAsync(IDatabase db, RedisKey stream)
     {
         try
         {
-            await db.StreamCreateConsumerGroupAsync(stream, Group, position: "$", createStream: true);
+            var info = await db.StreamInfoAsync(stream);
+            return info.LastGeneratedId;
         }
-        catch (RedisServerException ex) when (ex.Message.Contains("BUSYGROUP", StringComparison.OrdinalIgnoreCase))
+        catch
         {
-            // already exists
+            return "0-0";
         }
     }
 
-    private async Task<StreamEntry[]> ReadNewAsync(IDatabase db, RedisKey stream)
+    private static async Task<StreamEntry[]> ReadBatchAsync(IDatabase db, RedisKey stream, RedisValue lastId)
     {
-        // XREADGROUP GROUP <group> <consumer> COUNT <n> BLOCK <ms> STREAMS <stream> >
-        var args = new object?[] { "GROUP", Group, _consumer, "BLOCK", BlockMs, "COUNT", BatchSize, "STREAMS", stream, ">" };
-        var result = await db.ExecuteAsync("XREADGROUP", args);
-        if (result.IsNull) return [];
-        return ParseXReadResult(result);
+        var result = await db.StreamReadAsync(stream, lastId, BatchSize);
+        return result ?? [];
     }
 
-    private async Task ProcessNewAsync(IDatabase db, RedisKey stream, RedisKey poison, StreamEntry entry)
+    // --- Processing ----------------------------------------------------------
+
+    private async Task ProcessEntryAsync(IDatabase db, RedisKey stream, RedisKey poison, RedisKey attemptsHash, StreamEntry entry)
     {
         var id = entry.Id;
 
-        if (!TryGetEnvelope(entry, out var envelope, out var reason))
+        if (!TryGetEnvelope(entry, out var envelope, out var badEnvelopeReason))
         {
-            await DeadLetterAsync(db, poison, id, reason!, GetField(entry, "payload"));
-            await AckAndDeleteAsync(db, stream, id);
+            await DeadLetterAsync(db, poison, id, badEnvelopeReason!, GetField(entry, "payload"));
+            await DeleteAsync(db, stream, id);
+            await db.HashDeleteAsync(attemptsHash, id);
             return;
         }
 
         if (!TryDeserializeEvent(envelope, out var domainEvent, out var badType))
         {
             await DeadLetterAsync(db, poison, id, $"UnknownEventType:{badType}", envelope.Payload);
-            await AckAndDeleteAsync(db, stream, id);
+            await DeleteAsync(db, stream, id);
+            await db.HashDeleteAsync(attemptsHash, id);
             return;
         }
 
         try
         {
             await _publisher.PublishAsync(domainEvent!);
-            await AcknowledgeAsync(db, stream, id);
+            await DeleteAsync(db, stream, id);
+            await db.HashDeleteAsync(attemptsHash, id);
         }
         catch
         {
-            // Leave un-ACKed -> remains in PEL for later XAUTOCLAIM
-        }
-    }
-
-    private async Task ReprocessIdlePendingAsync(IDatabase db, RedisKey stream, RedisKey poison, RedisKey attemptsHash)
-    {
-        var entries = await AutoClaimAsync(db, stream);
-        if (entries.Length == 0) return;
-
-        foreach (var entry in entries)
-        {
-            var id = entry.Id;
-
-            // Read attempts
-            int attempts = 0;
-            var attemptsVal = await db.HashGetAsync(attemptsHash, id);
-            if (attemptsVal.HasValue && int.TryParse(attemptsVal.ToString(), out var parsed)) attempts = parsed;
-
+            var attempts = await db.HashIncrementAsync(attemptsHash, id, 1);
             if (attempts >= MaxAttempts)
             {
                 await DeadLetterAsync(db, poison, id, "MaxRetriesExceeded", GetField(entry, "payload"));
-                await AckAndDeleteAsync(db, stream, id);
-                await db.HashDeleteAsync(attemptsHash, id);
-                continue;
-            }
-
-            // Try processing again
-            try
-            {
-                if (!TryGetEnvelope(entry, out var env, out var reason))
-                {
-                    await DeadLetterAsync(db, poison, id, reason!, GetField(entry, "payload"));
-                    await AckAndDeleteAsync(db, stream, id);
-                    await db.HashDeleteAsync(attemptsHash, id);
-                    continue;
-                }
-
-                if (!TryDeserializeEvent(env, out var ev, out var badType))
-                {
-                    await DeadLetterAsync(db, poison, id, $"UnknownEventType:{badType}", env.Payload);
-                    await AckAndDeleteAsync(db, stream, id);
-                    await db.HashDeleteAsync(attemptsHash, id);
-                    continue;
-                }
-
-                await _publisher.PublishAsync(ev!);
-
-                await AcknowledgeAsync(db, stream, id);
+                await DeleteAsync(db, stream, id);
                 await db.HashDeleteAsync(attemptsHash, id);
             }
-            catch
-            {
-                // Increment attempts and keep in PEL
-                await db.HashIncrementAsync(attemptsHash, id, 1);
-            }
         }
     }
 
-    // --- Redis wrappers -------------------------------------------------------
+    private static Task<long> DeleteAsync(IDatabase db, RedisKey stream, RedisValue id)
+        => db.StreamDeleteAsync(stream, [id]);
 
-    private static StreamEntry[] ParseXReadResult(in RedisResult result)
-    {
-        // [ [ stream , [ [id, [field, value, ...]], ... ] ] ]
-        try
-        {
-            var outer = (RedisResult[])result;
-            if (outer is null || outer.Length == 0) return [];
-
-            var list = new List<StreamEntry>();
-            foreach (var streamRes in outer)
-            {
-                var streamArr = (RedisResult[])streamRes;
-                if (streamArr is null || streamArr.Length < 2) continue;
-
-                var entriesArr = (RedisResult[])streamArr[1];
-                if (entriesArr is null || entriesArr.Length == 0) continue;
-
-                foreach (var entryRes in entriesArr)
-                {
-                    var entryArr = (RedisResult[])entryRes;
-                    if (entryArr is null || entryArr.Length < 2) continue;
-
-                    var id = (string)entryArr[0];
-                    var fieldsArr = (RedisResult[])entryArr[1];
-
-                    var values = new List<NameValueEntry>();
-                    for (int i = 0; i < fieldsArr.Length - 1; i += 2)
-                    {
-                        values.Add(new NameValueEntry((string)fieldsArr[i], (string)fieldsArr[i + 1]));
-                    }
-                    list.Add(new StreamEntry(id, [.. values]));
-                }
-            }
-            return [.. list];
-        }
-        catch { return []; }
-    }
-
-    private static async Task<StreamEntry[]> AutoClaimAsync(IDatabase db, RedisKey stream)
-    {
-        // XAUTOCLAIM <stream> <group> <consumer> <min-idle> 0-0 COUNT <batch>
-        var args = new object?[] { stream, Group, ConsumerStatic, AutoClaimIdleMs, "0-0", "COUNT", AutoClaimBatch };
-        var result = await db.ExecuteAsync("XAUTOCLAIM", args);
-        if (result.IsNull) return [];
-        return ParseXAutoClaimResult(result);
-    }
-
-    private static StreamEntry[] ParseXAutoClaimResult(in RedisResult result)
-    {
-        // [ nextStartId, [ [id, [field, value, ...]], ... ] ]
-        try
-        {
-            var arr = (RedisResult[])result;
-            if (arr is null || arr.Length < 2) return [];
-
-            var entriesArr = (RedisResult[])arr[1];
-            if (entriesArr is null || entriesArr.Length == 0) return [];
-
-            var list = new List<StreamEntry>(entriesArr.Length);
-            foreach (var entryRes in entriesArr)
-            {
-                var entryArr = (RedisResult[])entryRes;
-                if (entryArr is null || entryArr.Length < 2) continue;
-
-                var id = (string)entryArr[0];
-                var fieldsArr = (RedisResult[])entryArr[1];
-
-                var values = new List<NameValueEntry>();
-                for (int i = 0; i < fieldsArr.Length - 1; i += 2)
-                {
-                    values.Add(new NameValueEntry((string)fieldsArr[i], (string)fieldsArr[i + 1]));
-                }
-                list.Add(new StreamEntry(id, [.. values]));
-            }
-            return [.. list];
-        }
-        catch { return []; }
-    }
-
-    private static async Task AcknowledgeAsync(IDatabase db, RedisKey stream, RedisValue id)
-        => await db.StreamAcknowledgeAsync(stream, Group, id);
-
-    private static async Task AckAndDeleteAsync(IDatabase db, RedisKey stream, RedisValue id)
-    {
-        await AcknowledgeAsync(db, stream, id);
-        await db.StreamDeleteAsync(stream, [id]);
-    }
-
-    private static async Task DeadLetterAsync(IDatabase db, RedisKey poison, RedisValue id, string reason, string? payload)
-        => await db.StreamAddAsync(poison, [new("origId", id), new("reason", reason), new("payload", payload ?? string.Empty)]);
+    private static Task<RedisValue> DeadLetterAsync(IDatabase db, RedisKey poison, RedisValue id, string reason, string? payload)
+        => db.StreamAddAsync(poison, [new("origId", id), new("reason", reason), new("payload", payload ?? string.Empty)]);
 
     // --- Envelope + Event helpers --------------------------------------------
 
     private static bool TryGetEnvelope(in StreamEntry entry, out OutboxEnvelope? env, out string? reason)
     {
-        env = null; reason = null;
+        env = null;
+        reason = null;
+
         var payload = GetField(entry, "payload");
-        if (string.IsNullOrWhiteSpace(payload)) { reason = "InvalidEnvelope"; return false; }
-        try { env = JsonSerializer.Deserialize<OutboxEnvelope>(payload!, JsonOptions.Default); return env is not null; }
-        catch { reason = "InvalidEnvelope"; return false; }
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            reason = "InvalidEnvelope";
+            return false;
+        }
+
+        try
+        {
+            env = JsonSerializer.Deserialize<OutboxEnvelope>(payload!, JsonOptions.Default);
+            if (env is null)
+            {
+                reason = "InvalidEnvelope";
+                return false;
+            }
+            return true;
+        }
+        catch
+        {
+            reason = "InvalidEnvelope";
+            return false;
+        }
     }
 
     private static bool TryDeserializeEvent(OutboxEnvelope env, out IDomainEvent? ev, out string? badType)
     {
-        ev = null; badType = null;
+        ev = null;
+        badType = null;
+
         var type = ResolveType(env.EventType);
-        if (type is null) { badType = env.EventType; return false; }
-        try { ev = JsonSerializer.Deserialize(env.Payload, type, JsonOptions.Default) as IDomainEvent; return ev is not null; }
-        catch { badType = env.EventType; return false; }
+        if (type is null)
+        {
+            badType = env.EventType;
+            return false;
+        }
+
+        try
+        {
+            ev = JsonSerializer.Deserialize(env.Payload, type, JsonOptions.Default) as IDomainEvent;
+            return ev is not null;
+        }
+        catch
+        {
+            badType = env.EventType;
+            return false;
+        }
     }
 
     private static string? GetField(in StreamEntry entry, string name)
@@ -288,7 +201,4 @@ public class ProcessOutboxMessagesJob(IDomainEventPublisher publisher, IOptions<
         }
         return null;
     }
-
-    // Needed for static usage in AutoClaimAsync arg array
-    private static string ConsumerStatic => $"worker-{Environment.MachineName}-{Environment.ProcessId}";
 }

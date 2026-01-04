@@ -20,11 +20,12 @@ public sealed class StartGameFromLobbyValidator : AbstractValidator<StartGameFro
 
 public record StartGameFromLobbyCommand(string UserId, Guid LobbyId, GameType GameType, string? GameName) : ICommand<GameId>;
 
-public sealed class StartGameFromLobbyCommandHandler(IGameRepository gameRepository, IBoardGenerator boardGenerator, ILobbyRepository lobbyRepository) : ICommandHandler<StartGameFromLobbyCommand, GameId>
+public sealed class StartGameFromLobbyCommandHandler(IGameRepository gameRepository, IBoardGenerator boardGenerator, ILobbyRepository lobbyRepository, IRealtimePublisher realtimePublisher) : ICommandHandler<StartGameFromLobbyCommand, GameId>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
     private readonly IBoardGenerator _boardGenerator = boardGenerator;
     private readonly ILobbyRepository _lobbyRepository = lobbyRepository;
+    private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
 
     public async Task<Result<GameId>> Handle(StartGameFromLobbyCommand command, CancellationToken ct = default)
     {
@@ -45,6 +46,8 @@ public sealed class StartGameFromLobbyCommandHandler(IGameRepository gameReposit
 
         var game = result.Value;
         var saved = await _gameRepository.SaveAsync(game, ct);
+
+        if (saved) await _realtimePublisher.MoveFromLobbyToGameAsync(lobby.Id, game.Id, shuffledUserIds, DateTimeOffset.Now, ct);
 
         return saved ? Result<GameId>.Success(game.Id) : Result<GameId>.Failure(DomainError.InvalidOperation);
     }
