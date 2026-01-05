@@ -1,5 +1,8 @@
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
+using SettlersOfCrutan.Application.Abstractions.Realtime;
+using SettlersOfCrutan.Application.Lobbies.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
@@ -20,12 +23,19 @@ public sealed class StartGameFromLobbyValidator : AbstractValidator<StartGameFro
 
 public record StartGameFromLobbyCommand(string UserId, Guid LobbyId, GameType GameType, string? GameName) : ICommand<GameId>;
 
-public sealed class StartGameFromLobbyCommandHandler(IGameRepository gameRepository, IBoardGenerator boardGenerator, ILobbyRepository lobbyRepository, IRealtimePublisher realtimePublisher) : ICommandHandler<StartGameFromLobbyCommand, GameId>
+public sealed class StartGameFromLobbyCommandHandler(IGameRepository gameRepository,
+                                                     IBoardGenerator boardGenerator,
+                                                     ILobbyRepository lobbyRepository,
+                                                     IRealtimePublisher realtimePublisher,
+                                                     IDateTimeProvider clock,
+                                                     ILogger<ChangeReadyStatusCommandHandler> logger) : ICommandHandler<StartGameFromLobbyCommand, GameId>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
     private readonly IBoardGenerator _boardGenerator = boardGenerator;
     private readonly ILobbyRepository _lobbyRepository = lobbyRepository;
     private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
+    private readonly IDateTimeProvider _clock = clock;
+    private readonly ILogger<ChangeReadyStatusCommandHandler> _logger = logger;
 
     public async Task<Result<GameId>> Handle(StartGameFromLobbyCommand command, CancellationToken ct = default)
     {
@@ -47,7 +57,24 @@ public sealed class StartGameFromLobbyCommandHandler(IGameRepository gameReposit
         var game = result.Value;
         var saved = await _gameRepository.SaveAsync(game, ct);
 
-        if (saved) await _realtimePublisher.MoveFromLobbyToGameAsync(lobby.Id, game.Id, shuffledUserIds, DateTimeOffset.Now, ct);
+        var now = _clock.UtcNow;
+        var userViews = LobbyDto.UserViewsFromLobby(lobby);
+
+        try
+        {
+            if (saved)
+            await _realtimePublisher.MoveFromLobbyToGameAsync(lobby.Id, game.Id, shuffledUserIds, now, ct);
+        }
+        catch (Exception ex)
+        {
+            // Do NOT fail the command if state is already saved.
+            // Log and optionally enqueue retry/catch-up.
+
+            _logger.LogWarning(ex, "Failed to publish MoveFromLobbyToGameAsync for LobbyId {LobbyId}", lobby.Id);
+
+            // Optional: enqueue a lightweight "lobby changed" signal for retry,
+            // or rely on clients to resync on next poll/reconnect.
+        }
 
         return saved ? Result<GameId>.Success(game.Id) : Result<GameId>.Failure(DomainError.InvalidOperation);
     }
