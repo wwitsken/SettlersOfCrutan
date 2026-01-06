@@ -70,7 +70,9 @@ export const game: Game = {
     ],
     ports: [
       {
-        coordinates: [{ q: -1, r: 1, s: 0 }],
+        // Provide two coordinates so the port can be centered on the edge midpoint (like roads)
+        inCoordinate: { q: 1, r: -1, s: 0 },
+        outCoordinate: { q: 1, r: -2, s: 1 },
         type: "generic",
       },
     ],

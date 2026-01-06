@@ -38,5 +38,7 @@ public record RoadDto
 public record PortDto
 {
     public List<HexCoordinateDto> Coordinates { get; set; }
+    public HexCoordinateDto InCoordinate { get; set; }
+    public HexCoordinateDto OutCoordinate { get; set; }
     public string Type { get; set; } // e.g., "Wood", "Brick", or "Any"
 }

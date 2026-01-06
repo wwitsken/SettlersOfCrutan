@@ -1,10 +1,14 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { useMemo } from "react";
+import * as THREE from "three";
 import { game } from "../domain/game/gameExample";
 
 function GamePage() {
   const hexRadius = 1;
+  const portOuterRadius = 0.35;
+  const portInnerRadius = 0.25;
+  const portHeight = 0.03;
 
   const resourceColors: Record<string, string> = useMemo(
     () => ({
@@ -41,6 +45,21 @@ function GamePage() {
     return { x: sx / n, z: sz / n };
   };
 
+  const portShape = useMemo(() => {
+    // Semi-annulus in XY plane, centered at origin.
+    // Arc is on +X side (bulges toward +X); flat cut is along the Y axis.
+    // We'll rotate around Y so +X points toward outCoordinate.
+    const shape = new THREE.Shape();
+    shape.absarc(0, 0, portOuterRadius, -Math.PI / 2, Math.PI / 2, false);
+    shape.lineTo(0, portInnerRadius);
+
+    const hole = new THREE.Path();
+    hole.absarc(0, 0, portInnerRadius, Math.PI / 2, -Math.PI / 2, true);
+    shape.holes.push(hole);
+
+    return shape;
+  }, [portInnerRadius, portOuterRadius]);
+
   return (
     <div style={{ width: "100%", height: "calc(100vh - 80px)" }}>
       <Canvas camera={{ position: [0, 5, 8], fov: 50 }}>
@@ -59,7 +78,7 @@ function GamePage() {
                 <meshStandardMaterial color={color} />
               </mesh>
               {/* Number token disc */}
-              <mesh position={[0, 0.15, 0]}>
+              <mesh position={[0, 0.11, 0]} rotation={[-Math.PI / 2, 0, 0]}>
                 <circleGeometry args={[0.25, 32]} />
                 <meshStandardMaterial color={"#fff"} />
               </mesh>
@@ -115,11 +134,11 @@ function GamePage() {
           return (
             <mesh
               key={`pc-${idx}`}
-              position={[p.x, isCity ? 0.4 : 0.3, p.z]}
+              position={[p.x, isCity ? 0.3 : 0.3, p.z]}
               castShadow
             >
               {isCity ? (
-                <boxGeometry args={[0.3, 0.3, 0.3]} />
+                <boxGeometry args={[0.3, 0.4, 0.3]} />
               ) : (
                 <sphereGeometry args={[0.2, 16, 16]} />
               )}
@@ -130,13 +149,59 @@ function GamePage() {
 
         {/* Ports */}
         {game.board.ports.map((port, idx) => {
-          if (port.coordinates.length < 1) return null;
-          const c = port.coordinates[0];
-          const p = cubeToPosition(c.q, c.r);
+          const pin = cubeToPosition(port.inCoordinate.q, port.inCoordinate.r);
+          const pout = cubeToPosition(
+            port.outCoordinate.q,
+            port.outCoordinate.r
+          );
+
+          // Position at the midpoint (same as roads)
+          const x = (pin.x + pout.x) / 2;
+          const z = (pin.z + pout.z) / 2;
+
+          // Apply the same rotation logic as roads, but align the *flat cut* of the semicircle
+          // to the edge direction (i.e., the same axis the road box aligns to).
+          const axis =
+            port.inCoordinate.r === port.outCoordinate.r
+              ? "r"
+              : port.inCoordinate.q === port.outCoordinate.q
+              ? "q"
+              : port.inCoordinate.s === port.outCoordinate.s
+              ? "s"
+              : null;
+
+          const angleByAxis = {
+            r: Math.PI / 2, // 90°
+            q: (7 * Math.PI) / 6, // 210°
+            s: (11 * Math.PI) / 6, // 330°
+          } as const;
+
+          // Our semi-annulus has its flat cut along the local +Y axis in shape space.
+          // After rotating into the board plane, that cut runs along local +Z.
+          // Roads align their long axis along local +X, so add +90° to align +Z to the road axis.
+          const yaw = (axis ? angleByAxis[axis] : 0) + Math.PI / 2;
+
           return (
-            <group key={`port-${idx}`} position={[p.x, 0.05, p.z]}>
-              <mesh castShadow receiveShadow>
-                <ringGeometry args={[0.25, 0.35, 32]} />
+            <group
+              key={`port-${idx}`}
+              position={[x, 0.06, z]}
+              rotation={[0, yaw, 0]}
+            >
+              <mesh
+                castShadow
+                receiveShadow
+                rotation={[-Math.PI / 2, 0, Math.PI]}
+              >
+                <extrudeGeometry
+                  args={[
+                    portShape,
+                    {
+                      depth: portHeight,
+                      steps: 1,
+                      bevelEnabled: false,
+                    },
+                  ]}
+                />
                 <meshStandardMaterial color={"#1e90ff"} />
               </mesh>
             </group>

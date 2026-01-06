@@ -24,7 +24,8 @@ export type Road = {
 };
 
 export type Port = {
-  coordinates: HexCoordinate[];
+  inCoordinate: HexCoordinate;
+  outCoordinate: HexCoordinate;
   type: string;
 };
 
