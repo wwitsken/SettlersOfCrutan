@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "start": "vite",
+    "noapi": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -17,6 +18,8 @@
     "@azure/msal-browser": "^4.27.0",
     "@azure/msal-react": "^3.0.23",
     "@microsoft/signalr": "^8.0.0",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@tailwindcss/vite": "^4.1.14",
     "immer": "^11.0.1",
     "openapi-fetch": "^0.14.1",
@@ -24,6 +27,7 @@
     "react-dom": "^19.1.1",
     "react-router": "^7.9.3",
     "tailwindcss": "^4.1.14",
+    "three": "^0.182.0",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

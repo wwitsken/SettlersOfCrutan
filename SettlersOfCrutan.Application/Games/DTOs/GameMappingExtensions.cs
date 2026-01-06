@@ -54,12 +54,12 @@ public static class GameMappingExtensions
             {
                 Coordinates = ToHexCoordinateDtos(pc.VertexCoordinate),
                 Type = pc.Level.ToString(),
-                OwnerId = pc.PlayerOwner.Value
+                PlayerOwnerId = pc.PlayerOwner.Value
             })],
             Roads = [.. board.Roads.Select(r => new AppRoadDto
             {
                 Coordinates = ToHexCoordinateDtos(r.EdgeCoordinate),
-                OwnerId = r.OwnerId.Value
+                PlayerOwnerId = r.OwnerId.Value
             })],
             Ports = [.. board.Ports.Select(p => new AppPortDto
             {
@@ -90,8 +90,8 @@ public static class GameMappingExtensions
 
         return new TradeOfferDto
         {
-            ProposerId = offer.ProposerId.Value,
-            AcceptorId = offer.AcceptorId?.Value,
+            PlayerProposerId = offer.ProposerId.Value,
+            PlayerAcceptorId = offer.AcceptorId?.Value,
             RequestedResources = offer.RequestedResources.ToDictionary(r => r.Type, r => r.Quantity),
             OfferedResources = offer.OfferedResources.ToDictionary(r => r.Type, r => r.Quantity),
             IsAccepted = offer.IsAccepted

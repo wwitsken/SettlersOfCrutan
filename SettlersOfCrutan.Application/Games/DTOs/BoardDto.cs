@@ -26,13 +26,13 @@ public record PopulationCenterDto
 {
     public List<HexCoordinateDto> Coordinates { get; set; }
     public string Type { get; set; } // e.g., "Settlement" or "City"
-    public string OwnerId { get; set; }
+    public string PlayerOwnerId { get; set; }
 }
 
 public record RoadDto
 {
     public List<HexCoordinateDto> Coordinates { get; set; }
-    public string OwnerId { get; set; }
+    public string PlayerOwnerId { get; set; }
 }
 
 public record PortDto
