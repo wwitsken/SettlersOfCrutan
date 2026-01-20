@@ -1,16 +1,9 @@
 ﻿using SettlersOfCrutan.Domain.Games;
-using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Application.Games.DTOs;
 
-public record PrivatePlayerDto
-{
-    public Dictionary<ResourceCardType, int> ResourceHand { get; set; } = [];
-    public Dictionary<DevelopmentCardType, int> DevCardHand { get; set; } = [];
-}
-
-public record PublicPlayerDto
+public record PlayerDto
 {
     public required string Id { get; set; }
     public required int PlayOrder { get; set; }

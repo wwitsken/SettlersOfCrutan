@@ -1710,10 +1710,12 @@ export interface components {
         PopulationCenterDto: {
             coordinates?: components["schemas"]["HexCoordinateDto"][];
             type?: string;
-            ownerId?: string;
+            playerOwnerId?: string;
         };
         PortDto: {
             coordinates?: components["schemas"]["HexCoordinateDto"][];
+            inCoordinate?: components["schemas"]["HexCoordinateDto"];
+            outCoordinate?: components["schemas"]["HexCoordinateDto"];
             type?: string;
         };
         ProblemDetails: {
@@ -1751,10 +1753,10 @@ export interface components {
             quantity: number | string;
         };
         /** @enum {unknown} */
-        ResourceCardType: "none" | "brick" | "lumber" | "wool" | "grain" | "ore" | "desert";
+        ResourceCardType: "none" | "brick" | "lumber" | "wool" | "grain" | "ore" | "desert" | "water";
         RoadDto: {
             coordinates?: components["schemas"]["HexCoordinateDto"][];
-            ownerId?: string;
+            playerOwnerId?: string;
         };
         RollDiceCommandResult: {
             /** Format: int32 */
@@ -1768,8 +1770,8 @@ export interface components {
             gameName: null | string;
         };
         TradeOfferDto: {
-            proposerId?: string;
-            acceptorId?: null | string;
+            playerProposerId?: string;
+            playerAcceptorId?: null | string;
             requestedResources?: {
                 [key: string]: number | string;
             };

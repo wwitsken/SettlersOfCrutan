@@ -42,23 +42,23 @@ public class Board : Entity<BoardId>
                                                                          ports);
 
     // --- Pure validation methods (Result = precondition outcome) ---
-    public Result<Nothing> CanPlaceRoad(PlayerId owner, Edge coord)
+    public Result<Nothing> CanPlaceRoad(PlayerId owner, Edge coord, bool isInitialPlacement = false)
     {
         var norm = coord.Normalize();
         if (Roads.Any(r => r.EdgeCoordinate.Normalize().Equals(norm)))
             return Result.Failure<Nothing>(new DomainError("RoadBuild", "Edge already has a road"));
-        if (!IsEdgeBuildableBy(owner, coord))
+        if (!IsEdgeBuildableBy(owner, coord) && !isInitialPlacement)
             return Result.Failure<Nothing>(new DomainError("RoadBuild", "Road not connected to player's network"));
         return Result.Success();
     }
 
-    public Result<Nothing> CanPlaceSettlement(PlayerId owner, Vertex coord)
+    public Result<Nothing> CanPlaceSettlement(PlayerId owner, Vertex coord, bool isInitialPlacement = false)
     {
         if (PopulationCenters.Any(p => p.VertexCoordinate == coord))
             return Result.Failure<Nothing>(new DomainError("SettlementPlacement", "Vertex already occupied"));
         if (VertexFactory.GetAdjacentVertices(coord).Any(IsVertexOccupied))
             return Result.Failure<Nothing>(new DomainError("SettlementPlacement", "Adjacent vertex occupied (distance rule)"));
-        if (!HasAdjacentRoadOwnedBy(owner, coord))
+        if (!HasAdjacentRoadOwnedBy(owner, coord) && !isInitialPlacement)
             return Result.Failure<Nothing>(new DomainError("SettlementPlacement", "No adjacent road for owner"));
         return Result.Success();
     }

@@ -1,7 +1,7 @@
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
-using System.Runtime.CompilerServices;
+using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Application.Games.DTOs;
 
@@ -15,11 +15,11 @@ using AppPortDto = SettlersOfCrutan.Application.Games.DTOs.PortDto;
 
 public static class GameMappingExtensions
 {
-    public static GameDto ToDto(this Game game)
+    public static PublicGameDto ToDto(this Game game)
     {
         ArgumentNullException.ThrowIfNull(game);
 
-        return new GameDto
+        return new PublicGameDto
         {
             Id = game.Id.Value,
             GameType = game.GameType.ToString(),
@@ -31,9 +31,37 @@ public static class GameMappingExtensions
             PlayerDirection = game.PlayerDirection,
             GamePhase = game.GamePhase,
             Round = game.Round,
-            PlayerIndex = game.PlayerIndex,
+            CurrentPlayerId = game.Players[game.PlayerIndex].Id,
             CurrentTradeOffer = game.CurrentTradeOffer?.ToDto(),
-            Players = [.. game.Players.Select((p, idx) => p.ToPublicDto(idx, idx == game.PlayerIndex))]
+            Players = [.. game.Players.Select((p, idx) => new PlayerDto {
+                Id = p.Id.Value,
+                PlayOrder = idx,
+                IsPlaying = game.CurrentPlayerId() == p.Id,
+                DisplayName = p.DisplayName,
+                PlayerColor = p.Color,
+                ResourceCardCount = p.TotalResources,
+                DevelopmentCardCount = p.DevCardCount,
+                PieceReserve = p.GetBuildables().ToDictionary(),
+            })]
+        };
+    }
+
+    public static PrivateGameDto ToPrivateDto(this Game game, string userId)
+    {
+        ArgumentNullException.ThrowIfNull(game);
+        ArgumentNullException.ThrowIfNull(userId);
+        var player = game.Players.First(p => p.UserId == userId);
+        return new PrivateGameDto
+        {
+            MyPlayerId = player.Id,
+            MyHand = new MyHandDto(
+                Resources: player.GetResources(),
+                DevCards: player.GetDevelopmentCards(),
+                Buildables: player.GetBuildables()
+            ),
+            MyScore = 1000, // TODO: Implement score calculation
+            BuildableRoads = [.. game.GetBuildableRoads(player.Id).Select(ToHexCoordinateDtos)],
+            BuildableSettlements = [.. game.GetBuildableSettlements(player.Id).Select(ToHexCoordinateDtos)]
         };
     }
 
@@ -61,12 +89,40 @@ public static class GameMappingExtensions
                 Coordinates = ToHexCoordinateDtos(r.EdgeCoordinate),
                 PlayerOwnerId = r.OwnerId.Value
             })],
-            Ports = [.. board.Ports.Select(p => new AppPortDto
+            Ports = [.. board.Ports.Select(p =>
             {
-                Coordinates = ToHexCoordinateDtos(p.EdgeCoordinate),
-                Type = p.Type.ToString()
+                var (inCoord, outCoord) = GetPortInOutCoordinates(board, p.EdgeCoordinate);
+
+                return new AppPortDto
+                {
+                    InCoordinate = inCoord,
+                    OutCoordinate = outCoord,
+                    Coordinates = ToHexCoordinateDtos(p.EdgeCoordinate),
+                    Type = p.Type.ToString()
+                };
             })]
         };
+    }
+
+    private static (AppHexCoordinateDto In, AppHexCoordinateDto Out) GetPortInOutCoordinates(Board board, Edge edge)
+    {
+        ArgumentNullException.ThrowIfNull(board);
+
+        var coords = edge.HexCoords().ToArray();
+
+        static AppHexCoordinateDto ToDto(HexCoord hc) => new() { Q = hc.Q, R = hc.R };
+
+        static bool IsLand(Board b, HexCoord hc)
+            => b.Hexes.Any(h => h.Coordinate == hc && h.Resource != ResourceCardType.Water);
+
+        static bool IsWaterOrOffBoard(Board b, HexCoord hc)
+            => b.Hexes.Any(h => h.Coordinate == hc && h.Resource == ResourceCardType.Water)
+                || !b.Hexes.Any(h => h.Coordinate == hc);
+
+        var inHex = coords.First(hc => IsLand(board, hc));
+        var outHex = coords.First(hc => IsWaterOrOffBoard(board, hc));
+
+        return (ToDto(inHex), ToDto(outHex));
     }
 
     private static List<AppHexCoordinateDto> ToHexCoordinateDtos(Vertex v)
@@ -95,24 +151,6 @@ public static class GameMappingExtensions
             RequestedResources = offer.RequestedResources.ToDictionary(r => r.Type, r => r.Quantity),
             OfferedResources = offer.OfferedResources.ToDictionary(r => r.Type, r => r.Quantity),
             IsAccepted = offer.IsAccepted
-        };
-    }
-
-    private static PublicPlayerDto ToPublicDto(this Player player, int playerOrder, bool isPlaying)
-    {
-        ArgumentNullException.ThrowIfNull(player);
-
-        return new PublicPlayerDto
-        {
-            Id = player.Id.Value,
-            PlayOrder = playerOrder,
-            IsPlaying = isPlaying,
-            DisplayName = player.DisplayName,
-            PlayerColor = player.Color,
-            ResourceCardCount = player.TotalResources,
-            DevelopmentCardCount = player.DevCardCount,
-            PieceReserve = player.GetBuildables().ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-            DiscardRequirement = 0
         };
     }
 }

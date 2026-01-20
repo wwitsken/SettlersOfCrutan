@@ -6,13 +6,14 @@ using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Lobbies;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace SettlersOfCrutan.Application.Lobbies.Commands;
 public record ChangeReadyStatusCommand(Guid LobbyId, PlayerId PlayerId, bool IsReady) : ICommand;
 
-public sealed class ChangeReadyStatusCommandHandler(ILobbyRepository lobbyRepository, IRealtimePublisher realtimePublisher, IDateTimeProvider clock, ILogger<ChangeReadyStatusCommandHandler> logger) : ICommandHandler<ChangeReadyStatusCommand>
+public sealed class ChangeReadyStatusCommandHandler(ILobbyRepository lobbyRepository,
+                                                    IRealtimePublisher realtimePublisher,
+                                                    IDateTimeProvider clock,
+                                                    ILogger<ChangeReadyStatusCommandHandler> logger) : ICommandHandler<ChangeReadyStatusCommand>
 {
     private readonly ILobbyRepository _lobbyRepository = lobbyRepository;
     private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;

@@ -1,4 +1,7 @@
-﻿using SettlersOfCrutan.Application.Abstractions;
+﻿using Microsoft.Extensions.Logging;
+using SettlersOfCrutan.Application.Abstractions;
+using SettlersOfCrutan.Application.Abstractions.Realtime;
+using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Application.Games.Policies;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
@@ -9,9 +12,17 @@ namespace SettlersOfCrutan.Application.Games.Commands.Build;
 
 public record BuyDevelopmentCardCommand(GameId GameId, PlayerId PlayerId) : ICommand<DevelopmentCardType>;
 
-public sealed class BuyDevelopmentCardCommandHandler(IGameRepository gameRepository, StandardPriceCalculator priceCalculator) : ICommandHandler<BuyDevelopmentCardCommand, DevelopmentCardType>
+public sealed class BuyDevelopmentCardCommandHandler(
+    IGameRepository gameRepository,
+    IRealtimePublisher realtimePublisher,
+    IDateTimeProvider clock,
+    ILogger<BuyDevelopmentCardCommandHandler> logger,
+    StandardPriceCalculator priceCalculator) : ICommandHandler<BuyDevelopmentCardCommand, DevelopmentCardType>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
+    private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
+    private readonly IDateTimeProvider _clock = clock;
+    private readonly ILogger<BuyDevelopmentCardCommandHandler> _logger = logger;
     private readonly StandardPriceCalculator _priceCalculator = priceCalculator;
 
     public async Task<Result<DevelopmentCardType>> Handle(BuyDevelopmentCardCommand command, CancellationToken ct = default)
@@ -23,6 +34,33 @@ public sealed class BuyDevelopmentCardCommandHandler(IGameRepository gameReposit
         if (result.IsFailure) return Result<DevelopmentCardType>.Failure(result.Error);
 
         var saved = await _gameRepository.SaveAsync(game, ct);
-        return saved ? Result<DevelopmentCardType>.Success(result.Value) : Result<DevelopmentCardType>.Failure(DomainError.InvalidOperation);
+
+        if (saved)
+        {
+            var now = _clock.UtcNow;
+            var userViews = GameDto.UserViewsFromGame(game);
+
+            try
+            {
+                var publishTasks = userViews.Select(kvp =>
+                    _realtimePublisher.UpdateGameAsync(
+                        game.Id,
+                        kvp.Key,
+                        now,
+                        RealtimeEvents.GameStateUpdated,
+                        kvp.Value,
+                        ct));
+
+                await Task.WhenAll(publishTasks);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to publish GameStateUpdated for GameId {GameId}", game.Id);
+            }
+        }
+
+        return saved
+            ? Result<DevelopmentCardType>.Success(result.Value)
+            : Result<DevelopmentCardType>.Failure(DomainError.InvalidOperation);
     }
 }

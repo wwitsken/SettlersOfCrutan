@@ -4,7 +4,6 @@ using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Games.Commands.Lifecycle;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Application.Games.Queries;
-using SettlersOfCrutan.Application.Lobbies.Commands;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Presentation.Auth;
@@ -33,14 +32,14 @@ public static class BaseGameEndpoints
             return result.UnwrapId<GameId, Guid>().ToHttpResult();
         }).RequireAuthorization();
 
-        group.MapGet("/{id:guid}", async Task<Results<Ok<GameDto>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
+        group.MapGet("/{id:guid}", async Task<Results<Ok<PublicGameDto>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
-            [FromServices] IQueryHandler<GetGameByIdQuery, GameDto> handler,
+            [FromServices] IQueryHandler<GetGameByIdQuery, PublicGameDto> handler,
             IUserProvider userProvider,
             CancellationToken ct) =>
         {
             var query = new GetGameByIdQuery(new GameId { Value = id });
-            Result<GameDto> result = await handler.Handle(query, ct);
+            Result<PublicGameDto> result = await handler.Handle(query, ct);
             return result.ToHttpResult();
         }).RequireAuthorization();
 

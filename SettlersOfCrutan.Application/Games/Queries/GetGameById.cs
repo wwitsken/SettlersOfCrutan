@@ -6,17 +6,17 @@ using SettlersOfCrutan.Domain.Games;
 
 namespace SettlersOfCrutan.Application.Games.Queries;
 
-public record GetGameByIdQuery(GameId Id) : IQuery<GameDto>;
+public record GetGameByIdQuery(GameId Id) : IQuery<PublicGameDto>;
 
-public class GetGameByIdQueryHandler(IGameRepository repository) : IQueryHandler<GetGameByIdQuery, GameDto>
+public class GetGameByIdQueryHandler(IGameRepository repository) : IQueryHandler<GetGameByIdQuery, PublicGameDto>
 {
     private readonly IGameRepository _repository = repository;
 
-    public async Task<Result<GameDto>> Handle(GetGameByIdQuery query, CancellationToken ct = default)
+    public async Task<Result<PublicGameDto>> Handle(GetGameByIdQuery query, CancellationToken ct = default)
     {
         Game? game = await _repository.GetAsync(query.Id, ct);
         return game is not null
-            ? Result<GameDto>.Success(game.ToDto())
-            : Result<GameDto>.Failure(DomainError.InvalidOperation);
+            ? Result<PublicGameDto>.Success(game.ToDto())
+            : Result<PublicGameDto>.Failure(DomainError.InvalidOperation);
     }
 }
