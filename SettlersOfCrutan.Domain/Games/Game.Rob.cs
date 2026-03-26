@@ -43,13 +43,21 @@ public partial class Game
         var rng = new Random();
         var victim = Players.First(p => p.Id == victimId);
         List<ResourceCardType> victimResourceTypes = [.. Enum.GetValues<ResourceCardType>().SelectMany(rt => ListResourceType(rt, victim))];
-        if (victimResourceTypes.Count == 0) return ResourceCardType.None;
 
-        var stolenResource = victimResourceTypes[rng.Next(victimResourceTypes.Count)];
-        victim.SubtractResource(stolenResource, 1);
-        var player = Players.First(p => p.Id == robbingPlayerId);
-        player.AddResource(stolenResource, 1);
+        var stolenResource = victimResourceTypes.Count == 0
+            ? ResourceCardType.None
+            : victimResourceTypes[rng.Next(victimResourceTypes.Count)];
+
+        if (stolenResource != ResourceCardType.None)
+        {
+            victim.SubtractResource(stolenResource, 1);
+            var player = Players.First(p => p.Id == robbingPlayerId);
+            player.AddResource(stolenResource, 1);
+        }
+
+        GamePhase = GamePhase.TradeBuild;
         AddDomainEvent(new RobberResolvedDomainEvent(Id, newRobberHexCoord, stolenResource, robbingPlayerId, victimId));
+        AddDomainEvent(new TradeBuildStartedDomainEvent(Id, robbingPlayerId));
         return stolenResource;
     }
 }
