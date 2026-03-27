@@ -11,7 +11,7 @@ import GamePage from "./pages/GamePage.tsx";
 
 import { MsalProvider } from "@azure/msal-react";
 
-import { msalInstance } from "../authConfig.ts";
+import { msalInstance } from "./authConfig.ts";
 import { SignalRProvider } from "./context/SignalRProvider";
 
 await msalInstance.initialize();

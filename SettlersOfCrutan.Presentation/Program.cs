@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
+using Microsoft.Identity.Web;
 using Scalar.AspNetCore;
 using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Infrastructure;
@@ -33,41 +31,14 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserProvider, UserProvider>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer("Bearer", jwtOptions =>
+    .AddMicrosoftIdentityWebApi(builder.Configuration);
+
+
+builder.Services.AddAuthorizationBuilder()
+  .AddPolicy("AccessAsUser", policy =>
     {
-        jwtOptions.Authority = Environment.GetEnvironmentVariable("AUTH_AUTHORITY");
-        jwtOptions.Audience = Environment.GetEnvironmentVariable("AUTH_AUDIENCE");
-
-        // We have to hook the OnMessageReceived event in order to
-        // allow the JWT authentication handler to read the access
-        // token from the query string when a WebSocket or 
-        // Server-Sent Events request comes in.
-
-        // Sending the access token in the query string is required when using WebSockets or ServerSentEvents
-        // due to a limitation in Browser APIs. We restrict it to only calls to the
-        // SignalR hub in this code.
-        // See https://docs.microsoft.com/aspnet/core/signalr/security#access-token-logging
-        // for more information about security considerations when using
-        // the query string to transmit the access token.
-        jwtOptions.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                var accessToken = context.Request.Query["access_token"];
-
-                // If the request is for our hub...
-                var path = context.HttpContext.Request.Path;
-                if (!string.IsNullOrEmpty(accessToken) &&
-                    (path.StartsWithSegments("/api/realtime-hub")))
-                {
-                    // Read the token out of the query string
-                    context.Token = accessToken;
-                }
-                return Task.CompletedTask;
-            }
-        };
+        policy.RequireClaim("scp", "access_as_user");
     });
-builder.Services.AddAuthorization();
 
 // Flatten BaseId value objects in HTTP JSON (responses and requests)
 builder.Services.AddHttpJsonSettings();
@@ -82,9 +53,9 @@ if (app.Environment.IsProduction())
 if (app.Environment.IsDevelopment())
 {
     var audience =
-    builder.Configuration["AUTH_AUDIENCE"]
-    ?? Environment.GetEnvironmentVariable("AUTH_AUDIENCE")
-    ?? throw new InvalidOperationException("AUTH_AUDIENCE is not set.");
+    builder.Configuration["AzureAd:Instance"]
+    ?? Environment.GetEnvironmentVariable("AzureAd:Instance")
+    ?? throw new InvalidOperationException("AzureAd:Instance is not set.");
 
     app.UseDeveloperExceptionPage();
     app.MapOpenApi();
@@ -111,7 +82,6 @@ app.MapGroup("api/")
     .MapLobbyEndpoints();
 
 app.MapGet("/api/health", Results<Ok<string>, BadRequest> () => TypedResults.Ok($"OK at {DateTime.Now:t}"));
-app.MapPost("/api/echo", Results<Ok<string>, BadRequest> ([FromBody] string Message) => TypedResults.Ok($"Echo: {Message}"));
 app.MapGet("/api/test", Results<Ok<string>, BadRequest> () => TypedResults.Ok("Test endpoint is working")).RequireAuthorization();
 
 app.MapHub<CrutanHub>("/api/realtime-hub").RequireAuthorization();

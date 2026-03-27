@@ -46,52 +46,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/echo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": string;
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": string;
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/test": {
         parameters: {
             query?: never;
@@ -215,7 +169,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["GameDto"];
+                        "application/json": components["schemas"]["PublicGameDto"];
                     };
                 };
                 /** @description Bad Request */
@@ -1632,29 +1586,6 @@ export interface components {
             hexCoord1: components["schemas"]["HexCoordDto"];
             hexCoord2: components["schemas"]["HexCoordDto"];
         };
-        GameDto: {
-            /** Format: uuid */
-            id?: string;
-            gameType: string;
-            gameName: string;
-            board: components["schemas"]["BoardDto"];
-            bankResourceHand?: {
-                [key: string]: number | string;
-            };
-            bankDevCardHand?: {
-                [key: string]: number | string;
-            };
-            /** Format: date-time */
-            turnExpiresAt?: null | string;
-            playerDirection?: components["schemas"]["PlayerDirection"];
-            gamePhase?: components["schemas"]["GamePhase"];
-            /** Format: int32 */
-            round?: number | string;
-            /** Format: int32 */
-            playerIndex?: number | string;
-            currentTradeOffer?: null | components["schemas"]["TradeOfferDto"];
-            players?: components["schemas"]["PublicPlayerDto"][];
-        };
         /** @enum {unknown} */
         GamePhase: "pendingStart" | "setup" | "rollDice" | "discardHalf" | "resolveRobber" | "tradeBuild" | "gameEnd";
         /** @enum {unknown} */
@@ -1707,6 +1638,24 @@ export interface components {
         PlayerColor: "none" | "red" | "blue" | "white" | "orange" | "green" | "yellow" | "brown" | "purple";
         /** @enum {unknown} */
         PlayerDirection: "clockwise" | "counterClockwise";
+        PlayerDto: {
+            id: string;
+            /** Format: int32 */
+            playOrder: number | string;
+            isPlaying?: boolean;
+            displayName?: string;
+            playerColor?: components["schemas"]["PlayerColor"];
+            /** Format: int32 */
+            resourceCardCount?: number | string;
+            /** Format: int32 */
+            developmentCardCount?: number | string;
+            pieceReserve?: {
+                [key: string]: number | string;
+            };
+            /** Format: int32 */
+            discardRequirement?: number | string;
+        };
+        PlayerId: unknown;
         PopulationCenterDto: {
             coordinates?: components["schemas"]["HexCoordinateDto"][];
             type?: string;
@@ -1726,22 +1675,27 @@ export interface components {
             detail?: null | string;
             instance?: null | string;
         };
-        PublicPlayerDto: {
-            id: string;
-            /** Format: int32 */
-            playOrder: number | string;
-            isPlaying?: boolean;
-            displayName?: string;
-            playerColor?: components["schemas"]["PlayerColor"];
-            /** Format: int32 */
-            resourceCardCount?: number | string;
-            /** Format: int32 */
-            developmentCardCount?: number | string;
-            pieceReserve?: {
+        PublicGameDto: {
+            /** Format: uuid */
+            id?: string;
+            gameType: string;
+            gameName: string;
+            board: components["schemas"]["BoardDto"];
+            bankResourceHand?: {
                 [key: string]: number | string;
             };
+            bankDevCardHand?: {
+                [key: string]: number | string;
+            };
+            /** Format: date-time */
+            turnExpiresAt?: null | string;
+            playerDirection?: components["schemas"]["PlayerDirection"];
+            gamePhase?: components["schemas"]["GamePhase"];
             /** Format: int32 */
-            discardRequirement?: number | string;
+            round?: number | string;
+            currentPlayerId?: null | components["schemas"]["PlayerId"];
+            currentTradeOffer?: null | components["schemas"]["TradeOfferDto"];
+            players?: components["schemas"]["PlayerDto"][];
         };
         ResolveRobberRequest: {
             victimPlayerId: string;

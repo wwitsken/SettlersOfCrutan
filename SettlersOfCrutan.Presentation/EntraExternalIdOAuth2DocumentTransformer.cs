@@ -12,14 +12,14 @@ internal sealed class EntraExternalIdOAuth2DocumentTransformer(IConfiguration co
         CancellationToken cancellationToken)
     {
         var authority =
-            configuration["AUTH_AUTHORITY"]
-            ?? Environment.GetEnvironmentVariable("AUTH_AUTHORITY")
-            ?? throw new InvalidOperationException("AUTH_AUTHORITY is not set.");
+            configuration["AzureAd:Instance"]
+            ?? Environment.GetEnvironmentVariable("AzureAd:Instance")
+            ?? throw new InvalidOperationException("AzureAd:Instance is not set.");
 
         var audience =
-            configuration["AUTH_AUDIENCE"]
-            ?? Environment.GetEnvironmentVariable("AUTH_AUDIENCE")
-            ?? throw new InvalidOperationException("AUTH_AUDIENCE is not set.");
+            configuration["AzureAd:ClientId"]
+            ?? Environment.GetEnvironmentVariable("AzureAd:ClientId")
+            ?? throw new InvalidOperationException("AzureAd:ClientId is not set.");
 
         var baseAuthority = authority.TrimEnd('/');
 

@@ -1,4 +1,3 @@
-﻿using SettlersOfCrutan.Application.Games.DomainEventHandlers;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Resources;
 

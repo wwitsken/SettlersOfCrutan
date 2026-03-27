@@ -8,44 +8,48 @@ import {
 export default function AppLayout() {
   const { instance } = useMsal();
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <header className="bg-white shadow">
-        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="text-lg font-semibold text-gray-900">
-            Settlers Of Crutan
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+          <Link
+            to="/"
+            className="text-lg font-semibold tracking-tight text-slate-900"
+          >
+            Settlers of Crutan
           </Link>
           <nav className="flex items-center gap-4 text-sm">
-            <Link to="/" className="text-gray-700 hover:text-gray-900">
+            <Link to="/" className="text-slate-600 hover:text-slate-900">
               Home
             </Link>
-            <span className="text-gray-300">|</span>
             <UnauthenticatedTemplate>
               <button
-                className="text-gray-700 hover:text-gray-900 cursor-pointer"
+                type="button"
+                className="rounded-lg bg-slate-900 px-3 py-1.5 text-white hover:bg-slate-800"
                 onClick={async () => await instance.loginRedirect()}
               >
-                Login
+                Sign in
               </button>
             </UnauthenticatedTemplate>
             <AuthenticatedTemplate>
               <button
-                className="text-gray-700 hover:text-gray-900 cursor-pointer"
+                type="button"
+                className="text-slate-600 hover:text-slate-900"
                 onClick={async () => await instance.logout()}
               >
-                Logout
+                Sign out
               </button>
             </AuthenticatedTemplate>
           </nav>
         </div>
       </header>
       <main className="flex-1">
-        <div className="mx-auto max-w-6xl p-4 pt-20">
+        <div className="mx-auto max-w-6xl p-4 md:p-6">
           <Outlet />
         </div>
       </main>
-      <footer className="bg-white border-t">
-        <div className="mx-auto max-w-6xl px-4 py-3 text-xs text-gray-500">
-          {new Date().getFullYear()} Settlers Of Crutan
+      <footer className="border-t border-slate-200 bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-3 text-xs text-slate-500">
+          {new Date().getFullYear()} Settlers of Crutan
         </div>
       </footer>
     </div>

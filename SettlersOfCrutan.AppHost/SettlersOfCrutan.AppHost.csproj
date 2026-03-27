@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Sdk Name="Aspire.AppHost.Sdk" Version="9.3.1" />
 
@@ -17,7 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SettlersOfCrutan.OutboxService\SettlersOfCrutan.OutboxService.csproj" />
     <ProjectReference Include="..\SettlersOfCrutan.Presentation\SettlersOfCrutan.Presentation.csproj" />
   </ItemGroup>
 

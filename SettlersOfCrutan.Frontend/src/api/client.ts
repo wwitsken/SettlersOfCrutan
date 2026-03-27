@@ -1,6 +1,6 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "./types";
-import { acquireAccessToken } from "../../authConfig";
+import { acquireAccessToken } from "../authConfig";
 
 let accessToken: string | undefined = undefined;
 

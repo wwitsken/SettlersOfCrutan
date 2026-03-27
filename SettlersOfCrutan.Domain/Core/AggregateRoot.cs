@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace SettlersOfCrutan.Domain.Core;
 public abstract class AggregateRoot<TId> : Entity<TId>
@@ -9,4 +9,7 @@ public abstract class AggregateRoot<TId> : Entity<TId>
     public long Version { get; protected set; }
 
     public void BumpVersion() => Version++;
+
+    /// <summary>Clears raised domain events after a successful persistence publish so they are not replayed.</summary>
+    public void ClearRaisedDomainEvents() => ClearDomainEvents();
 }

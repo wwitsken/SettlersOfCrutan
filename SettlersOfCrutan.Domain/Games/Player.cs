@@ -1,4 +1,4 @@
-﻿using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games.Resources;
 using System.Text.Json.Serialization;
 
@@ -58,7 +58,7 @@ public class Player : Entity<PlayerId>
     [JsonConstructor]
     private Player(PlayerId id,
                    string userId,
-                   string name,
+                   string displayName,
                    PlayerColor color,
                    ResourceHand resourceHand,
                    DevCardHand devCardHand,
@@ -68,7 +68,7 @@ public class Player : Entity<PlayerId>
     {
         Id = id;
         UserId = userId;
-        DisplayName = name;
+        DisplayName = displayName;
         Color = color;
         ResourceHand = resourceHand;
         DevCardHand = devCardHand;

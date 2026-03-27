@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PropsWithChildren } from "react";
 import * as signalR from "@microsoft/signalr";
-import { acquireAccessToken } from "../../authConfig";
+import { acquireAccessToken } from "../authConfig";
 import {
   SignalRContext,
   type SignalRContextValue,
@@ -70,10 +70,9 @@ export function SignalRProvider({
       for (const [methodName, handler] of Object.entries(
         pendingHandlersRef.current
       )) {
-        if (!registeredMethodsRef.current.has(methodName)) {
-          conn.on(methodName, handler);
-          registeredMethodsRef.current.add(methodName);
-        }
+        conn.off(methodName);
+        conn.on(methodName, handler);
+        registeredMethodsRef.current.add(methodName);
       }
       handlersRegisteredRef.current = true;
       pendingHandlersRef.current = null;
@@ -126,10 +125,9 @@ export function SignalRProvider({
     }
 
     for (const [methodName, handler] of Object.entries(map)) {
-      if (!registeredMethodsRef.current.has(methodName)) {
-        conn.on(methodName, handler);
-        registeredMethodsRef.current.add(methodName);
-      }
+      conn.off(methodName);
+      conn.on(methodName, handler);
+      registeredMethodsRef.current.add(methodName);
     }
     handlersRegisteredRef.current = true;
   }, []);

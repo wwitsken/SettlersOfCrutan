@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Infrastructure.Outbox;
@@ -7,12 +8,18 @@ using StackExchange.Redis;
 using System.Text.Json;
 
 namespace SettlersOfCrutan.Infrastructure.Redis;
-public partial class RedisRepository<TAgg, TId>(IDatabase db, IOptions<RedisOptions> opts) : IRepository<TAgg, TId>
+public class RedisRepository<TAgg, TId>(
+    IDatabase db,
+    IOptions<RedisOptions> opts,
+    IDomainEventPublisher domainEventPublisher,
+    ILogger<RedisRepository<TAgg, TId>> logger) : IRepository<TAgg, TId>
     where TAgg : AggregateRoot<TId>
     where TId : BaseId
 {
     private readonly IDatabase _db = db;
     private readonly RedisOptions _opts = opts.Value ?? new RedisOptions();
+    private readonly IDomainEventPublisher _domainEventPublisher = domainEventPublisher;
+    private readonly ILogger<RedisRepository<TAgg, TId>> _logger = logger;
     private readonly string _aggName = typeof(TAgg).Name.ToLowerInvariant();
 
     public async Task<TAgg?> GetAsync(TId id, CancellationToken ct = default)
@@ -26,41 +33,41 @@ public partial class RedisRepository<TAgg, TId>(IDatabase db, IOptions<RedisOpti
 
     public async Task<bool> SaveAsync(TAgg aggregate, CancellationToken ct = default)
     {
-        // capture expected BEFORE bump
         var expected = aggregate.Version.ToString();
-
-        // now bump for what we will store
-        var toStore = CloneWithNextVersion(aggregate); // this increments Version
+        var toStore = CloneWithNextVersion(aggregate);
         var json = JsonSerializer.Serialize(toStore, JsonOptions.Default);
-
-        // Prepare outbox event envelopes
-        var outboxKey = RedisKeys.Outbox(_opts.KeyPrefix);
-        var envelopes = aggregate.DomainEvents
-            .Select(ev => OutboxEnvelope.Create(_aggName, aggregate.Id.ToString(), toStore.Version, ev))
-            .ToList();
 
         RedisKey key = RedisKeys.Aggregate(_opts.KeyPrefix, _aggName, aggregate.Id);
 
-        // Prepare arguments for Lua script -- domain events go into ARGV[4..]
-        List<RedisValue> argv =
-        [
-            expected,
-            json,
-            envelopes.Count.ToString()
-        ];
-        foreach (var env in envelopes)
-        {
-            argv.Add(JsonSerializer.Serialize(env, JsonOptions.Default));
-        }
+        List<RedisValue> argv = [expected, json, "0"];
 
         var result = (int)await _db.ScriptEvaluateAsync(
             Scripts.CompareExchangeSet,
-            [key, RedisKeys.Outbox(_opts.KeyPrefix)],
-            [.. argv]
-        );
+            [key],
+            [.. argv]);
 
         if (result == 1 && _opts.DefaultTtl is { } ttl)
             await _db.KeyExpireAsync(key, ttl);
+
+        if (result == 1)
+        {
+            var pendingEvents = aggregate.DomainEvents.ToList();
+            aggregate.ClearRaisedDomainEvents();
+
+            foreach (var ev in pendingEvents)
+            {
+                try
+                {
+                    await _domainEventPublisher.PublishAsync(ev, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex,
+                        "Failed to publish domain event {EventType} for aggregate {AggName} {AggId}",
+                        ev.GetType().Name, _aggName, aggregate.Id);
+                }
+            }
+        }
 
         return result == 1;
     }

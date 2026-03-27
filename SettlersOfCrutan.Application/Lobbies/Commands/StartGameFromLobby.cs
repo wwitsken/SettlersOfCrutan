@@ -2,7 +2,7 @@ using FluentValidation;
 using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
-using SettlersOfCrutan.Application.Lobbies.DTOs;
+using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
@@ -58,22 +58,28 @@ public sealed class StartGameFromLobbyCommandHandler(IGameRepository gameReposit
         var saved = await _gameRepository.SaveAsync(game, ct);
 
         var now = _clock.UtcNow;
-        var userViews = LobbyDto.UserViewsFromLobby(lobby);
 
-        try
+        if (saved)
         {
-            if (saved)
-            await _realtimePublisher.MoveFromLobbyToGameAsync(lobby.Id, game.Id, shuffledUserIds, now, ct);
-        }
-        catch (Exception ex)
-        {
-            // Do NOT fail the command if state is already saved.
-            // Log and optionally enqueue retry/catch-up.
+            try
+            {
+                await _realtimePublisher.MoveFromLobbyToGameAsync(lobby.Id, game.Id, shuffledUserIds, now, ct);
 
-            _logger.LogWarning(ex, "Failed to publish MoveFromLobbyToGameAsync for LobbyId {LobbyId}", lobby.Id);
-
-            // Optional: enqueue a lightweight "lobby changed" signal for retry,
-            // or rely on clients to resync on next poll/reconnect.
+                var gameViews = GameDto.UserViewsFromGame(game);
+                var publishTasks = gameViews.Select(kvp =>
+                    _realtimePublisher.UpdateGameAsync(
+                        game.Id,
+                        kvp.Key,
+                        now,
+                        RealtimeEvents.GameStateUpdated,
+                        kvp.Value,
+                        ct));
+                await Task.WhenAll(publishTasks);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to publish realtime for new game {GameId} from lobby {LobbyId}", game.Id, lobby.Id);
+            }
         }
 
         return saved ? Result<GameId>.Success(game.Id) : Result<GameId>.Failure(DomainError.InvalidOperation);

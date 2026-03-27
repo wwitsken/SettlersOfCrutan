@@ -1,15 +1,14 @@
 import { useEffect } from "react";
 import { useSignalRContext } from "../context/SignalRContext";
 import { useGamesStore } from "../stores/gameStore";
-import type { Game } from "../domain/game/game";
+import { gamePayloadToDomain } from "../domain/game/mapGameFromApi";
+import { RealtimeEvents } from "../realtime/realtimeEvents";
 
-type GameReceiveArgs = [string, Date, string, unknown];
+type GameReceiveArgs = [string, string | Date, string, unknown];
 
 /**
- * Registers SignalR handlers for the Game page.
- *
- * This mirrors the LobbyPage pattern, but keeps handler registration in a hook.
- * The payload projection is intentionally lightweight/mocked for now.
+ * Registers SignalR for the game route. Server contract: full snapshots use
+ * {@link RealtimeEvents.GameStateUpdated} with a per-user GameDto payload.
  */
 export function useGameSignalR(gameId?: string | null) {
   const { isConnected, isConnecting, error, start, registerHandlers } =
@@ -20,22 +19,26 @@ export function useGameSignalR(gameId?: string | null) {
   useEffect(() => {
     registerHandlers({
       GameReceive: (...args: unknown[]) => {
-        const [evtGameId, timestamp, eventName, payload] =
-          args as GameReceiveArgs;
+        const [evtGameId, , eventName, payload] = args as GameReceiveArgs;
 
-        // If this page is scoped to a specific game, ignore events for other games.
         if (gameId && evtGameId && evtGameId !== gameId) return;
 
-        try {
-          // TODO: replace with proper projection from API/SignalR DTO -> domain Game
-          const projected = (payload ?? {}) as Game;
-          setGame(projected);
+        if (eventName !== RealtimeEvents.GameStateUpdated) {
+          if (import.meta.env.DEV) {
+            console.debug(
+              "[SignalR] GameReceive ignored (unknown event)",
+              eventName,
+            );
+          }
+          return;
+        }
 
-          console.log(
-            `gameId: ${evtGameId}\n timeStamp: ${timestamp}\n eventName: ${eventName}\n payLoad: ${JSON.stringify(
-              projected,
-            )}`,
-          );
+        try {
+          const projected = gamePayloadToDomain(payload);
+          if (projected) setGame(projected);
+          else if (import.meta.env.DEV) {
+            console.warn("GameStateUpdated payload could not be mapped", payload);
+          }
         } catch (e) {
           console.error("Failed to project GameReceive payload:", e);
         }
