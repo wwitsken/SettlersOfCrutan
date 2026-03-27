@@ -1,10 +1,12 @@
 import { Outlet, Link } from "react-router";
-import { useAuthStore } from "../stores/authStore";
+import { useMsal } from "@azure/msal-react";
+import {
+  AuthenticatedTemplate,
+  UnauthenticatedTemplate,
+} from "@azure/msal-react";
 
 export default function AppLayout() {
-  // Select booleans so conditional rendering works correctly
-  const isAuthed = useAuthStore((s) => s.status === "authenticated");
-  const isAdmin = useAuthStore((s) => s.hasRole("Admin"));
+  const { instance } = useMsal();
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <header className="bg-white shadow">
@@ -16,41 +18,23 @@ export default function AppLayout() {
             <Link to="/" className="text-gray-700 hover:text-gray-900">
               Home
             </Link>
-            {isAuthed && (
-              <Link
-                to="/preferences"
-                className="text-gray-700 hover:text-gray-900"
-              >
-                Preferences
-              </Link>
-            )}
             <span className="text-gray-300">|</span>
-            {!isAuthed && (
-              <Link to="/login" className="text-gray-700 hover:text-gray-900">
+            <UnauthenticatedTemplate>
+              <button
+                className="text-gray-700 hover:text-gray-900 cursor-pointer"
+                onClick={async () => await instance.loginRedirect()}
+              >
                 Login
-              </Link>
-            )}
-            {isAuthed && (
-              <Link to="/logout" className="text-gray-700 hover:text-gray-900">
+              </button>
+            </UnauthenticatedTemplate>
+            <AuthenticatedTemplate>
+              <button
+                className="text-gray-700 hover:text-gray-900 cursor-pointer"
+                onClick={async () => await instance.logout()}
+              >
                 Logout
-              </Link>
-            )}
-            {isAdmin && (
-              <Link
-                to="/create-user"
-                className="text-gray-700 hover:text-gray-900"
-              >
-                Create User
-              </Link>
-            )}
-            {isAuthed && (
-              <Link
-                to="/reset-password"
-                className="text-gray-700 hover:text-gray-900"
-              >
-                Reset Password
-              </Link>
-            )}
+              </button>
+            </AuthenticatedTemplate>
           </nav>
         </div>
       </header>

@@ -28,7 +28,7 @@ public class Lobby : AggregateRoot<LobbyId>
         Capacity = capacity;
     }
 
-    public static Lobby Create(PlayerId host)
+    public static Lobby Create(string hostUserId)
     {
         var lobby = new Lobby(
             new LobbyId { Value = Guid.NewGuid() },
@@ -37,38 +37,35 @@ public class Lobby : AggregateRoot<LobbyId>
             DateTimeOffset.UtcNow,
             capacity: 4);
 
-        lobby._members.Add(LobbyMember.CreateHost(host, DateTime.Now));
-        lobby.AddDomainEvent(new LobbyMemberAddedDomainEvent(lobby.Id, host));
-        lobby.AddDomainEvent(new LobbyHostChangedDomainEvent(lobby.Id, host));
+        var host = LobbyMember.CreateHost(hostUserId, DateTime.Now);
+        lobby._members.Add(host);
+        lobby.AddDomainEvent(new LobbyMemberAddedDomainEvent(lobby.Id, host.Id));
+        lobby.AddDomainEvent(new LobbyHostChangedDomainEvent(lobby.Id, host.Id));
         return lobby;
     }
 
-    /// <summary>
-    /// Admission rule: the application layer should already have verified the player's Presence:
-    /// - player is Online, and
-    /// - player is not in another lobby or is joining this one.
-    /// </summary>
-    public Result<Nothing> AddMember(PlayerId playerId)
+    public Result<Nothing> AddMember(string userId)
     {
         if (!IsOpen) return Result<Nothing>.Failure(new("LobbyClosed", "Lobby is closed."));
-        if (_members.Any(m => m.PlayerId == playerId)) return Result<Nothing>.Failure(new("AlreadyJoinedLobby", "Player is already in the lobby."));
+        if (_members.Any(m => m.UserId == userId)) return Result<Nothing>.Failure(new("AlreadyJoinedLobby", "Player is already in the lobby."));
         if (_members.Count >= Capacity) return Result<Nothing>.Failure(new("LobbyFull", "Lobby is full."));
 
-        _members.Add(LobbyMember.CreateRegular(playerId, DateTime.Now));
-        AddDomainEvent(new LobbyMemberAddedDomainEvent(Id, playerId));
+        var newMember = LobbyMember.CreateRegular(userId, DateTime.Now);
+        _members.Add(newMember);
+        AddDomainEvent(new LobbyMemberAddedDomainEvent(Id, newMember.Id));
         return Result.Success();
     }
 
-    public Result<Nothing> RemoveMember(PlayerId playerId)
+    public Result<Nothing> RemoveMember(string userId)
     {
-        var idx = _members.FindIndex(m => m.PlayerId == playerId);
+        var idx = _members.FindIndex(m => m.UserId == userId);
         if (idx < 0)
             return Result<Nothing>.Failure(new("NotInLobby", "Player is not in the lobby."));
 
         var removed = _members[idx];
         _members.RemoveAt(idx);
 
-        AddDomainEvent(new LobbyMemberRemovedDomainEvent(Id, playerId));
+        AddDomainEvent(new LobbyMemberRemovedDomainEvent(Id, removed.Id));
 
         if (removed.IsHost && _members.Count > 0)
         {
@@ -77,16 +74,16 @@ public class Lobby : AggregateRoot<LobbyId>
             if (nextPlayer is not null)
             {
                 nextPlayer.SetHost(true);
-                AddDomainEvent(new LobbyHostChangedDomainEvent(Id, nextPlayer.PlayerId!));
+                AddDomainEvent(new LobbyHostChangedDomainEvent(Id, nextPlayer.Id!));
             }
         }
 
         return Result.Success();
     }
 
-    public Result<Nothing> SetReady(PlayerId playerId, bool ready)
+    public Result<Nothing> SetReady(string userId, bool ready)
     {
-        var idx = _members.FindIndex(m => m.PlayerId == playerId);
+        var idx = _members.FindIndex(m => m.UserId == userId);
         if (idx < 0)
             return Result<Nothing>.Failure(new("NotInLobby", "Player is not in the lobby."));
 
@@ -94,12 +91,23 @@ public class Lobby : AggregateRoot<LobbyId>
         if (m.IsReady == ready) return Result.Success();
 
         m.SetReady(ready);
-        AddDomainEvent(new LobbyMemberReadyStatusChangedDomainEvent(Id, playerId, ready));
+        AddDomainEvent(new LobbyMemberReadyStatusChangedDomainEvent(Id, m.Id, ready));
         return Result.Success();
     }
 
-    public void CloseLobby() => IsOpen = false;
-    public void OpenLobby() => IsOpen = true;
+    public Result<Nothing> CanStartGame(string userId)
+    {
+        var idx = _members.FindIndex(m => m.UserId == userId);
+        if (idx < 0)
+            return Result.Failure(new("NotInLobby", "Player is not in the lobby."));
+        var m = _members[idx];
+        if (!m.IsHost)
+            return Result.Failure(new("NotHost", "Only the host can start the game."));
+        if (!AllReady())
+            return Result.Failure(new("NotAllReady", "Not all players are ready."));
 
-    public bool AllReady() => _members.Count > 0 && _members.All(m => m.IsReady);
+        return Result.Success();
+    }
+
+    private bool AllReady() => _members.Count > 0 && _members.All(m => m.IsReady);
 }

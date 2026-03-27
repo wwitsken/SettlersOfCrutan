@@ -13,7 +13,8 @@ public enum ResourceCardType
     Wool,
     Grain,
     Ore,
-    Desert
+    Desert,
+    Water
 }
 
 public sealed record ResourceHandId : BaseId<Guid>;

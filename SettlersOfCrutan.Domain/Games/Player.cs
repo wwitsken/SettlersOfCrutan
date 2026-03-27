@@ -23,7 +23,8 @@ public record PlayerId : BaseId<string>
 public class Player : Entity<PlayerId>
 {
     public override PlayerId Id { get; init; }
-    public string Name { get; private set; } = string.Empty;
+    public string UserId { get; private set; }
+    public string DisplayName { get; private set; } = string.Empty;
     public PlayerColor Color { get; private set; } = PlayerColor.None;
 
     // Encapsulated managers (internal for aggregate collaboration)
@@ -44,7 +45,8 @@ public class Player : Entity<PlayerId>
     public IReadOnlyDictionary<DevelopmentCardType, int> GetDevelopmentCards() => DevCardHand.Cards;
 
     public static Player Create(string userId)
-        => new(new() { Value = userId },
+        => new(new() { Value = Guid.NewGuid().ToString() },
+               userId,
                "",
                PlayerColor.None,
                new ResourceHand(),
@@ -52,6 +54,28 @@ public class Player : Entity<PlayerId>
                PieceReserve.StandardPlayerStarting(),
                null,
                false);
+
+    [JsonConstructor]
+    private Player(PlayerId id,
+                   string userId,
+                   string name,
+                   PlayerColor color,
+                   ResourceHand resourceHand,
+                   DevCardHand devCardHand,
+                   PieceReserve pieceReserve,
+                   DateTimeOffset? joinedAt,
+                   bool ready)
+    {
+        Id = id;
+        UserId = userId;
+        DisplayName = name;
+        Color = color;
+        ResourceHand = resourceHand;
+        DevCardHand = devCardHand;
+        PieceReserve = pieceReserve;
+        JoinedAt = joinedAt;
+        _ready = ready;
+    }
 
     // -------- Resource methods --------
     public bool CanPayResources(IEnumerable<ResourceCardAmount> cost) => ResourceHand.CanPay(cost);
@@ -88,27 +112,8 @@ public class Player : Entity<PlayerId>
     private bool _ready;
 
     public bool Ready => _ready;
-    public void SetName(string name) => Name = name?.Trim() ?? string.Empty;
+    public void SetName(string name) => DisplayName = name?.Trim() ?? string.Empty;
     public void SetColor(PlayerColor color) => Color = color;
     public void SetReady(bool ready) => _ready = ready;
 
-    [JsonConstructor]
-    private Player(PlayerId id,
-                   string name,
-                   PlayerColor color,
-                   ResourceHand resourceHand,
-                   DevCardHand devCardHand,
-                   PieceReserve pieceReserve,
-                   DateTimeOffset? joinedAt,
-                   bool ready)
-    {
-        Id = id;
-        Name = name;
-        Color = color;
-        ResourceHand = resourceHand;
-        DevCardHand = devCardHand;
-        PieceReserve = pieceReserve;
-        JoinedAt = joinedAt;
-        _ready = ready;
-    }
 }

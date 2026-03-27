@@ -9,14 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Azure.Data.Tables" Version="13.0.2" />
-    <PackageReference Include="Aspire.StackExchange.Redis" Version="13.0.2" />
-    <PackageReference Include="ElCamino.AspNetCore.Identity.AzureTable" Version="10.0.0" />
-    <PackageReference Include="ElCamino.AspNetCore.Identity.AzureTable.Model" Version="10.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.0" />
+    <PackageReference Include="Aspire.StackExchange.Redis" Version="13.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0-preview.4" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.11.1" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.11.10" />
   </ItemGroup>
 
   <ItemGroup>

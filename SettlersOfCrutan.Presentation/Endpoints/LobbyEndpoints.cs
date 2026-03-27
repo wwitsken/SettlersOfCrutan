@@ -2,13 +2,15 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using SettlersOfCrutan.Application.Abstractions;
-using SettlersOfCrutan.Application.Contracts.Lobbies;
 using SettlersOfCrutan.Application.Lobbies.Commands;
+using SettlersOfCrutan.Application.Lobbies.DTOs;
 using SettlersOfCrutan.Application.Lobbies.Queries;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
+using SettlersOfCrutan.Domain.Lobbies;
 using SettlersOfCrutan.Infrastructure.SignalR;
 using SettlersOfCrutan.Presentation.Auth;
+using SettlersOfCrutan.Presentation.Dtos;
 using SettlersOfCrutan.Presentation.Extensions;
 
 namespace SettlersOfCrutan.Presentation.Endpoints;
@@ -84,6 +86,18 @@ public static class LobbyEndpoints
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
+
+        group.MapPost("/{lobbyId:guid}/start-game", async Task<Results<Ok<Guid>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
+            Guid lobbyId,
+            [FromBody] StartGameFromLobbyRequest req,
+            ICommandHandler<StartGameFromLobbyCommand, GameId> handler,
+            IUserProvider userProvider,
+            CancellationToken ct) =>
+        {
+            var cmd = new StartGameFromLobbyCommand(userProvider.GetUserId(), lobbyId, req.GameType, req.GameName);
+            Result<GameId> result = await handler.Handle(cmd, ct);
+            return result.UnwrapId<GameId, Guid>().ToHttpResult();
+        }).RequireAuthorization();
 
         group.RequireAuthorization();
 

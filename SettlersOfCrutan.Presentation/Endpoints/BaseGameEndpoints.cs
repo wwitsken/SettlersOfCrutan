@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Games.Commands.Lifecycle;
+using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Application.Games.Queries;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
@@ -17,16 +18,6 @@ public static class BaseGameEndpoints
     {
         var group = app.MapGroup("/games").WithTags("Game:Lifecycle");
 
-        group.MapPost("/create", async Task<Results<Ok<Guid>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
-            [FromBody] CreateGameRequest command,
-            ICommandHandler<CreateGameCommand, GameId> handler,
-            CancellationToken ct) =>
-        {
-            var cmd = new CreateGameCommand(command.GameName, [.. command.UserIds], command.GameType);
-            Result<GameId> result = await handler.Handle(cmd, ct);
-            return result.UnwrapId<GameId, Guid>().ToHttpResult();
-        }).RequireAuthorization();
-
         group.MapPost("/{id:guid}/join", async Task<Results<Ok<Guid>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
             [FromBody] JoinGameRequest request,
@@ -41,14 +32,14 @@ public static class BaseGameEndpoints
             return result.UnwrapId<GameId, Guid>().ToHttpResult();
         }).RequireAuthorization();
 
-        group.MapGet("/{id:guid}", async Task<IResult> (
+        group.MapGet("/{id:guid}", async Task<Results<Ok<PublicGameDto>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
-            [FromServices] IQueryHandler<GetGameByIdQuery, Game> handler,
+            [FromServices] IQueryHandler<GetGameByIdQuery, PublicGameDto> handler,
             IUserProvider userProvider,
             CancellationToken ct) =>
         {
             var query = new GetGameByIdQuery(new GameId { Value = id });
-            var result = await handler.Handle(query, ct);
+            Result<PublicGameDto> result = await handler.Handle(query, ct);
             return result.ToHttpResult();
         }).RequireAuthorization();
 

@@ -9,15 +9,28 @@ public sealed class SignalRRealtimePublisher(IHubContext<CrutanHub, ICrutanClien
 {
     private readonly IHubContext<CrutanHub, ICrutanClient> _hub = hub;
 
-    public Task ToLobbyUserAsync(LobbyId lobbyId, string userId, string eventName, object payload, CancellationToken ct = default) =>
-        _hub.Clients.User(userId).LobbyReceive(lobbyId.Value.ToString(), eventName, payload);
-    
-    public Task ToLobbyUsersAsync(LobbyId lobbyId, IReadOnlyList<string> userIds, string eventName, object payload, CancellationToken ct = default) =>
-        _hub.Clients.Users(userIds).LobbyReceive(lobbyId.Value.ToString(), eventName, payload);
+    public Task UpdateLobbyAsync(LobbyId lobbyId, string userId, DateTimeOffset timestamp, string eventName, object payload, CancellationToken ct = default)
+    {
+        return _hub.Clients.User(userId).LobbyReceive(lobbyId.Value.ToString(), timestamp, eventName, payload);
+    }
 
-    public Task ToGameUserAsync(GameId gameId, string userId, string eventName, object payload, CancellationToken ct = default) =>
-        _hub.Clients.User(userId).GameReceive(gameId.Value.ToString(), eventName, payload);
+    public Task UpdateLobbyAsync(LobbyId lobbyId, IReadOnlyList<string> userIds, DateTimeOffset timestamp, string eventName, object payload, CancellationToken ct = default)
+    {
+        return _hub.Clients.Users(userIds).LobbyReceive(lobbyId.Value.ToString(), timestamp, eventName, payload);
+    }
 
-    public Task ToGameUsersAsync(GameId gameId, IReadOnlyList<string> userIds, string eventName, object payload, CancellationToken ct = default) =>
-        _hub.Clients.Users(userIds).GameReceive(gameId.Value.ToString(), eventName, payload);
+    public Task UpdateGameAsync(GameId gameId, string userId, DateTimeOffset timestamp, string eventName, object payload, CancellationToken ct = default)
+    {
+        return _hub.Clients.User(userId).GameReceive(gameId.Value.ToString(), timestamp, eventName, payload);
+    }
+
+    public Task UpdateGameAsync(GameId gameId, IReadOnlyList<string> userIds, DateTimeOffset timestamp, string eventName, object payload, CancellationToken ct = default)
+    {
+        return _hub.Clients.Users(userIds).GameReceive(gameId.Value.ToString(), timestamp, eventName, payload);
+    }
+
+    public Task MoveFromLobbyToGameAsync(LobbyId lobbyId, GameId gameId, IReadOnlyList<string> userIds, DateTimeOffset timestamp, CancellationToken ct = default)
+    {
+        return _hub.Clients.Users(userIds).MoveFromLobbyToGame(lobbyId.Value.ToString(), gameId.Value.ToString(), timestamp);
+    }
 }

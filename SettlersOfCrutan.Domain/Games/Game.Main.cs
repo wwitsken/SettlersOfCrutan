@@ -3,6 +3,7 @@ using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
 using SettlersOfCrutan.Domain.Games.Generation;
 using SettlersOfCrutan.Domain.Games.Resources;
+using SettlersOfCrutan.Domain.Lobbies;
 using System.Text.Json.Serialization;
 
 namespace SettlersOfCrutan.Domain.Games;
@@ -20,9 +21,6 @@ public partial class Game : AggregateRoot<GameId>
     public ResourceHand BankResourceHand { get; private set; } = ResourceHand.StandardBankResources();
     public DevCardHand BankDevCardHand { get; private set; } = DevCardHand.StandardBankDeck();
 
-    public bool AllPlayersJoined() => Players.All(p => p.JoinedAt is not null);
-    public bool AllPlayersReady() => Players.All(p => p.Ready);
-    public PlayerId CurrentPlayerId() => Players[PlayerIndex].Id;
     public DateTimeOffset? TurnExpiresAt { get; set; }
     public PlayerDirection PlayerDirection { get; set; } = PlayerDirection.Clockwise;
     public GamePhase GamePhase { get; set; }
@@ -35,6 +33,11 @@ public partial class Game : AggregateRoot<GameId>
 
     private readonly List<DiscardHalfRequirement> _discardHalfRequirements = [];
     public IReadOnlyList<DiscardHalfRequirement> DiscardHalfRequirements => [.. _discardHalfRequirements];
+
+
+    public bool AllPlayersJoined() => Players.All(p => p.JoinedAt is not null);
+    public bool AllPlayersReady() => Players.All(p => p.Ready);
+    public PlayerId CurrentPlayerId() => Players[PlayerIndex].Id;
 
     [JsonConstructor]
     private Game(
@@ -68,7 +71,7 @@ public partial class Game : AggregateRoot<GameId>
         TurnExpiresAt = turnExpiresAt;
     }
 
-    public static Result<Game> CreateGame(string gameName, string[] userIds, IBoardGenerator boardGenerator)
+    public static Result<Game> CreateGame(string gameName, LobbyId spawnerLobbyId, string[] userIds, IBoardGenerator boardGenerator)
     {
         Game game = new(
             GameType.BaseGame,
@@ -84,7 +87,7 @@ public partial class Game : AggregateRoot<GameId>
             0
         );
 
-        game.AddDomainEvent(new GameCreatedDomainEvent(game.Id, [.. game.Players.Select(p => p.Id.Value)]));
+        game.AddDomainEvent(new GameCreatedFromLobbyDomainEvent(game.Id, spawnerLobbyId, [.. game.Players.Select(p => p.Id.Value)]));
 
         return Result.Success(game);
     }

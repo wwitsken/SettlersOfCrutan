@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
+using SettlersOfCrutan.Application.Abstractions.Realtime;
+using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
@@ -13,9 +11,16 @@ namespace SettlersOfCrutan.Application.Games.Commands.Trade;
 
 public record MaritimeTrade4to1Command(GameId GameId, PlayerId PlayerId, ResourceCardType DiscardResource, ResourceCardType RequestResource) : ICommand;
 
-public sealed class MaritimeTrade4to1CommandHandler(IGameRepository gameRepository) : ICommandHandler<MaritimeTrade4to1Command>
+public sealed class MaritimeTrade4to1CommandHandler(
+    IGameRepository gameRepository,
+    IRealtimePublisher realtimePublisher,
+    IDateTimeProvider clock,
+    ILogger<MaritimeTrade4to1CommandHandler> logger) : ICommandHandler<MaritimeTrade4to1Command>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
+    private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
+    private readonly IDateTimeProvider _clock = clock;
+    private readonly ILogger<MaritimeTrade4to1CommandHandler> _logger = logger;
 
     public async Task<Result<Nothing>> Handle(MaritimeTrade4to1Command command, CancellationToken ct = default)
     {
@@ -26,6 +31,31 @@ public sealed class MaritimeTrade4to1CommandHandler(IGameRepository gameReposito
         if (result.IsFailure) return Result<Nothing>.Failure(result.Error);
 
         var saved = await _gameRepository.SaveAsync(game, ct);
+
+        if (saved)
+        {
+            var now = _clock.UtcNow;
+            var userViews = GameDto.UserViewsFromGame(game);
+
+            try
+            {
+                var publishTasks = userViews.Select(kvp =>
+                    _realtimePublisher.UpdateGameAsync(
+                        game.Id,
+                        kvp.Key,
+                        now,
+                        RealtimeEvents.GameStateUpdated,
+                        kvp.Value,
+                        ct));
+
+                await Task.WhenAll(publishTasks);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to publish GameStateUpdated for GameId {GameId}", game.Id);
+            }
+        }
+
         return saved ? Result<Nothing>.Success() : Result<Nothing>.Failure(DomainError.InvalidOperation);
     }
 }

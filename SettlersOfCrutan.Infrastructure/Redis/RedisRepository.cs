@@ -57,10 +57,10 @@ public partial class RedisRepository<TAgg, TId>(IDatabase db, IOptions<RedisOpti
             Scripts.CompareExchangeSet,
             [key, RedisKeys.Outbox(_opts.KeyPrefix)],
             [.. argv]
-        ).ConfigureAwait(false);
+        );
 
         if (result == 1 && _opts.DefaultTtl is { } ttl)
-            await _db.KeyExpireAsync(key, ttl).ConfigureAwait(false);
+            await _db.KeyExpireAsync(key, ttl);
 
         return result == 1;
     }

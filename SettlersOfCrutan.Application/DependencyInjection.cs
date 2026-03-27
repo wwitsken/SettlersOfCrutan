@@ -10,9 +10,6 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
-        // Concrete singletons
-        services.AddSingleton<IDateTimeProvider, SystemClock>();
-
         // App services / policies
         services.AddScoped<IBoardGenerator, RandomBoardGenerator>();
         services.AddSingleton<StandardPriceCalculator>();
