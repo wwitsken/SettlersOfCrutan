@@ -28,7 +28,7 @@ export function HexTile({ hex, hexRadius, color, hexNumber }: Props) {
       </mesh>
 
       <Text
-        position={[0, 0.12, 0]}
+        position={[0, 0.12, -0.03]}
         rotation={[-Math.PI / 2, 0, 0]}
         fontSize={0.18}
         color={"black"}
@@ -36,6 +36,18 @@ export function HexTile({ hex, hexRadius, color, hexNumber }: Props) {
         anchorY="middle"
       >
         {String(hexNumber)}
+      </Text>
+      <Text
+        position={[0, 0.121, 0.056]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        fontSize={0.065}
+        color={"#333"}
+        anchorX="center"
+        anchorY="middle"
+        maxWidth={0.46}
+        textAlign="center"
+      >
+        {`${hex.coordinate.q}:${hex.coordinate.r}:${hex.coordinate.s}`}
       </Text>
     </group>
   );
