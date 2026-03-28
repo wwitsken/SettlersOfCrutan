@@ -13,6 +13,7 @@ public class RandomBoardGenerator : IBoardGenerator
 
         // Build axial coordinates within radius
         var coords = GetHexCoords(config.Radius).ToList();
+        FixedPortEdgePlacement.ValidateOrThrow(config, new HashSet<HexCoord>(coords));
         var hexCount = coords.Count;
 
         // Assign resources according to counts
@@ -46,11 +47,20 @@ public class RandomBoardGenerator : IBoardGenerator
 
         AssignNumberTokens(hexes, numberTokens, rng);
 
-        // Generate random ports on border edges
         var totalPorts = config.Ports.Sum(p => p.Value);
-        var borderEdges = GetBorderEdges(coords).ToList();
-        Shuffle(borderEdges, rng);
-        var chosenEdges = borderEdges.Take(totalPorts).ToList();
+        List<Edge> chosenEdges;
+        if (config.FixedPortEdges is not null && config.FixedPortEdges.Count > 0)
+        {
+            chosenEdges = config.FixedPortEdges
+                .Select(s => new Edge(s.LandHex, s.SeaHex).Normalize())
+                .ToList();
+        }
+        else
+        {
+            var borderEdges = GetBorderEdges(coords).ToList();
+            Shuffle(borderEdges, rng);
+            chosenEdges = borderEdges.Take(totalPorts).ToList();
+        }
 
         var portTypes = new List<PortType>();
         foreach (var (type, count) in config.Ports)
@@ -84,6 +94,16 @@ public class RandomBoardGenerator : IBoardGenerator
             // allow mismatch but warn via exception for generator correctness
             // consumers can catch and adjust if they want best-effort
             throw new ArgumentException($"NumberTokens count {config.NumberTokens.Count} does not match non-desert hexes {nonDesert}.");
+        }
+
+        if (config.FixedPortEdges is not null && config.FixedPortEdges.Count > 0)
+        {
+            var totalPorts = config.Ports.Values.Sum();
+            if (config.FixedPortEdges.Count != totalPorts)
+            {
+                throw new ArgumentException(
+                    $"FixedPortEdges count {config.FixedPortEdges.Count} must equal total ports {totalPorts}.");
+            }
         }
     }
 

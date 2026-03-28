@@ -107,6 +107,9 @@ export const game: Game = {
       developmentCardCount: 0,
       pieceReserve: { settlement: 5, city: 4, road: 15 },
       discardRequirement: 0,
+      victoryPoints: 3,
+      hasLongestRoad: true,
+      hasLargestArmy: false,
     },
   ],
 };

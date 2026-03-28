@@ -1,9 +1,28 @@
-﻿using SettlersOfCrutan.Domain.Games.Boards;
+using SettlersOfCrutan.Domain.Games.Boards;
+using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Domain.Games.Generation;
+
 public static class StandardBoardConfigurations
 {
+    /// <summary>
+    /// Standard base-game (radius 2) port edge positions: land hex then adjacent off-board hex.
+    /// Port <i>types</i> are still assigned by the board generator (random or deterministic).
+    /// </summary>
+    public static IReadOnlyList<PortEdgeSlot> DefaultBaseGamePortEdges { get; } =
+    [
+        new(new HexCoord(1, -2, 1), new HexCoord(2, -3, 1)),
+        new(new HexCoord(2, -1, -1), new HexCoord(3, -2, -1)),
+        new(new HexCoord(2, 0, -2), new HexCoord(3, 0, -3)),
+        new(new HexCoord(1, 1, -2), new HexCoord(1, 2, -3)),
+        new(new HexCoord(-1, 2, -1), new HexCoord(-1, 3, -2)),
+        new(new HexCoord(-2, 2, 0), new HexCoord(-3, 3, 0)),
+        new(new HexCoord(-2, 1, 1), new HexCoord(-3, 1, 2)),
+        new(new HexCoord(-1, -1, 2), new HexCoord(-2, -1, 3)),
+        new(new HexCoord(0, -2, 2), new HexCoord(0, -3, 3)),
+    ];
+
     public static BoardConfig DefaultBaseGame => new
         (
         Radius: 2,
@@ -25,5 +44,6 @@ public static class StandardBoardConfigurations
             [PortType.Wool2to1] = 1,
             [PortType.Grain2to1] = 1,
             [PortType.Ore2to1] = 1
-        });
+        },
+        FixedPortEdges: DefaultBaseGamePortEdges);
 }

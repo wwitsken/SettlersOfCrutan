@@ -74,15 +74,27 @@ public class StandardBoardGenerator : IBoardGenerator
             idx++;
         }
 
-        // Deterministic ports placement: enumerate border edges in a stable order
         var coords = GetHexCoords(config.Radius).ToList();
-        var borderEdges = GetBorderEdges(coords).Distinct().OrderBy(e => e.ToString()).ToList();
+        var boardSet = new HashSet<HexCoord>(coords);
+        FixedPortEdgePlacement.ValidateOrThrow(config, boardSet);
+
+        List<Edge> portEdges;
+        if (config.FixedPortEdges is not null && config.FixedPortEdges.Count > 0)
+        {
+            portEdges = config.FixedPortEdges
+                .Select(s => new Edge(s.LandHex, s.SeaHex).Normalize())
+                .ToList();
+        }
+        else
+        {
+            portEdges = GetBorderEdges(coords).Distinct().OrderBy(e => e.ToString()).ToList();
+        }
 
         var portTypes = BuildDeterministicPortTypes(config.Ports);
         var ports = new List<Port>();
-        for (int i = 0; i < Math.Min(borderEdges.Count, portTypes.Count); i++)
+        for (int i = 0; i < Math.Min(portEdges.Count, portTypes.Count); i++)
         {
-            ports.Add(new Port(borderEdges[i]) { Type = portTypes[i] });
+            ports.Add(new Port(portEdges[i]) { Type = portTypes[i] });
         }
 
         return Board.Create(hexes, ports);

@@ -1,4 +1,4 @@
-﻿using SettlersOfCrutan.Domain.Games;
+using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 
@@ -70,34 +70,41 @@ public class BoardPlacementValidationTests
 
         var hex = new HexCoord(0, 0, 0);
         var v0 = VertexFactory.FromHexCorner(hex, HexCornerDirection.NE);
-        var v1 = VertexFactory.GetAdjacentVertices(v0).First();
+        var seedEdge = new Edge(v0.HexCoord1, v0.HexCoord2);
+        var seedNorm = seedEdge.Normalize();
+        var initial = board.PlaceInitialSettlementAndRoad(owner, v0, seedEdge);
+        Assert.True(initial.IsSuccess);
 
-        // Determine the edge shared by v0 and v1: the two common hexes
-        var s0 = new[] { v0.HexCoord1, v0.HexCoord2, v0.HexCoord3 };
-        var s1 = new[] { v1.HexCoord1, v1.HexCoord2, v1.HexCoord3 };
-        var shared = s0.Intersect(s1).ToList();
-        Assert.Equal(2, shared.Count);
-        var e0 = new Edge(shared[0], shared[1]);
+        // Pick an adjacent vertex whose shared edge with v0 is not the initial road (otherwise BuildRoad duplicates).
+        Vertex v1 = default;
+        Edge e0 = default;
+        foreach (var cand in VertexFactory.GetAdjacentVertices(v0).OrderBy(v => v.ToString()))
+        {
+            var s0 = new[] { v0.HexCoord1, v0.HexCoord2, v0.HexCoord3 };
+            var s1 = new[] { cand.HexCoord1, cand.HexCoord2, cand.HexCoord3 };
+            var shared = s0.Intersect(s1).ToList();
+            Assert.Equal(2, shared.Count);
+            var candEdge = new Edge(shared[0], shared[1]).Normalize();
+            if (candEdge.Equals(seedNorm)) continue;
+            v1 = cand;
+            e0 = new Edge(shared[0], shared[1]);
+            break;
+        }
 
-        // Seed a connected road for the owner so BuildRoad connectivity passes
-        HexCoord neighborOfShared0 = shared[0]
-            .GetAdjacentHexCoords()
-            .Values
-            .First(v => !v.Equals(shared[1]));
-        board.BuildRoad(owner!, new Edge(shared[0], neighborOfShared0));
+        Assert.NotEqual(default(Vertex), v1);
 
         // Build road for e0
         var road = board.BuildRoad(owner, e0);
         Assert.True(road.IsSuccess);
 
         // Attempt again using reversed order should fail
-        var r2 = board.BuildRoad(owner, new Edge(shared[1], shared[0]));
+        var placedNorm = e0.Normalize();
+        var r2 = board.BuildRoad(owner, new Edge(placedNorm.HexCoord2, placedNorm.HexCoord1));
         Assert.True(r2.IsFailure);
         Assert.Equal("RoadBuild", r2.Error.Code);
         Assert.Contains("already has a road", r2.Error.Message, StringComparison.OrdinalIgnoreCase);
 
         // Only one road added for that edge (count only normalized matches)
-        var norm = e0.Normalize();
-        Assert.Equal(1, board.Roads.Count(r => r.EdgeCoordinate.Normalize().Equals(norm)));
+        Assert.Equal(1, board.Roads.Count(r => r.EdgeCoordinate.Normalize().Equals(placedNorm)));
     }
 }

@@ -198,6 +198,9 @@ function mapPlayers(list: PublicGameDto["players"]): Player[] {
       Object.entries(p.pieceReserve ?? {}).map(([k, v]) => [k, num(v)]),
     ),
     discardRequirement: num(p.discardRequirement),
+    victoryPoints: num(p.victoryPoints),
+    hasLongestRoad: !!p.hasLongestRoad,
+    hasLargestArmy: !!p.hasLargestArmy,
   }));
 }
 

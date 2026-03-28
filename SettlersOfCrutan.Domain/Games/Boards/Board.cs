@@ -1,4 +1,4 @@
-﻿using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.Resources;
@@ -222,26 +222,31 @@ public class Board : Entity<BoardId>
 
     private bool HasAdjacentRoadOwnedBy(PlayerId owner, Vertex coord)
     {
-        return Roads.Any(r => r.OwnerId.Equals(owner)
-            && (r.EdgeCoordinate.HexCoord1.Equals(coord) || r.EdgeCoordinate.HexCoord2.Equals(coord)));
+        var n = coord.Normalize();
+        return Roads.Any(r =>
+            r.OwnerId.Equals(owner) && SettlementTouchesEdge(n, r.EdgeCoordinate));
     }
 
     public bool IsEdgeBuildableBy(PlayerId owner, Edge edgeCoord)
     {
-        // connected to player's existing road network
         bool connectedToRoad = Roads.Any(r => r.OwnerId.Equals(owner)
             && EdgeFactory.ConnectsToEdge(r.EdgeCoordinate, edgeCoord));
 
         bool connectedToPopulationCenter = PopulationCenters.Any(pc =>
-        {
-            var va = edgeCoord.HexCoord1;
-            var vb = edgeCoord.HexCoord2;
-
-            return (pc.VertexCoordinate.Equals(va) || pc.VertexCoordinate.Equals(vb))
-                && pc.PlayerOwner.Equals(owner);
-        });
+            pc.PlayerOwner.Equals(owner)
+            && SettlementTouchesEdge(pc.VertexCoordinate, edgeCoord));
 
         return connectedToRoad || connectedToPopulationCenter;
+    }
+
+    /// <summary>
+    /// True when the settlement sits on an endpoint of the edge (both edge hexes are in the vertex triple).
+    /// </summary>
+    private static bool SettlementTouchesEdge(Vertex settlement, Edge edge)
+    {
+        var e = edge.Normalize();
+        var triple = settlement.Normalize().HexCoords();
+        return triple.Contains(e.HexCoord1) && triple.Contains(e.HexCoord2);
     }
 
     public bool CanMoveRobberTo(HexCoord newRobberHexCoord)

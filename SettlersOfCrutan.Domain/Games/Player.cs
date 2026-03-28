@@ -37,6 +37,10 @@ public class Player : Entity<PlayerId>
 
     public DateTimeOffset? JoinedAt { get; set; } = null;
 
+    /// <summary>Development knights successfully played (for largest army).</summary>
+    [JsonInclude]
+    public int KnightsPlayed { get; private set; }
+
     // Public read-only projections
     public int TotalResources => ResourceHand.Total;
     public int DevCardCount => DevCardHand.Total;
@@ -64,7 +68,8 @@ public class Player : Entity<PlayerId>
                    DevCardHand devCardHand,
                    PieceReserve pieceReserve,
                    DateTimeOffset? joinedAt,
-                   bool ready)
+                   bool ready,
+                   int knightsPlayed = 0)
     {
         Id = id;
         UserId = userId;
@@ -75,7 +80,10 @@ public class Player : Entity<PlayerId>
         PieceReserve = pieceReserve;
         JoinedAt = joinedAt;
         _ready = ready;
+        KnightsPlayed = knightsPlayed;
     }
+
+    public void IncrementKnightsPlayed() => KnightsPlayed++;
 
     // -------- Resource methods --------
     public bool CanPayResources(IEnumerable<ResourceCardAmount> cost) => ResourceHand.CanPay(cost);

@@ -1,4 +1,4 @@
-﻿using SettlersOfCrutan.Domain.Games.Boards;
+using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.Generation;
 using SettlersOfCrutan.Domain.Games.Resources;
@@ -28,7 +28,8 @@ public class BoardGenerationTests
             [PortType.Wool2to1] = 1,
             [PortType.Grain2to1] = 1,
             [PortType.Ore2to1] = 1,
-        }
+        },
+        FixedPortEdges: StandardBoardConfigurations.DefaultBaseGamePortEdges
     );
 
     [Fact]
@@ -88,7 +89,7 @@ public class BoardGenerationTests
         var cfg = StandardConfigRadius2();
         var board = gen.Generate(cfg, seed: 2024);
 
-        int totalPorts = cfg.Ports.Count;
+        int totalPorts = cfg.Ports.Values.Sum();
         Assert.Equal(totalPorts, board.Ports.Count);
 
         // Each port must be on a border edge (neighbor hex missing)
@@ -104,6 +105,29 @@ public class BoardGenerationTests
         {
             Assert.Equal(count, board.Ports.Count(p => p.Type == type));
         }
+    }
+
+    [Fact]
+    public void RandomGenerator_KeepsStandardPortEdgesWhileShufflingTypes()
+    {
+        var gen = new RandomBoardGenerator();
+        var cfg = StandardConfigRadius2();
+        var expectedEdges = StandardBoardConfigurations.DefaultBaseGamePortEdges
+            .Select(s => new Edge(s.LandHex, s.SeaHex).Normalize())
+            .OrderBy(e => e.ToString())
+            .ToList();
+
+        var boardA = gen.Generate(cfg, seed: 11);
+        var boardB = gen.Generate(cfg, seed: 77);
+
+        var edgesA = boardA.Ports.Select(p => p.EdgeCoordinate.Normalize()).OrderBy(e => e.ToString()).ToList();
+        var edgesB = boardB.Ports.Select(p => p.EdgeCoordinate.Normalize()).OrderBy(e => e.ToString()).ToList();
+
+        Assert.Equal(expectedEdges, edgesA);
+        Assert.Equal(expectedEdges, edgesB);
+        Assert.NotEqual(
+            boardA.Ports.Select(p => p.Type).ToList(),
+            boardB.Ports.Select(p => p.Type).ToList());
     }
 
 }

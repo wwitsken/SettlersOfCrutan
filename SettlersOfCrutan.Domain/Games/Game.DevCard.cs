@@ -1,4 +1,4 @@
-﻿using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
@@ -101,6 +101,7 @@ public partial class Game
             return Result.Failure<HexCoord>(DomainError.MissingKnightCard);
 
         player.UseDevCardToBank(BankDevCardHand, DevelopmentCardType.Knight);
+        player.IncrementKnightsPlayed();
         GamePhase = GamePhase.ResolveRobber;
         AddDomainEvent(new KnightCardPlayedDomainEvent(Id, playerId));
         AddDomainEvent(new RobPlayerStartedDomainEvent(Id));

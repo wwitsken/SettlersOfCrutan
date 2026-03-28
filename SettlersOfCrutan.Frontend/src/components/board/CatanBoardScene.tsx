@@ -2,25 +2,70 @@ import { useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import type { Game } from "../../domain/game/game";
+import type { HexCoordinate, PopulationCenter } from "../../domain/game/board";
 import type { ResourceCardType } from "../../domain/game/gameTypes";
+import type { BoardPickMode } from "../../hooks/useGamePageInteraction";
+import type { components } from "../../api/types";
+import {
+  edgeTouchesVertex,
+  isEdgeInBuildableList,
+  isVertexInBuildableList,
+  toEdgeCoordDto,
+  toVertexCoordDto,
+} from "../../domain/game/hexCoords";
 import { HexTile } from "./HexTile";
 import { RoadMesh } from "./RoadMesh";
 import { PopulationCenterMesh } from "./PopulationCenterMesh";
 import { PortMesh } from "./PortMesh";
 import { axisFromCoords, cubeToPosition, midpoint } from "./boardMath";
 
-type HoverMode = "none" | "road" | "settlement" | "cityUpgrade";
+type EdgeCoordDto = components["schemas"]["EdgeCoordDto"];
+type VertexCoordDto = components["schemas"]["VertexCoordDto"];
+
+type RoadCandidate = {
+  key: string;
+  x: number;
+  z: number;
+  angle: number;
+  hexA: HexCoordinate;
+  hexB: HexCoordinate;
+};
+
+type VertexCandidate = {
+  key: string;
+  x: number;
+  z: number;
+  h0: HexCoordinate;
+  h1: HexCoordinate;
+  h2: HexCoordinate;
+};
 
 type Props = {
   game: Game;
   hexRadius?: number;
-  hoverMode?: HoverMode;
+  boardPickMode: BoardPickMode;
+  buildableRoads?: HexCoordinate[][];
+  buildableSettlements?: HexCoordinate[][];
+  initialRoadVertexHexes?: HexCoordinate[] | null;
+  myPlayerId?: string;
+  onRoadPicked?: (edge: EdgeCoordDto) => void;
+  onVertexPicked?: (vertex: VertexCoordDto) => void;
+  onRobberHexPicked?: (hex: HexCoordinate) => void;
+  onSettlementCityPicked?: (vertex: VertexCoordDto) => void;
 };
 
 export function CatanBoardScene({
   game,
   hexRadius = 1,
-  hoverMode = "road",
+  boardPickMode,
+  buildableRoads,
+  buildableSettlements,
+  initialRoadVertexHexes,
+  myPlayerId,
+  onRoadPicked,
+  onVertexPicked,
+  onRobberHexPicked,
+  onSettlementCityPicked,
 }: Props) {
   const board = game.board;
 
@@ -38,9 +83,7 @@ export function CatanBoardScene({
     water: "#1e90ff",
   };
 
-  const hoverRoadCandidates = useMemo(() => {
-    if (hoverMode !== "road") return [] as const;
-
+  const allRoadCandidates = useMemo((): RoadCandidate[] => {
     const directions = [
       { q: 1, r: -1, s: 0 },
       { q: 1, r: 0, s: -1 },
@@ -50,33 +93,31 @@ export function CatanBoardScene({
       { q: 0, r: -1, s: 1 },
     ] as const;
 
-    const dedup = new Map<
-      string,
-      { key: string; x: number; z: number; angle: number }
-    >();
+    const dedup = new Map<string, RoadCandidate>();
 
     for (const hex of board.hexes) {
       for (const d of directions) {
-        const neighborKey = `${hex.coordinate.q + d.q},${
-          hex.coordinate.r + d.r
-        },${hex.coordinate.s + d.s}`;
-        const neighborCoord = {
+        const neighborCoord: HexCoordinate = {
           q: hex.coordinate.q + d.q,
           r: hex.coordinate.r + d.r,
           s: hex.coordinate.s + d.s,
         };
 
         const aKey = `${hex.coordinate.q},${hex.coordinate.r},${hex.coordinate.s}`;
-        const bKey = neighborKey;
+        const bKey = `${neighborCoord.q},${neighborCoord.r},${neighborCoord.s}`;
         const key = aKey < bKey ? `${aKey}|${bKey}` : `${bKey}|${aKey}`;
         if (dedup.has(key)) continue;
 
         const pa = cubeToPosition(
           hexRadius,
           hex.coordinate.q,
-          hex.coordinate.r
+          hex.coordinate.r,
         );
-        const pb = cubeToPosition(hexRadius, neighborCoord.q, neighborCoord.r);
+        const pb = cubeToPosition(
+          hexRadius,
+          neighborCoord.q,
+          neighborCoord.r,
+        );
         const m = midpoint(pa, pb);
 
         const axis = axisFromCoords(hex.coordinate, neighborCoord);
@@ -84,20 +125,48 @@ export function CatanBoardScene({
           axis === "r"
             ? Math.PI / 2
             : axis === "q"
-            ? (7 * Math.PI) / 6
-            : axis === "s"
-            ? (11 * Math.PI) / 6
-            : 0;
+              ? (7 * Math.PI) / 6
+              : axis === "s"
+                ? (11 * Math.PI) / 6
+                : 0;
 
-        dedup.set(key, { key, x: m.x, z: m.z, angle });
+        dedup.set(key, {
+          key,
+          x: m.x,
+          z: m.z,
+          angle,
+          hexA: { ...hex.coordinate },
+          hexB: { ...neighborCoord },
+        });
       }
     }
 
     return Array.from(dedup.values());
-  }, [board.hexes, hexRadius, hoverMode]);
+  }, [board.hexes, hexRadius]);
+
+  const hoverRoadCandidates = useMemo(() => {
+    if (boardPickMode !== "road") return [];
+
+    let list = allRoadCandidates;
+    const br = buildableRoads;
+    if (br && br.length > 0) {
+      list = list.filter((c) => isEdgeInBuildableList(br, c.hexA, c.hexB));
+    } else if (initialRoadVertexHexes && initialRoadVertexHexes.length >= 3) {
+      list = list.filter((c) =>
+        edgeTouchesVertex(initialRoadVertexHexes, [c.hexA, c.hexB]),
+      );
+    }
+
+    return list;
+  }, [
+    allRoadCandidates,
+    boardPickMode,
+    buildableRoads,
+    initialRoadVertexHexes,
+  ]);
 
   const hoverVertexCandidates = useMemo(() => {
-    if (hoverMode !== "settlement") return [] as const;
+    if (boardPickMode !== "settlement") return [];
 
     const directions = [
       { q: 1, r: -1, s: 0 },
@@ -108,53 +177,64 @@ export function CatanBoardScene({
       { q: 0, r: -1, s: 1 },
     ] as const;
 
-    const dedup = new Map<string, { key: string; x: number; z: number }>();
+    const dedup = new Map<string, VertexCandidate>();
 
     for (const hex of board.hexes) {
-      const baseKey = `${hex.coordinate.q},${hex.coordinate.r},${hex.coordinate.s}`;
       const p0 = cubeToPosition(hexRadius, hex.coordinate.q, hex.coordinate.r);
+      const h0 = { ...hex.coordinate };
 
       for (let i = 0; i < 6; i++) {
         const d1 = directions[i];
         const d2 = directions[(i + 5) % 6];
 
-        const n1Key = `${hex.coordinate.q + d1.q},${hex.coordinate.r + d1.r},${
-          hex.coordinate.s + d1.s
-        }`;
-        const n2Key = `${hex.coordinate.q + d2.q},${hex.coordinate.r + d2.r},${
-          hex.coordinate.s + d2.s
-        }`;
+        const h1: HexCoordinate = {
+          q: hex.coordinate.q + d1.q,
+          r: hex.coordinate.r + d1.r,
+          s: hex.coordinate.s + d1.s,
+        };
+        const h2: HexCoordinate = {
+          q: hex.coordinate.q + d2.q,
+          r: hex.coordinate.r + d2.r,
+          s: hex.coordinate.s + d2.s,
+        };
 
-        const p1 = cubeToPosition(
-          hexRadius,
-          hex.coordinate.q + d1.q,
-          hex.coordinate.r + d1.r
-        );
-        const p2 = cubeToPosition(
-          hexRadius,
-          hex.coordinate.q + d2.q,
-          hex.coordinate.r + d2.r
-        );
+        const p1 = cubeToPosition(hexRadius, h1.q, h1.r);
+        const p2 = cubeToPosition(hexRadius, h2.q, h2.r);
 
         const vx = (p0.x + p1.x + p2.x) / 3;
         const vz = (p0.z + p1.z + p2.z) / 3;
 
-        // floating-safe dedupe key
         const kx = Math.round(vx * 1000);
         const kz = Math.round(vz * 1000);
         const vKey = `${kx},${kz}`;
 
-        // include the source triple for stability/debuggability if needed
+        const baseKey = `${hex.coordinate.q},${hex.coordinate.r},${hex.coordinate.s}`;
+        const n1Key = `${h1.q},${h1.r},${h1.s}`;
+        const n2Key = `${h2.q},${h2.r},${h2.s}`;
         const tripleKey = [baseKey, n1Key, n2Key].sort().join("|");
         const key = `${vKey}|${tripleKey}`;
+
         if (!dedup.has(vKey)) {
-          dedup.set(vKey, { key, x: vx, z: vz });
+          dedup.set(vKey, { key, x: vx, z: vz, h0, h1, h2 });
         }
       }
     }
 
-    return Array.from(dedup.values());
-  }, [board.hexes, hexRadius, hoverMode]);
+    let list = Array.from(dedup.values());
+    const bs = buildableSettlements;
+    if (bs && bs.length > 0) {
+      list = list.filter((v) =>
+        isVertexInBuildableList(bs, v.h0, v.h1, v.h2),
+      );
+    }
+    return list;
+  }, [board.hexes, hexRadius, boardPickMode, buildableSettlements]);
+
+  const handleCityClick = (pc: PopulationCenter) => {
+    if (pc.coordinates.length < 3) return;
+    const [a, b, c] = pc.coordinates;
+    onSettlementCityPicked?.(toVertexCoordDto(a, b, c));
+  };
 
   return (
     <div style={{ width: "100%", height: "100%" }}>
@@ -171,10 +251,16 @@ export function CatanBoardScene({
               hexRadius={hexRadius}
               color={resourceColors[hex.resource] ?? "#cccccc"}
               hexNumber={hex.numberToken}
+              robberPickMode={boardPickMode === "robberHex"}
+              onRobberHexPick={
+                onRobberHexPicked
+                  ? (h) => onRobberHexPicked(h.coordinate)
+                  : undefined
+              }
             />
           ))}
 
-          {hoverMode === "road" && (
+          {boardPickMode === "road" && (
             <group>
               {hoverRoadCandidates.map((c) => (
                 <group
@@ -186,9 +272,13 @@ export function CatanBoardScene({
                     onPointerOver={() => setHoveredRoadKey(c.key)}
                     onPointerOut={() =>
                       setHoveredRoadKey((prev) =>
-                        prev === c.key ? null : prev
+                        prev === c.key ? null : prev,
                       )
                     }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRoadPicked?.(toEdgeCoordDto(c.hexA, c.hexB));
+                    }}
                   >
                     <boxGeometry args={[hexRadius * 0.95, 0.1, 0.15]} />
                     <meshStandardMaterial transparent opacity={0} />
@@ -209,7 +299,7 @@ export function CatanBoardScene({
             </group>
           )}
 
-          {hoverMode === "settlement" && (
+          {boardPickMode === "settlement" && (
             <group>
               {hoverVertexCandidates.map((v) => (
                 <group key={v.key} position={[v.x, 0.3, v.z]}>
@@ -217,9 +307,15 @@ export function CatanBoardScene({
                     onPointerOver={() => setHoveredVertexKey(v.key)}
                     onPointerOut={() =>
                       setHoveredVertexKey((prev) =>
-                        prev === v.key ? null : prev
+                        prev === v.key ? null : prev,
                       )
                     }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onVertexPicked?.(
+                        toVertexCoordDto(v.h0, v.h1, v.h2),
+                      );
+                    }}
                   >
                     <sphereGeometry args={[0.25, 12, 12]} />
                     <meshStandardMaterial transparent opacity={0} />
@@ -249,7 +345,14 @@ export function CatanBoardScene({
               key={`pc-${idx}`}
               populationCenter={pc}
               hexRadius={hexRadius}
-              enableCityUpgradeHover={hoverMode === "cityUpgrade"}
+              enableCityUpgradeHover={boardPickMode === "cityUpgrade"}
+              selectForCityUpgrade={
+                boardPickMode === "cityUpgrade" &&
+                !!myPlayerId &&
+                pc.playerOwnerId === myPlayerId &&
+                pc.type === "settlement"
+              }
+              onCityUpgradeSelect={handleCityClick}
             />
           ))}
 

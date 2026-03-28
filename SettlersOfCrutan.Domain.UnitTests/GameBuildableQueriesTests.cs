@@ -2,6 +2,7 @@ using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.Generation;
+using SettlersOfCrutan.Domain.Games.Resources;
 using SettlersOfCrutan.Domain.Lobbies;
 
 namespace SettlersOfCrutan.Domain.UnitTests;
@@ -24,7 +25,8 @@ public class GameBuildableQueriesTests
     [Fact]
     public void GetBuildableRoads_ReturnsOnlyEdgesConnectedToPlayersNetwork()
     {
-        var board = new Board();
+        var origin = new HexCoord(0, 0, 0);
+        var board = Board.Create([new Hex(origin) { Resource = ResourceCardType.Desert }], []);
         var p1 = NewPlayer("p1");
         var p2 = NewPlayer("p2");
 
@@ -36,6 +38,7 @@ public class GameBuildableQueriesTests
         Assert.True(placed.IsSuccess);
 
         var game = NewGameWithBoard(board, p1.Value, p2.Value);
+        game.GamePhase = GamePhase.TradeBuild;
 
         var buildable = game.GetBuildableRoads(p1);
 

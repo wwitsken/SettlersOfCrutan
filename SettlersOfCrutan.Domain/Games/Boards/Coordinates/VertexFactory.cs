@@ -1,4 +1,4 @@
-﻿namespace SettlersOfCrutan.Domain.Games.Boards.Coordinates;
+namespace SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 public static class VertexFactory
 {
     private static readonly Dictionary<HexEdgeDirection, (int dX, int dY, int dZ)> EdgeOffsets = new()
@@ -65,6 +65,29 @@ public static class VertexFactory
     {
         var (dQ, dR, dS) = EdgeOffsets[edgeDirection];
         return new HexCoord(hex.Q + dQ, hex.R + dR, hex.S + dS);
+    }
+
+    /// <summary>
+    /// The two endpoints of a road edge (shared border between two adjacent hexes).
+    /// </summary>
+    public static (Vertex A, Vertex B) EndpointsForEdge(Edge edge)
+    {
+        var norm = edge.Normalize();
+        var h1 = norm.HexCoord1;
+        var h2 = norm.HexCoord2;
+        var found = new List<Vertex>();
+        foreach (var v in FromHex(h1))
+        {
+            var hexes = v.HexCoords();
+            if (hexes.Contains(h1) && hexes.Contains(h2))
+                found.Add(v.Normalize());
+        }
+
+        var distinct = found.Distinct().ToArray();
+        if (distinct.Length < 2)
+            throw new InvalidOperationException($"Could not resolve edge endpoints for {norm}");
+
+        return (distinct[0], distinct[1]);
     }
 
     public static Vertex[] FromHex(HexCoord hex)

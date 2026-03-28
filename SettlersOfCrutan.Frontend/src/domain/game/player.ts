@@ -10,4 +10,8 @@ export type Player = {
   developmentCardCount: number;
   pieceReserve: Record<string, number>;
   discardRequirement: number;
+  /** Public VP from settlements/cities; excludes hidden VP dev cards. */
+  victoryPoints: number;
+  hasLongestRoad: boolean;
+  hasLargestArmy: boolean;
 };

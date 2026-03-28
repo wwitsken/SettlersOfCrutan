@@ -1,20 +1,34 @@
 import type { Hex } from "../../domain/game/board";
 import { Text } from "@react-three/drei";
 import { cubeToPosition } from "./boardMath";
-
 type Props = {
   hex: Hex;
   hexRadius: number;
   color: string;
   hexNumber: number;
+  robberPickMode?: boolean;
+  onRobberHexPick?: (hex: Hex) => void;
 };
 
-export function HexTile({ hex, hexRadius, color, hexNumber }: Props) {
+export function HexTile({
+  hex,
+  hexRadius,
+  color,
+  hexNumber,
+  robberPickMode = false,
+  onRobberHexPick,
+}: Props) {
   const { x, z } = cubeToPosition(
     hexRadius,
     hex.coordinate.q,
-    hex.coordinate.r
+    hex.coordinate.r,
   );
+
+  const canPickRobber =
+    robberPickMode &&
+    onRobberHexPick &&
+    hex.resource !== "desert" &&
+    !hex.hasRobber;
 
   return (
     <group position={[x, 0, z]}>
@@ -22,6 +36,29 @@ export function HexTile({ hex, hexRadius, color, hexNumber }: Props) {
         <cylinderGeometry args={[hexRadius, hexRadius, 0.2, 6]} />
         <meshStandardMaterial color={color} />
       </mesh>
+      {canPickRobber && (
+        <mesh
+          position={[0, 0.15, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRobberHexPick(hex);
+          }}
+          onPointerOver={() => {
+            document.body.style.cursor = "pointer";
+          }}
+          onPointerOut={() => {
+            document.body.style.cursor = "auto";
+          }}
+        >
+          <circleGeometry args={[hexRadius * 0.85, 6]} />
+          <meshStandardMaterial
+            color="#ffffff"
+            transparent
+            opacity={0.12}
+          />
+        </mesh>
+      )}
       <mesh position={[0, 0.11, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.25, 32]} />
         <meshStandardMaterial color={"#fff"} />

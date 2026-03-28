@@ -19,6 +19,10 @@ public static class GameMappingExtensions
     {
         ArgumentNullException.ThrowIfNull(game);
 
+        var buildingVp = GamePresentationScoring.BuildingVictoryPoints(game);
+        var longestRoad = GamePresentationScoring.LongestRoadHolders(game);
+        var largestArmy = GamePresentationScoring.LargestArmyHolders(game);
+
         return new PublicGameDto
         {
             Id = game.Id.Value,
@@ -42,6 +46,10 @@ public static class GameMappingExtensions
                 ResourceCardCount = p.TotalResources,
                 DevelopmentCardCount = p.DevCardCount,
                 PieceReserve = p.GetBuildables().ToDictionary(),
+                DiscardRequirement = game.DiscardHalfRequirements.FirstOrDefault(r => r.PlayerId.Equals(p.Id))?.ResourceAmount ?? 0,
+                VictoryPoints = buildingVp.GetValueOrDefault(p.Id, 0),
+                HasLongestRoad = longestRoad.Contains(p.Id),
+                HasLargestArmy = largestArmy.Contains(p.Id),
             })]
         };
     }

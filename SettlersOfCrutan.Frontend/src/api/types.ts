@@ -1669,6 +1669,10 @@ export interface components {
             };
             /** Format: int32 */
             discardRequirement?: number | string;
+            /** Format: int32 */
+            victoryPoints?: number | string;
+            hasLongestRoad?: boolean;
+            hasLargestArmy?: boolean;
         };
         PlayerId: unknown;
         PopulationCenterDto: {

@@ -6,12 +6,16 @@ type Props = {
   populationCenter: PopulationCenter;
   hexRadius: number;
   enableCityUpgradeHover?: boolean;
+  selectForCityUpgrade?: boolean;
+  onCityUpgradeSelect?: (populationCenter: PopulationCenter) => void;
 };
 
 export function PopulationCenterMesh({
   populationCenter,
   hexRadius,
   enableCityUpgradeHover = false,
+  selectForCityUpgrade = false,
+  onCityUpgradeSelect,
 }: Props) {
   const [isHovered, setIsHovered] = useState(false);
   if (populationCenter.coordinates.length < 1) return null;
@@ -24,11 +28,19 @@ export function PopulationCenterMesh({
 
   const isCity = populationCenter.type === "city";
   const showUpgradeGhost = enableCityUpgradeHover && !isCity && isHovered;
+  const canClickCity =
+    selectForCityUpgrade && !isCity && onCityUpgradeSelect;
 
   return (
     <group position={[v.x, 0.3, v.z]}>
       <mesh
         castShadow
+        onClick={(e) => {
+          if (canClickCity) {
+            e.stopPropagation();
+            onCityUpgradeSelect(populationCenter);
+          }
+        }}
         onPointerOver={() => setIsHovered(true)}
         onPointerOut={() => setIsHovered(false)}
       >
