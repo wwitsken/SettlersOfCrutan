@@ -1,17 +1,18 @@
 import type { Board } from "./board";
 import type { Player } from "./player";
 import type { TradeOffer } from "./tradeOffer";
+import type { GamePhase, GameType, PlayerDirection } from "./gameTypes";
 
 export type Game = {
   id: string;
-  gameType: string;
+  gameType: GameType;
   gameName: string | undefined;
   board: Board;
   bankResourceHand: Record<string, number>;
   bankDevCardHand: Record<string, number>;
   turnExpiresAt: Date | undefined;
-  playerDirection: string;
-  gamePhase: string;
+  playerDirection: PlayerDirection;
+  gamePhase: GamePhase;
   round: number;
   playerIndex: number;
   currentTradeOffer: TradeOffer | undefined;

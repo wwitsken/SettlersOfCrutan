@@ -1,3 +1,5 @@
+import type { ResourceCardType } from "./gameTypes";
+
 export type Board = {
   hexes: Hex[];
   populationCenters: PopulationCenter[];
@@ -7,7 +9,7 @@ export type Board = {
 
 export type Hex = {
   coordinate: HexCoordinate;
-  resource: string;
+  resource: ResourceCardType;
   numberToken: number;
   hasRobber: boolean;
 };

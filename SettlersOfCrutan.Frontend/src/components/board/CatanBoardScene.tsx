@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import type { Game } from "../../domain/game/game";
+import type { ResourceCardType } from "../../domain/game/gameTypes";
 import { HexTile } from "./HexTile";
 import { RoadMesh } from "./RoadMesh";
 import { PopulationCenterMesh } from "./PopulationCenterMesh";
@@ -26,11 +27,12 @@ export function CatanBoardScene({
   const [hoveredRoadKey, setHoveredRoadKey] = useState<string | null>(null);
   const [hoveredVertexKey, setHoveredVertexKey] = useState<string | null>(null);
 
-  const resourceColors: Record<string, string> = {
-    wood: "#2e8b57",
+  const resourceColors: Record<ResourceCardType, string> = {
+    none: "#94a3b8",
     brick: "#b7410e",
-    sheep: "#9acd32",
-    wheat: "#f0e68c",
+    lumber: "#2e8b57",
+    wool: "#9acd32",
+    grain: "#f0e68c",
     ore: "#808080",
     desert: "#d2b48c",
     water: "#1e90ff",

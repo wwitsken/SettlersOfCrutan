@@ -68,7 +68,7 @@ export function DevDebugPanel({ gameId }: Props) {
               append(
                 error
                   ? `GET game error: ${JSON.stringify(error)}`
-                  : `GET game ok (phase ${data?.gamePhase})`,
+                  : `GET game ok (phase ${data?.game?.gamePhase})`,
               );
             }}
           >

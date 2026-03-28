@@ -2,19 +2,19 @@ import type { Game } from "./game";
 
 export const game: Game = {
   id: "123",
-  gameType: "mine",
+  gameType: "baseGame",
   gameName: "this one",
   board: {
     hexes: [
       {
         coordinate: { q: 0, r: 0, s: 0 },
-        resource: "wood",
+        resource: "lumber",
         numberToken: 5,
         hasRobber: false,
       },
       {
         coordinate: { q: 1, r: -1, s: 0 },
-        resource: "wheat",
+        resource: "grain",
         numberToken: 8,
         hasRobber: false,
       },
@@ -70,14 +70,19 @@ export const game: Game = {
     ],
     ports: [
       {
-        // Provide two coordinates so the port can be centered on the edge midpoint (like roads)
         inCoordinate: { q: 1, r: -1, s: 0 },
         outCoordinate: { q: 1, r: -2, s: 1 },
         type: "generic",
       },
     ],
   },
-  bankResourceHand: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 },
+  bankResourceHand: {
+    lumber: 0,
+    brick: 0,
+    wool: 0,
+    grain: 0,
+    ore: 0,
+  },
   bankDevCardHand: {
     knight: 0,
     monopoly: 0,

@@ -59,6 +59,12 @@ export const useLobbyStore = create<State & Actions>()(
         }
       });
     },
-    clear: () => {},
+    clear: () => {
+      set({
+        status: "idle",
+        error: undefined,
+        currentLobby: undefined,
+      });
+    },
   }))
 );

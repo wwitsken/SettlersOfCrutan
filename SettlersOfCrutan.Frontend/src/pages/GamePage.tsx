@@ -2,17 +2,18 @@ import { useEffect } from "react";
 import { useParams } from "react-router";
 import { CatanBoardScene } from "../components/board/CatanBoardScene";
 import { DevDebugPanel } from "../components/dev/DevDebugPanel";
+import { GameStoreDebugView } from "../components/dev/GameStoreDebugView";
 import { useGameSignalR } from "../hooks/useGameSignalR";
 import { useGamesStore } from "../stores/gameStore";
 import { api } from "../api/client";
 import { acquireAccessToken } from "../authConfig";
-import { gamePayloadToDomain } from "../domain/game/mapGameFromApi";
+import { resolveBoardView } from "../domain/game/boardView";
 import { game as exampleGame } from "../domain/game/gameExample";
+import { applyGamePayloadFromApi } from "../stores/applyGamePayload";
 
 function GamePage() {
   const { gameId } = useParams();
   const game = useGamesStore((s) => s.game);
-  const setGame = useGamesStore((s) => s.setGame);
   const setLoading = useGamesStore((s) => s.setLoading);
   const setError = useGamesStore((s) => s.setError);
   const status = useGamesStore((s) => s.status);
@@ -41,18 +42,19 @@ function GamePage() {
         );
         return;
       }
-      const mapped = gamePayloadToDomain(data);
-      if (mapped) setGame(mapped);
-      else setError("Game response could not be mapped.");
+      if (!applyGamePayloadFromApi(data))
+        setError("Game response could not be mapped.");
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [gameId, setGame, setLoading, setError]);
+  }, [gameId, setLoading, setError]);
 
-  const boardGame = game ?? exampleGame;
-  const showExampleBanner = !game && status !== "loading";
+  const boardView = resolveBoardView(status, game);
+  const boardGame = boardView === "loading" ? exampleGame : game ?? exampleGame;
+  const showExampleBanner = boardView === "example";
+  const showLoadingBanner = boardView === "loading";
 
   return (
     <div className="flex flex-col gap-3">
@@ -94,12 +96,30 @@ function GamePage() {
         </div>
       )}
 
-      <div
-        className="overflow-hidden rounded-xl border border-slate-200 bg-slate-950 shadow-inner"
-        style={{ height: "min(70vh, 640px)", minHeight: 360 }}
-      >
-        <CatanBoardScene game={boardGame} hexRadius={1} />
+      <div className="flex flex-col gap-1">
+        {(showLoadingBanner || showExampleBanner) && (
+          <div
+            className={`rounded-lg border px-3 py-1.5 text-center text-xs font-medium ${
+              showLoadingBanner
+                ? "border-sky-200 bg-sky-50 text-sky-900"
+                : "border-amber-200 bg-amber-50 text-amber-950"
+            }`}
+            role="status"
+          >
+            {showLoadingBanner
+              ? "Loading game… (board preview is static example data)"
+              : "Example board — store has no loaded game yet (see debug panel below in dev)."}
+          </div>
+        )}
+        <div
+          className="overflow-hidden rounded-xl border border-slate-200 bg-slate-950 shadow-inner"
+          style={{ height: "min(70vh, 640px)", minHeight: 360 }}
+        >
+          <CatanBoardScene game={boardGame} hexRadius={1} />
+        </div>
       </div>
+
+      {import.meta.env.DEV && <GameStoreDebugView />}
 
       <DevDebugPanel gameId={gameId} />
     </div>

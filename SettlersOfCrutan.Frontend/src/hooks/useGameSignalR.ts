@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useSignalRContext } from "../context/SignalRContext";
-import { useGamesStore } from "../stores/gameStore";
-import { gamePayloadToDomain } from "../domain/game/mapGameFromApi";
+import { applyGamePayloadFromApi } from "../stores/applyGamePayload";
 import { RealtimeEvents } from "../realtime/realtimeEvents";
 
 type GameReceiveArgs = [string, string | Date, string, unknown];
@@ -13,8 +12,6 @@ type GameReceiveArgs = [string, string | Date, string, unknown];
 export function useGameSignalR(gameId?: string | null) {
   const { isConnected, isConnecting, error, start, registerHandlers } =
     useSignalRContext();
-
-  const setGame = useGamesStore((s) => s.setGame);
 
   useEffect(() => {
     registerHandlers({
@@ -34,9 +31,7 @@ export function useGameSignalR(gameId?: string | null) {
         }
 
         try {
-          const projected = gamePayloadToDomain(payload);
-          if (projected) setGame(projected);
-          else if (import.meta.env.DEV) {
+          if (!applyGamePayloadFromApi(payload) && import.meta.env.DEV) {
             console.warn("GameStateUpdated payload could not be mapped", payload);
           }
         } catch (e) {
@@ -52,7 +47,7 @@ export function useGameSignalR(gameId?: string | null) {
         // connection errors are surfaced via context `error`
       }
     })();
-  }, [gameId, registerHandlers, setGame, start]);
+  }, [gameId, registerHandlers, start]);
 
   return {
     isConnected,

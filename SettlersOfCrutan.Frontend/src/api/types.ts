@@ -169,7 +169,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PublicGameDto"];
+                        "application/json": components["schemas"]["GameDto"];
                     };
                 };
                 /** @description Bad Request */
@@ -1586,6 +1586,10 @@ export interface components {
             hexCoord1: components["schemas"]["HexCoordDto"];
             hexCoord2: components["schemas"]["HexCoordDto"];
         };
+        GameDto: {
+            game: components["schemas"]["PublicGameDto"];
+            myPrivateGameInfo: components["schemas"]["PrivateGameDto"];
+        };
         /** @enum {unknown} */
         GamePhase: "pendingStart" | "setup" | "rollDice" | "discardHalf" | "resolveRobber" | "tradeBuild" | "gameEnd";
         /** @enum {unknown} */
@@ -1630,6 +1634,17 @@ export interface components {
             discard: components["schemas"]["ResourceCardType"];
             request: components["schemas"]["ResourceCardType"];
         };
+        MyHandDto: {
+            resources: {
+                [key: string]: number | string;
+            };
+            devCards: {
+                [key: string]: number | string;
+            };
+            buildables: {
+                [key: string]: number | string;
+            };
+        };
         OfferTradeRequest: {
             requested: components["schemas"]["ResourceCardAmountDto"][];
             offered: components["schemas"]["ResourceCardAmountDto"][];
@@ -1666,6 +1681,14 @@ export interface components {
             inCoordinate?: components["schemas"]["HexCoordinateDto"];
             outCoordinate?: components["schemas"]["HexCoordinateDto"];
             type?: string;
+        };
+        PrivateGameDto: {
+            myPlayerId: components["schemas"]["PlayerId"];
+            myHand: components["schemas"]["MyHandDto"];
+            /** Format: int32 */
+            myScore?: number | string;
+            buildableRoads?: components["schemas"]["HexCoordinateDto"][][];
+            buildableSettlements?: components["schemas"]["HexCoordinateDto"][][];
         };
         ProblemDetails: {
             type?: null | string;
