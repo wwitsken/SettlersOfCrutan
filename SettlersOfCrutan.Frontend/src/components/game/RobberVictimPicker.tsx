@@ -39,8 +39,7 @@ export function RobberVictimPicker({
 
         {victims.length === 0 ? (
           <p className="mt-3 text-sm text-slate-500">
-            No eligible opponents (you may still confirm with any id the server
-            accepts).
+            No eligible opponents on this hex.
           </p>
         ) : (
           <ul className="mt-3 space-y-1">

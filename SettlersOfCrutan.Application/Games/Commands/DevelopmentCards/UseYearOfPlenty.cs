@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
+using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
@@ -28,7 +29,10 @@ public sealed class UseYearOfPlentyCommandHandler(
         var game = await _gameRepository.GetAsync(command.GameId, ct);
         if (game is null) return Result<UseYearOfPlentyCommandResult>.Failure(DomainError.NotFound);
 
-        var result = game.PlayYearOfPlenty(command.PlayerId, command.Resource1, command.Resource2);
+        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        if (actor.IsFailure) return Result<UseYearOfPlentyCommandResult>.Failure(actor.Error);
+
+        var result = game.PlayYearOfPlenty(actor.Value, command.Resource1, command.Resource2);
         if (result.IsFailure) return Result<UseYearOfPlentyCommandResult>.Failure(result.Error);
 
         var saved = await _gameRepository.SaveAsync(game, ct);

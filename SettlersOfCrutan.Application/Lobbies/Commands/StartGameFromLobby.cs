@@ -55,9 +55,12 @@ public sealed class StartGameFromLobbyCommandHandler(IGameRepository gameReposit
         if (result.IsFailure) return Result<GameId>.Failure(result.Error);
 
         var game = result.Value;
-        var saved = await _gameRepository.SaveAsync(game, ct);
-
         var now = _clock.UtcNow;
+        foreach (var p in game.Players)
+            p.JoinedAt ??= now;
+        game.StartGame(_clock);
+
+        var saved = await _gameRepository.SaveAsync(game, ct);
 
         if (saved)
         {

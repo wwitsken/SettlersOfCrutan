@@ -61,14 +61,13 @@ public static class GameDevelopmentCardEndpoints
 
         group.MapPost("/knight", async Task<Results<NoContent, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
-            [FromBody] UseKnightRequest request,
             IUserProvider userProvider,
             ICommandHandler<UseKnightCommand> handler,
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
             PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
-            var cmd = new UseKnightCommand(gameId, playerId, request.NewRobberHex.ToDomain(), new PlayerId { Value = request.VictimPlayerId });
+            var cmd = new UseKnightCommand(gameId, playerId);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });

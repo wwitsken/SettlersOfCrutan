@@ -202,8 +202,8 @@ public class Board : Entity<BoardId>
         var hex = Hexes.FirstOrDefault(h => h.Coordinate.Equals(newCoord));
         if (hex is null)
             return Result<HexCoord>.Failure(new DomainError("RobberMove", "Hex does not exist"));
-        if (hex.Resource == ResourceCardType.Desert)
-            return Result<HexCoord>.Failure(new DomainError("RobberMove", "Cannot place robber on desert"));
+        if (hex.Resource == ResourceCardType.Water)
+            return Result<HexCoord>.Failure(new DomainError("RobberMove", "Cannot place robber on water"));
         if (Hexes.Any(h => h.HasRobber && h.Coordinate.Equals(newCoord)))
             return Result<HexCoord>.Failure(new DomainError("RobberMove", "Robber already on this hex"));
         // Remove robber from current hex
@@ -216,6 +216,13 @@ public class Board : Entity<BoardId>
 
     public bool IsPlayerExposedToHex(HexCoord hexCoord, PlayerId playerId) =>
         PopulationCenters.Any(pc => pc.VertexCoordinate.HexCoords().Contains(hexCoord) && pc.PlayerOwner == playerId);
+
+    /// <summary>Opponents (not <paramref name="robbingPlayerId"/>) with a settlement or city touching <paramref name="hexCoord"/>.</summary>
+    public IReadOnlyList<PlayerId> GetOpponentIdsOnHex(HexCoord hexCoord, PlayerId robbingPlayerId) =>
+        [.. PopulationCenters
+            .Where(pc => pc.VertexCoordinate.HexCoords().Contains(hexCoord) && pc.PlayerOwner != robbingPlayerId)
+            .Select(pc => pc.PlayerOwner)
+            .Distinct()];
 
     public bool IsVertexOccupied(Vertex coord) =>
         PopulationCenters.Any(p => p.VertexCoordinate.Equals(coord));
@@ -253,7 +260,7 @@ public class Board : Entity<BoardId>
     {
         var hex = Hexes.FirstOrDefault(h => h.Coordinate.Equals(newRobberHexCoord));
         if (hex is null) return false;
-        if (hex.Resource == ResourceCardType.Desert) return false;
+        if (hex.Resource == ResourceCardType.Water) return false;
         if (hex.HasRobber) return false;
         return true;
     }

@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
+using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
@@ -27,7 +28,10 @@ public sealed class UseMonopolyCommandHandler(
         var game = await _gameRepository.GetAsync(command.GameId, ct);
         if (game is null) return Result<int>.Failure(DomainError.NotFound);
 
-        var result = game.PlayMonopoly(command.PlayerId, command.ResourceType);
+        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        if (actor.IsFailure) return Result<int>.Failure(actor.Error);
+
+        var result = game.PlayMonopoly(actor.Value, command.ResourceType);
         if (result.IsFailure) return Result<int>.Failure(result.Error);
 
         var saved = await _gameRepository.SaveAsync(game, ct);

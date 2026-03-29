@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
+using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
@@ -28,7 +29,10 @@ public sealed class UseRoadBuildingCommandHandler(
         var game = await _gameRepository.GetAsync(command.GameId, ct);
         if (game is null) return Result.Failure(DomainError.NotFound);
 
-        Result<(Road r1, Road r2)> result = game.PlayRoadBuilding(command.PlayerId, command.Edge1, command.Edge2);
+        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        if (actor.IsFailure) return Result.Failure(actor.Error);
+
+        Result<(Road r1, Road r2)> result = game.PlayRoadBuilding(actor.Value, command.Edge1, command.Edge2);
         if (result.IsFailure) return Result.Failure(result.Error);
 
         var saved = await _gameRepository.SaveAsync(game, ct);

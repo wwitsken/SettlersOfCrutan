@@ -1,4 +1,4 @@
-﻿using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games; // For GameId, PlayerId
 
 namespace SettlersOfCrutan.Domain.DomainErrors;
@@ -32,6 +32,7 @@ public class DomainError(string code, string message) : Error(code, message)
 
     // Dynamic / contextual
     public static DomainError PlayerNotFound(GameId gameId, PlayerId playerId) => new("PlayerNotFound", $"Player with id {playerId} not found in game {gameId}");
+    public static DomainError UserNotInGame(GameId gameId) => new("UserNotInGame", $"Authenticated user is not a player in game {gameId}.");
 
     // Rolling dice
     public static DomainError CannotRollInCurrentPhase => new("Roll", "Cannot roll in the current game phase");
@@ -53,6 +54,9 @@ public class DomainError(string code, string message) : Error(code, message)
     public static DomainError CannotResolveRobberInCurrentPhase => new("Robber", "Cannot resolve robber in the current game phase");
     public static DomainError InvalidRobberMove => new("Robber", "Invalid robber move");
     public static DomainError VictimNotExposedToRobberHex => new("Robber", "Victim player is not exposed to the new robber hex");
+    public static DomainError RobberVictimRequired => new("Robber", "At least one opponent has a settlement or city on this hex; you must choose one to steal from.");
+    public static DomainError RobberVictimNotEligible => new("Robber", "That player is not an opponent with a settlement or city on this hex.");
+    public static DomainError RobberVictimNotAllowed => new("Robber", "No opponent is on this hex; omit the victim — there is no one to steal from.");
 
     // Trade offer lifecycle (active offer)
     public static DomainError AnotherTradeOfferActive => new("TradeOffer", "Another trade offer is already active");

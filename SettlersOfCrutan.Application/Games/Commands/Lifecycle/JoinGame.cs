@@ -1,8 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
+using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
 
 namespace SettlersOfCrutan.Application.Games.Commands.Lifecycle;
@@ -24,7 +26,7 @@ public sealed class JoinGameCommandHandler(IGameRepository gameRepository,
         if (game is null)
             return Result<GameId>.Failure(new Error("NotFound", "Game not found"));
 
-        var joinResult = game.JoinPlayer(command.PlayerId, DateTimeOffset.Now);
+        var joinResult = game.JoinPlayer(command.PlayerId.Value, _clock.UtcNow);
 
         if (joinResult.IsFailure)
             return Result<GameId>.Failure(joinResult.Error);

@@ -193,19 +193,11 @@ function GamePage() {
         (id) => id !== privateGame.myPlayerId,
       );
 
-      const finish = async (victimId: string) => {
+      const finish = async (victimId: string | null) => {
         setRobberBusy(true);
         setRobberErr(null);
         const hexDto = toHexCoordDto(hex);
-        const r =
-          robberKind === "resolve"
-            ? await postResolveRobber(gameId, victimId, hexDto)
-            : await postUseKnight(
-                gameId,
-                privateGame.myPlayerId,
-                victimId,
-                hexDto,
-              );
+        const r = await postResolveRobber(gameId, hexDto, victimId);
         setRobberBusy(false);
         if (r.ok) {
           clearRobberPending();
@@ -214,6 +206,11 @@ function GamePage() {
           setRobberErr(r.errorMessage);
         }
       };
+
+      if (victims.length === 0) {
+        void finish(null);
+        return;
+      }
 
       if (victims.length === 1) {
         void finish(victims[0]!);
@@ -235,20 +232,12 @@ function GamePage() {
   );
 
   const handleVictimPick = (victimId: string) => {
-    if (!pendingRobberHex || !gameId || !privateGame || !robberKind) return;
+    if (!pendingRobberHex || !gameId || !robberKind) return;
     void (async () => {
       setRobberBusy(true);
       setRobberErr(null);
       const hexDto = toHexCoordDto(pendingRobberHex);
-      const r =
-        robberKind === "resolve"
-          ? await postResolveRobber(gameId, victimId, hexDto)
-          : await postUseKnight(
-              gameId,
-              privateGame.myPlayerId,
-              victimId,
-              hexDto,
-            );
+      const r = await postResolveRobber(gameId, hexDto, victimId);
       setRobberBusy(false);
       if (r.ok) {
         clearRobberPending();
@@ -326,8 +315,19 @@ function GamePage() {
   };
 
   const onPlayKnight = () => {
-    setRobberKind("knight");
-    setInteractionMode("devKnightHex");
+    if (!gameId) return;
+    void (async () => {
+      setRobberBusy(true);
+      setRobberErr(null);
+      const r = await postUseKnight(gameId);
+      setRobberBusy(false);
+      if (r.ok) {
+        setRobberKind("knight");
+        setInteractionMode("devKnightHex");
+      } else {
+        setRobberErr(r.errorMessage);
+      }
+    })();
   };
 
   const onPlayMonopoly = () => {
@@ -497,7 +497,7 @@ function GamePage() {
       )}
 
       <RobberVictimPicker
-        open={!!pendingRobberHex && victimChoices.length !== 1}
+        open={!!pendingRobberHex && victimChoices.length > 1}
         victims={victimChoices}
         busy={robberBusy}
         error={robberErr}

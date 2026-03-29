@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
+using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
@@ -26,7 +27,10 @@ public sealed class AcceptTradeCommandHandler(
         var game = await _gameRepository.GetAsync(command.GameId, ct);
         if (game is null) return Result<Nothing>.Failure(DomainError.NotFound);
 
-        var result = game.AcceptTrade(command.PlayerId, command.TradeOfferId);
+        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        if (actor.IsFailure) return Result<Nothing>.Failure(actor.Error);
+
+        var result = game.AcceptTrade(actor.Value, command.TradeOfferId);
         if (result.IsFailure) return Result<Nothing>.Failure(result.Error);
 
         var saved = await _gameRepository.SaveAsync(game, ct);

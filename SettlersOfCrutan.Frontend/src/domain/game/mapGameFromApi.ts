@@ -97,11 +97,23 @@ const RESOURCE_ALIASES: Record<string, ResourceCardType> = {
   wheat: "grain",
 };
 
-function normalizeResourceCardType(v: string | undefined): ResourceCardType {
-  if (!v) return "desert";
-  if ((RESOURCE_VALUES as readonly string[]).includes(v))
-    return v as ResourceCardType;
-  const aliased = RESOURCE_ALIASES[v.toLowerCase()];
+function normalizeResourceCardType(v: unknown): ResourceCardType {
+  if (typeof v === "number" && Number.isFinite(v)) {
+    const i = Math.trunc(v);
+    if (i >= 0 && i < RESOURCE_VALUES.length) return RESOURCE_VALUES[i]!;
+    return "desert";
+  }
+  if (typeof v !== "string") return "desert";
+  const trimmed = v.trim();
+  if (!trimmed) return "desert";
+  const lower = trimmed.toLowerCase();
+  if ((RESOURCE_VALUES as readonly string[]).includes(lower))
+    return lower as ResourceCardType;
+  const camelFromPascal =
+    trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
+  if ((RESOURCE_VALUES as readonly string[]).includes(camelFromPascal))
+    return camelFromPascal as ResourceCardType;
+  const aliased = RESOURCE_ALIASES[lower];
   if (aliased) return aliased;
   return "desert";
 }
@@ -112,9 +124,17 @@ function normalizePlayerColor(v: string | undefined): PlayerColor {
   return "none";
 }
 
-function normalizeGamePhase(v: string | undefined): GamePhase {
-  if (v && (GAME_PHASE_VALUES as readonly string[]).includes(v))
+function normalizeGamePhase(v: unknown): GamePhase {
+  if (typeof v === "number" && Number.isFinite(v)) {
+    const i = Math.trunc(v);
+    if (i >= 0 && i < GAME_PHASE_VALUES.length) return GAME_PHASE_VALUES[i]!;
+  }
+  if (typeof v !== "string") return "pendingStart";
+  if ((GAME_PHASE_VALUES as readonly string[]).includes(v))
     return v as GamePhase;
+  const camelFromPascal = v.charAt(0).toLowerCase() + v.slice(1);
+  if ((GAME_PHASE_VALUES as readonly string[]).includes(camelFromPascal))
+    return camelFromPascal as GamePhase;
   return "pendingStart";
 }
 
@@ -164,11 +184,14 @@ function mapBoard(dto: PublicGameDto["board"] | undefined): Board {
     .filter((h): h is Hex => h !== null);
   const populationCenters: PopulationCenter[] = (dto.populationCenters ?? [])
     .filter((p) => p.coordinates?.length)
-    .map((p) => ({
-      coordinates: (p.coordinates ?? []).map(toHexCoord),
-      type: p.type === "city" ? "city" : "settlement",
-      playerOwnerId: p.playerOwnerId ?? "",
-    }));
+    .map((p) => {
+      const level = (p.type ?? "").toLowerCase();
+      return {
+        coordinates: (p.coordinates ?? []).map(toHexCoord),
+        type: level === "city" ? "city" : "settlement",
+        playerOwnerId: p.playerOwnerId ?? "",
+      };
+    });
   const roads: Road[] = (dto.roads ?? [])
     .filter((r) => r.coordinates?.length)
     .map((r) => ({
@@ -212,10 +235,16 @@ function mapTradeOffer(
     playerProposerId: dto.playerProposerId ?? "",
     playerAcceptorId: dto.playerAcceptorId ?? undefined,
     requestedResources: Object.fromEntries(
-      Object.entries(dto.requestedResources ?? {}).map(([k, v]) => [k, num(v)]),
+      Object.entries(dto.requestedResources ?? {}).map(([k, v]) => [
+        normalizeResourceCardType(k),
+        num(v),
+      ]),
     ),
     offeredResources: Object.fromEntries(
-      Object.entries(dto.offeredResources ?? {}).map(([k, v]) => [k, num(v)]),
+      Object.entries(dto.offeredResources ?? {}).map(([k, v]) => [
+        normalizeResourceCardType(k),
+        num(v),
+      ]),
     ),
     isAccepted: !!dto.isAccepted,
   };
@@ -290,7 +319,7 @@ function publicDtoToGame(publicPart: PublicGameDto): Game | null {
     board: mapBoard(publicPart.board),
     bankResourceHand: Object.fromEntries(
       Object.entries(publicPart.bankResourceHand ?? {}).map(([k, v]) => [
-        k,
+        normalizeResourceCardType(k),
         num(v),
       ]),
     ),

@@ -1,4 +1,4 @@
-﻿using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
 
@@ -15,13 +15,13 @@ public partial class Game
         return Result.Success(CurrentPlayerId());
     }
 
-    public Result<PlayerId> JoinPlayer(PlayerId playerId, DateTimeOffset when)
+    public Result<PlayerId> JoinPlayer(string userId, DateTimeOffset when)
     {
-        var p = _players.SingleOrDefault(x => x.Id == playerId);
-        if (p is null) return Result.Failure<PlayerId>(DomainError.PlayerNotFound(Id, playerId));
+        var p = _players.SingleOrDefault(x => x.UserId == userId);
+        if (p is null) return Result.Failure<PlayerId>(DomainError.UserNotInGame(Id));
         p.JoinedAt ??= when;
-        AddDomainEvent(new PlayerJoinedDomainEvent(Id, playerId, when));
-        return Result.Success(playerId);
+        AddDomainEvent(new PlayerJoinedDomainEvent(Id, p.Id, when));
+        return Result.Success(p.Id);
     }
 
     public Result<PlayerId> LeavePlayer(PlayerId playerId, DateTimeOffset when)

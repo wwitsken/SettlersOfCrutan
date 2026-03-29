@@ -884,7 +884,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": number | string;
+                        "application/json": number;
                     };
                 };
                 /** @description Bad Request */
@@ -986,11 +986,7 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["UseKnightRequest"];
-                };
-            };
+            requestBody?: never;
             responses: {
                 /** @description No Content */
                 204: {
@@ -1596,23 +1592,23 @@ export interface components {
         GameType: "baseGame" | "seafarers" | "citiesAndKnights" | "tradersAndBarbarians" | "explorersAndPirates";
         HexCoordDto: {
             /** Format: int32 */
-            q: number | string;
+            q: number;
             /** Format: int32 */
-            r: number | string;
+            r: number;
             /** Format: int32 */
-            s: number | string;
+            s: number;
         };
         HexCoordinateDto: {
             /** Format: int32 */
-            q?: number | string;
+            q?: number;
             /** Format: int32 */
-            r?: number | string;
+            r?: number;
         };
         HexDto: {
             coordinate?: components["schemas"]["HexCoordinateDto"];
             resource?: string;
             /** Format: int32 */
-            numberToken?: number | string;
+            numberToken?: number;
             hasRobber?: boolean;
         };
         JoinGameRequest: {
@@ -1636,13 +1632,13 @@ export interface components {
         };
         MyHandDto: {
             resources: {
-                [key: string]: number | string;
+                [key: string]: number;
             };
             devCards: {
-                [key: string]: number | string;
+                [key: string]: number;
             };
             buildables: {
-                [key: string]: number | string;
+                [key: string]: number;
             };
         };
         OfferTradeRequest: {
@@ -1656,21 +1652,21 @@ export interface components {
         PlayerDto: {
             id: string;
             /** Format: int32 */
-            playOrder: number | string;
+            playOrder: number;
             isPlaying?: boolean;
             displayName?: string;
             playerColor?: components["schemas"]["PlayerColor"];
             /** Format: int32 */
-            resourceCardCount?: number | string;
+            resourceCardCount?: number;
             /** Format: int32 */
-            developmentCardCount?: number | string;
+            developmentCardCount?: number;
             pieceReserve?: {
-                [key: string]: number | string;
+                [key: string]: number;
             };
             /** Format: int32 */
-            discardRequirement?: number | string;
+            discardRequirement?: number;
             /** Format: int32 */
-            victoryPoints?: number | string;
+            victoryPoints?: number;
             hasLongestRoad?: boolean;
             hasLargestArmy?: boolean;
         };
@@ -1690,7 +1686,7 @@ export interface components {
             myPlayerId: components["schemas"]["PlayerId"];
             myHand: components["schemas"]["MyHandDto"];
             /** Format: int32 */
-            myScore?: number | string;
+            myScore?: number;
             buildableRoads?: components["schemas"]["HexCoordinateDto"][][];
             buildableSettlements?: components["schemas"]["HexCoordinateDto"][][];
         };
@@ -1698,7 +1694,7 @@ export interface components {
             type?: null | string;
             title?: null | string;
             /** Format: int32 */
-            status?: null | number | string;
+            status?: null | number;
             detail?: null | string;
             instance?: null | string;
         };
@@ -1709,29 +1705,29 @@ export interface components {
             gameName: string;
             board: components["schemas"]["BoardDto"];
             bankResourceHand?: {
-                [key: string]: number | string;
+                [key: string]: number;
             };
             bankDevCardHand?: {
-                [key: string]: number | string;
+                [key: string]: number;
             };
             /** Format: date-time */
             turnExpiresAt?: null | string;
             playerDirection?: components["schemas"]["PlayerDirection"];
             gamePhase?: components["schemas"]["GamePhase"];
             /** Format: int32 */
-            round?: number | string;
+            round?: number;
             currentPlayerId?: null | components["schemas"]["PlayerId"];
             currentTradeOffer?: null | components["schemas"]["TradeOfferDto"];
             players?: components["schemas"]["PlayerDto"][];
         };
         ResolveRobberRequest: {
-            victimPlayerId: string;
             newRobberHex: components["schemas"]["HexCoordDto"];
+            victimPlayerId?: null | string;
         };
         ResourceCardAmountDto: {
             type: components["schemas"]["ResourceCardType"];
             /** Format: int32 */
-            quantity: number | string;
+            quantity: number;
         };
         /** @enum {unknown} */
         ResourceCardType: "none" | "brick" | "lumber" | "wool" | "grain" | "ore" | "desert" | "water";
@@ -1741,9 +1737,9 @@ export interface components {
         };
         RollDiceCommandResult: {
             /** Format: int32 */
-            dice1: number | string;
+            dice1: number;
             /** Format: int32 */
-            dice2: number | string;
+            dice2: number;
         };
         StartGameFromLobbyRequest: {
             gameType: components["schemas"]["GameType"];
@@ -1754,20 +1750,15 @@ export interface components {
             playerProposerId?: string;
             playerAcceptorId?: null | string;
             requestedResources?: {
-                [key: string]: number | string;
+                [key: string]: number;
             };
             offeredResources?: {
-                [key: string]: number | string;
+                [key: string]: number;
             };
             isAccepted?: boolean;
         };
         UpgradeSettlementToCityRequest: {
             vertexCoordinate: components["schemas"]["VertexCoordDto"];
-        };
-        UseKnightRequest: {
-            playerId: string;
-            victimPlayerId: string;
-            newRobberHex: components["schemas"]["HexCoordDto"];
         };
         UseMonopolyRequest: {
             playerId: string;

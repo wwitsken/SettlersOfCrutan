@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
+using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
@@ -10,7 +11,7 @@ using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Application.Games.Commands.TurnFlow;
 
-public record ResolveRobberCommand(GameId GameId, PlayerId PlayerId, HexCoord NewRobberHexCoord, PlayerId VictimId) : ICommand<ResourceCardType>;
+public record ResolveRobberCommand(GameId GameId, PlayerId PlayerId, HexCoord NewRobberHexCoord, PlayerId? VictimId) : ICommand<ResourceCardType>;
 
 public sealed class ResolveRobberCommandHandler(
     IGameRepository gameRepository,
@@ -28,7 +29,10 @@ public sealed class ResolveRobberCommandHandler(
         var game = await _gameRepository.GetAsync(command.GameId, ct);
         if (game is null) return Result<ResourceCardType>.Failure(DomainError.NotFound);
 
-        var result = game.ResolveRobber(command.PlayerId, command.NewRobberHexCoord, command.VictimId);
+        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        if (actor.IsFailure) return Result<ResourceCardType>.Failure(actor.Error);
+
+        var result = game.ResolveRobber(actor.Value, command.NewRobberHexCoord, command.VictimId);
         if (result.IsFailure) return Result<ResourceCardType>.Failure(result.Error);
 
         var saved = await _gameRepository.SaveAsync(game, ct);

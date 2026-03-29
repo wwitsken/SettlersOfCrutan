@@ -1,3 +1,3 @@
 namespace SettlersOfCrutan.Presentation.Dtos;
 
-public record ResolveRobberRequest(string VictimPlayerId, HexCoordDto NewRobberHex);
+public record ResolveRobberRequest(HexCoordDto NewRobberHex, string? VictimPlayerId = null);

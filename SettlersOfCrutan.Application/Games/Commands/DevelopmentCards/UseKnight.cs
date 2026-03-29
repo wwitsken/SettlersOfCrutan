@@ -1,15 +1,14 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
+using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
-using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
-
 namespace SettlersOfCrutan.Application.Games.Commands.DevelopmentCards;
 
-public record UseKnightCommand(GameId GameId, PlayerId PlayerId, HexCoord NewRobberHexCoord, PlayerId VictimId) : ICommand;
+public record UseKnightCommand(GameId GameId, PlayerId PlayerId) : ICommand;
 
 public sealed class UseKnightCommandHandler(
     IGameRepository gameRepository,
@@ -27,7 +26,10 @@ public sealed class UseKnightCommandHandler(
         var game = await _gameRepository.GetAsync(command.GameId, ct);
         if (game is null) return Result.Failure(DomainError.NotFound);
 
-        var result = game.PlayKnight(command.PlayerId, command.NewRobberHexCoord, command.VictimId);
+        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        if (actor.IsFailure) return Result.Failure(actor.Error);
+
+        var result = game.PlayKnight(actor.Value);
         if (result.IsFailure) return Result.Failure(result.Error);
 
         var saved = await _gameRepository.SaveAsync(game, ct);

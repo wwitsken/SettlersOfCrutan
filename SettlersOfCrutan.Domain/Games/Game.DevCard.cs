@@ -91,20 +91,21 @@ public partial class Game
         return Result.Success((t1, t2));
     }
 
-    public Result<HexCoord> PlayKnight(PlayerId playerId, HexCoord newRobberHexCoord, PlayerId victimId)
+    /// <summary>Consumes a knight dev card and enters robber resolution; call <see cref="ResolveRobber"/> next to move the robber and optionally steal.</summary>
+    public Result<Nothing> PlayKnight(PlayerId playerId)
     {
-        if (GamePhase != GamePhase.TradeBuild) return Result.Failure<HexCoord>(DomainError.WrongGamePhase);
-        if (CurrentPlayerId() != playerId) return Result.Failure<HexCoord>(DomainError.WrongTurn);
+        if (GamePhase != GamePhase.TradeBuild) return Result.Failure<Nothing>(DomainError.WrongGamePhase);
+        if (CurrentPlayerId() != playerId) return Result.Failure<Nothing>(DomainError.WrongTurn);
 
         var player = Players.First(p => p.Id == playerId);
         if (!player.CanUseDevCard(DevelopmentCardType.Knight))
-            return Result.Failure<HexCoord>(DomainError.MissingKnightCard);
+            return Result.Failure<Nothing>(DomainError.MissingKnightCard);
 
         player.UseDevCardToBank(BankDevCardHand, DevelopmentCardType.Knight);
         player.IncrementKnightsPlayed();
         GamePhase = GamePhase.ResolveRobber;
         AddDomainEvent(new KnightCardPlayedDomainEvent(Id, playerId));
         AddDomainEvent(new RobPlayerStartedDomainEvent(Id));
-        return Result.Success(newRobberHexCoord);
+        return Result.Success();
     }
 }

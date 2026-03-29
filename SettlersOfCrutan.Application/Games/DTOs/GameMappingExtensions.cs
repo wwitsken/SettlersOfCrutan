@@ -1,3 +1,4 @@
+using System.Text.Json;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
@@ -15,6 +16,10 @@ using AppPortDto = SettlersOfCrutan.Application.Games.DTOs.PortDto;
 
 public static class GameMappingExtensions
 {
+    /// <summary>Match HTTP / OpenAPI camelCase string enums (e.g. Brick → brick, BaseGame → baseGame).</summary>
+    private static string ToJsonCamelCase(string pascalCaseName) =>
+        JsonNamingPolicy.CamelCase.ConvertName(pascalCaseName);
+
     public static PublicGameDto ToDto(this Game game)
     {
         ArgumentNullException.ThrowIfNull(game);
@@ -82,7 +87,7 @@ public static class GameMappingExtensions
             Hexes = [.. board.Hexes.Select(h => new AppHexDto
             {
                 Coordinate = new AppHexCoordinateDto { Q = h.Coordinate.Q, R = h.Coordinate.R },
-                Resource = h.Resource.ToString(),
+                Resource = ToJsonCamelCase(h.Resource.ToString()),
                 NumberToken = h.NumberToken ?? 0,
                 HasRobber = h.HasRobber
             })],
@@ -106,7 +111,7 @@ public static class GameMappingExtensions
                     InCoordinate = inCoord,
                     OutCoordinate = outCoord,
                     Coordinates = ToHexCoordinateDtos(p.EdgeCoordinate),
-                    Type = p.Type.ToString()
+                    Type = ToJsonCamelCase(p.Type.ToString())
                 };
             })]
         };

@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
+using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
@@ -26,7 +27,10 @@ public sealed class RollDiceCommandHandler(
 
         if (game is null) return Result<RollDiceCommandResult>.Failure(new Error("NotFound", "Game not found"));
 
-        var result = game.RollAndResolveProduction(command.PlayerId);
+        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        if (actor.IsFailure) return Result<RollDiceCommandResult>.Failure(actor.Error);
+
+        var result = game.RollAndResolveProduction(actor.Value);
 
         if (result.IsFailure) return Result.Failure<RollDiceCommandResult>(result.Error);
 

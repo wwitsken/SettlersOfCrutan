@@ -5,6 +5,7 @@ using Scalar.AspNetCore;
 using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Infrastructure;
 using SettlersOfCrutan.Infrastructure.Redis;
+using SettlersOfCrutan.Infrastructure.Redis.Serialization;
 using SettlersOfCrutan.Infrastructure.SignalR;
 using SettlersOfCrutan.Presentation;
 using SettlersOfCrutan.Presentation.Auth;
@@ -24,7 +25,9 @@ builder.Services.AddOpenApi(options =>
 builder.Services.AddApplicationServices();
 builder.Services.Configure<RedisOptions>(builder.Configuration.GetSection("Redis"));
 builder.Services.AddInfrastructureServices();
-builder.Services.AddSignalR().AddStackExchangeRedis(builder.Configuration.GetConnectionString("redis")!);
+builder.Services.AddSignalR()
+    .AddJsonProtocol(o => o.PayloadSerializerOptions = ApiSharedJsonOptions.CreateForSignalR())
+    .AddStackExchangeRedis(builder.Configuration.GetConnectionString("redis")!);
 
 // HTTP Context
 builder.Services.AddHttpContextAccessor();

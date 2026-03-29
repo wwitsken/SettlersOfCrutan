@@ -39,7 +39,9 @@ public static class GameTurnFlowEndpoints
         {
             GameId gameId = new() { Value = id };
             PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
-            PlayerId victimId = new() { Value = request.VictimPlayerId };
+            PlayerId? victimId = string.IsNullOrWhiteSpace(request.VictimPlayerId)
+                ? null
+                : new PlayerId { Value = request.VictimPlayerId! };
             var cmd = new ResolveRobberCommand(gameId, playerId, request.NewRobberHex.ToDomain(), victimId);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();

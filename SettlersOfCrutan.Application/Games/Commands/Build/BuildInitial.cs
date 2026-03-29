@@ -1,7 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
 using SettlersOfCrutan.Application.Games.DTOs;
+using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
@@ -24,7 +25,9 @@ public sealed class BuildInitialCommandHandler(IGameRepository gameRepository,
     {
         var game = await _gameRepository.GetAsync(command.GameId, ct);
         if (game is null) return Result<Nothing>.Failure(DomainError.NotFound);
-        var result = game.PlaceInitial(command.PlayerId, command.SettlementCoordinate, command.RoadCoordinate, _clock);
+        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        if (actor.IsFailure) return Result<Nothing>.Failure(actor.Error);
+        var result = game.PlaceInitial(actor.Value, command.SettlementCoordinate, command.RoadCoordinate, _clock);
         if (result.IsFailure) return Result<Nothing>.Failure(result.Error);
         await _gameRepository.SaveAsync(game, ct);
 

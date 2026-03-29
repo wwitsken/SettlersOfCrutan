@@ -301,38 +301,42 @@ export function CatanBoardScene({
 
           {boardPickMode === "settlement" && (
             <group>
-              {hoverVertexCandidates.map((v) => (
-                <group key={v.key} position={[v.x, 0.3, v.z]}>
-                  <mesh
-                    onPointerOver={() => setHoveredVertexKey(v.key)}
-                    onPointerOut={() =>
-                      setHoveredVertexKey((prev) =>
-                        prev === v.key ? null : prev,
-                      )
-                    }
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onVertexPicked?.(
-                        toVertexCoordDto(v.h0, v.h1, v.h2),
-                      );
-                    }}
-                  >
-                    <sphereGeometry args={[0.25, 12, 12]} />
-                    <meshStandardMaterial transparent opacity={0} />
-                  </mesh>
-
-                  {hoveredVertexKey === v.key && (
-                    <mesh castShadow>
-                      <sphereGeometry args={[0.2, 16, 16]} />
-                      <meshStandardMaterial
-                        color={"#ffffff"}
-                        transparent
-                        opacity={0.5}
-                      />
+              {hoverVertexCandidates.map((v) => {
+                const hitR = hexRadius * 0.22;
+                const ghostR = hexRadius * 0.2;
+                return (
+                  <group key={v.key} position={[v.x, 0.2, v.z]}>
+                    <mesh
+                      onPointerOver={() => setHoveredVertexKey(v.key)}
+                      onPointerOut={() =>
+                        setHoveredVertexKey((prev) =>
+                          prev === v.key ? null : prev,
+                        )
+                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onVertexPicked?.(
+                          toVertexCoordDto(v.h0, v.h1, v.h2),
+                        );
+                      }}
+                    >
+                      <sphereGeometry args={[hitR, 12, 12]} />
+                      <meshStandardMaterial transparent opacity={0} />
                     </mesh>
-                  )}
-                </group>
-              ))}
+
+                    {hoveredVertexKey === v.key && (
+                      <mesh castShadow>
+                        <sphereGeometry args={[ghostR, 16, 16]} />
+                        <meshStandardMaterial
+                          color={"#ffffff"}
+                          transparent
+                          opacity={0.5}
+                        />
+                      </mesh>
+                    )}
+                  </group>
+                );
+              })}
             </group>
           )}
 

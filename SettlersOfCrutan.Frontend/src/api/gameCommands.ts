@@ -144,31 +144,35 @@ export async function postDiscardHalf(
 
 export async function postResolveRobber(
   gameId: string,
-  victimPlayerId: string,
   newRobberHex: HexCoordDto,
+  victimPlayerId?: string | null,
 ): Promise<CommandResult> {
   const t = await tokenOrErr();
   if (typeof t !== "string") return t;
+  const body: { newRobberHex: HexCoordDto; victimPlayerId?: string } = {
+    newRobberHex,
+  };
+  if (
+    victimPlayerId !== undefined &&
+    victimPlayerId !== null &&
+    victimPlayerId !== ""
+  ) {
+    body.victimPlayerId = victimPlayerId;
+  }
   const { error, response } = await api.POST("/api/games/{id}/turn/resolve-robber", {
     params: { path: { id: gameId } },
-    body: { victimPlayerId, newRobberHex },
+    body,
     accessToken: t,
   });
   if (response.status === 200 && !error) return { ok: true };
   return { ok: false, errorMessage: problemMessage(response.status, error) };
 }
 
-export async function postUseKnight(
-  gameId: string,
-  playerId: string,
-  victimPlayerId: string,
-  newRobberHex: HexCoordDto,
-): Promise<CommandResult> {
+export async function postUseKnight(gameId: string): Promise<CommandResult> {
   const t = await tokenOrErr();
   if (typeof t !== "string") return t;
   const { error, response } = await api.POST("/api/games/{id}/devcards/knight", {
     params: { path: { id: gameId } },
-    body: { playerId, victimPlayerId, newRobberHex },
     accessToken: t,
   });
   if (response.status === 204 && !error) return { ok: true };
