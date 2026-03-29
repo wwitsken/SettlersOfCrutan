@@ -1,24 +1,37 @@
-﻿using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
+using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
 using SettlersOfCrutan.Domain.Games.Resources;
+using SettlersOfCrutan.Domain.Specifications;
+using PlaceInitialSpecs = SettlersOfCrutan.Domain.Specifications.PlaceInitial;
+using BuildRoadSpecs = SettlersOfCrutan.Domain.Specifications.BuildRoad;
+using BuildSettlementSpecs = SettlersOfCrutan.Domain.Specifications.BuildSettlement;
+using BuildCitySpecs = SettlersOfCrutan.Domain.Specifications.BuildCity;
+using BuyDevCardSpecs = SettlersOfCrutan.Domain.Specifications.BuyDevelopmentCard;
 
 namespace SettlersOfCrutan.Domain.Games;
 public partial class Game
 {
+    private static readonly ISpecification<PlaceInitialSpecs.PlaceInitialContext>[] PlaceInitialSpecifications =
+    [
+        new PlaceInitialSpecs.GameMustBeInSetupPhase(),
+        new PlaceInitialSpecs.MustBeCurrentPlayerTurn(),
+        new PlaceInitialSpecs.PlayerMustHaveInitialPieces(),
+        new PlaceInitialSpecs.BoardMustAllowInitialPlacement()
+    ];
+
     public Result<(PopulationCenter, Road)> PlaceInitial(PlayerId playerId, Vertex settlementVertex, Edge roadEdge, IDateTimeProvider clock)
     {
-        if (GamePhase != GamePhase.Setup) return Result.Failure<(PopulationCenter, Road)>(DomainError.WrongGamePhase);
-        if (CurrentPlayerId() != playerId) return Result.Failure<(PopulationCenter, Road)>(DomainError.WrongTurn);
-
         var player = Players.First(p => p.Id == playerId);
-        if (!player.CanConsumePiece(BuildableType.Settlement) || !player.CanConsumePiece(BuildableType.Road))
-            return Result.Failure<(PopulationCenter, Road)>(DomainError.MissingInitialPieces);
+        var context = new PlaceInitialSpecs.PlaceInitialContext(GamePhase, CurrentPlayerId(), playerId, player, Board, settlementVertex, roadEdge);
 
-        var can = Board.CanPlaceInitialSettleAndRoad(settlementVertex, roadEdge);
-        if (can.IsFailure) return Result.Failure<(PopulationCenter, Road)>(can.Error);
+        foreach (var spec in PlaceInitialSpecifications)
+        {
+            var result = spec.IsSatisfiedBy(context);
+            if (result.IsFailure)
+                return Result.Failure<(PopulationCenter, Road)>(result.Error);
+        }
 
         var (settlement, road) = Board.PlaceInitialSettleAndRoadNoFail(playerId, settlementVertex, roadEdge);
         player.ConsumePiece(BuildableType.Settlement);
@@ -29,18 +42,27 @@ public partial class Game
         return Result.Success((settlement, road));
     }
 
+    private static readonly ISpecification<BuildRoadSpecs.BuildRoadContext>[] BuildRoadSpecifications =
+    [
+        new BuildRoadSpecs.GameMustBeInTradeBuildPhase(),
+        new BuildRoadSpecs.MustBeCurrentPlayerTurn(),
+        new BuildRoadSpecs.PlayerMustAffordRoad(),
+        new BuildRoadSpecs.PlayerMustHaveRoadPiece(),
+        new BuildRoadSpecs.BoardMustAllowRoadPlacement()
+    ];
+
     public Result<Road> BuildRoad(IPriceCalculator priceCalculator, PlayerId playerId, Edge edge)
     {
-        if (GamePhase != GamePhase.TradeBuild) return Result.Failure<Road>(DomainError.WrongGamePhase);
-        if (CurrentPlayerId() != playerId) return Result.Failure<Road>(DomainError.WrongTurn);
-
         var player = Players.First(p => p.Id == playerId);
         var cost = priceCalculator.RoadPrice();
+        var context = new BuildRoadSpecs.BuildRoadContext(GamePhase, CurrentPlayerId(), playerId, player, cost, Board, edge);
 
-        if (!player.CanPayResources(cost)) return Result.Failure<Road>(DomainError.InsufficientResources);
-        if (!player.CanConsumePiece(BuildableType.Road)) return Result.Failure<Road>(DomainError.MissingRoad);
-        var canPlace = Board.CanPlaceRoad(playerId, edge);
-        if (canPlace.IsFailure) return Result.Failure<Road>(canPlace.Error);
+        foreach (var spec in BuildRoadSpecifications)
+        {
+            var result = spec.IsSatisfiedBy(context);
+            if (result.IsFailure)
+                return Result.Failure<Road>(result.Error);
+        }
 
         var road = Board.PlaceRoadNoFail(playerId, edge);
         player.PayResourcesTo(BankResourceHand, cost);
@@ -50,18 +72,27 @@ public partial class Game
         return Result.Success(road);
     }
 
+    private static readonly ISpecification<BuildSettlementSpecs.BuildSettlementContext>[] BuildSettlementSpecifications =
+    [
+        new BuildSettlementSpecs.GameMustBeInTradeBuildPhase(),
+        new BuildSettlementSpecs.MustBeCurrentPlayerTurn(),
+        new BuildSettlementSpecs.PlayerMustAffordSettlement(),
+        new BuildSettlementSpecs.PlayerMustHaveSettlementPiece(),
+        new BuildSettlementSpecs.BoardMustAllowSettlementPlacement()
+    ];
+
     public Result<PopulationCenter> BuildSettlement(IPriceCalculator priceCalculator, PlayerId playerId, Vertex vertex)
     {
-        if (GamePhase != GamePhase.TradeBuild) return Result.Failure<PopulationCenter>(DomainError.WrongGamePhase);
-        if (CurrentPlayerId() != playerId) return Result.Failure<PopulationCenter>(DomainError.WrongTurn);
-
         var player = Players.First(p => p.Id == playerId);
         var cost = priceCalculator.SettlementPrice();
+        var context = new BuildSettlementSpecs.BuildSettlementContext(GamePhase, CurrentPlayerId(), playerId, player, cost, Board, vertex);
 
-        if (!player.CanPayResources(cost)) return Result.Failure<PopulationCenter>(DomainError.InsufficientResources);
-        if (!player.CanConsumePiece(BuildableType.Settlement)) return Result.Failure<PopulationCenter>(DomainError.MissingSettlement);
-        var can = Board.CanPlaceSettlement(playerId, vertex);
-        if (can.IsFailure) return Result.Failure<PopulationCenter>(can.Error);
+        foreach (var spec in BuildSettlementSpecifications)
+        {
+            var result = spec.IsSatisfiedBy(context);
+            if (result.IsFailure)
+                return Result.Failure<PopulationCenter>(result.Error);
+        }
 
         var settlement = Board.PlaceSettlementNoFail(playerId, vertex);
         player.PayResourcesTo(BankResourceHand, cost);
@@ -71,39 +102,60 @@ public partial class Game
         return Result.Success(settlement);
     }
 
+    private static readonly ISpecification<BuildCitySpecs.BuildCityContext>[] BuildCitySpecifications =
+    [
+        new BuildCitySpecs.GameMustBeInTradeBuildPhase(),
+        new BuildCitySpecs.MustBeCurrentPlayerTurn(),
+        new BuildCitySpecs.PlayerMustAffordCity(),
+        new BuildCitySpecs.PlayerMustHaveCityPiece(),
+        new BuildCitySpecs.BoardMustAllowCityUpgrade()
+    ];
+
     public Result<PopulationCenter> BuildCity(IPriceCalculator priceCalculator, PlayerId playerId, Vertex vertex)
     {
-        if (GamePhase != GamePhase.TradeBuild) return Result.Failure<PopulationCenter>(DomainError.WrongGamePhase);
-        if (CurrentPlayerId() != playerId) return Result.Failure<PopulationCenter>(DomainError.WrongTurn);
-
         var player = Players.First(p => p.Id == playerId);
         var cost = priceCalculator.CityPrice();
+        var context = new BuildCitySpecs.BuildCityContext(GamePhase, CurrentPlayerId(), playerId, player, cost, Board, vertex);
 
-        if (!player.CanPayResources(cost)) return Result.Failure<PopulationCenter>(DomainError.InsufficientResources);
-        if (!player.CanConsumePiece(BuildableType.City)) return Result.Failure<PopulationCenter>(DomainError.MissingCity);
-        var can = Board.CanUpgradeToCity(playerId, vertex);
-        if (can.IsFailure) return Result.Failure<PopulationCenter>(can.Error);
+        foreach (var spec in BuildCitySpecifications)
+        {
+            var result = spec.IsSatisfiedBy(context);
+            if (result.IsFailure)
+                return Result.Failure<PopulationCenter>(result.Error);
+        }
 
         var city = Board.UpgradeToCityNoFail(playerId, vertex);
         player.PayResourcesTo(BankResourceHand, cost);
         player.ConsumePiece(BuildableType.City);
-        player.ReturnPiece(BuildableType.Settlement); // return settlement piece
+        player.ReturnPiece(BuildableType.Settlement);
 
         AddDomainEvent(new SettlementUpgradedToCityDomainEvent(Id, playerId, city));
         return Result.Success(city);
     }
 
+    private static readonly ISpecification<BuyDevCardSpecs.BuyDevelopmentCardContext>[] BuyDevelopmentCardSpecifications =
+    [
+        new BuyDevCardSpecs.GameMustBeInTradeBuildPhase(),
+        new BuyDevCardSpecs.MustBeCurrentPlayerTurn(),
+        new BuyDevCardSpecs.PlayerMustAffordDevelopmentCard(),
+        new BuyDevCardSpecs.PlayerMustNotExceedDevCardLimit(),
+        new BuyDevCardSpecs.BankMustHaveDevelopmentCards()
+    ];
+
     public Result<DevelopmentCardType> BuyDevelopmentCard(IPriceCalculator priceCalculator, PlayerId playerId)
     {
-        if (GamePhase != GamePhase.TradeBuild) return Result.Failure<DevelopmentCardType>(DomainError.WrongGamePhase);
-        if (CurrentPlayerId() != playerId) return Result.Failure<DevelopmentCardType>(DomainError.WrongTurn);
-
         var player = Players.First(p => p.Id == playerId);
         var cost = priceCalculator.DevelopmentCardPrice();
+        var context = new BuyDevCardSpecs.BuyDevelopmentCardContext(
+            GamePhase, CurrentPlayerId(), playerId, player, cost,
+            player.DevCardHand.Cards.Count, BankDevCardHand.Cards.Count);
 
-        if (!player.CanPayResources(cost)) return Result.Failure<DevelopmentCardType>(DomainError.InsufficientResources);
-        if (player.DevCardHand.Cards.Count > 3) return Result.Failure<DevelopmentCardType>(DomainError.TooManyDevelopmentCards);
-        if (BankDevCardHand.Cards.Count <= 0) return Result.Failure<DevelopmentCardType>(DomainError.InsufficientBankDevelopmentCards);
+        foreach (var spec in BuyDevelopmentCardSpecifications)
+        {
+            var result = spec.IsSatisfiedBy(context);
+            if (result.IsFailure)
+                return Result.Failure<DevelopmentCardType>(result.Error);
+        }
 
         var drawn = BankDevCardHand.DrawRandom();
         player.AddDevCard(drawn);

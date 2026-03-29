@@ -1,18 +1,31 @@
-﻿using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
 using SettlersOfCrutan.Domain.Games.Resources;
+using SettlersOfCrutan.Domain.Specifications;
+using EndTurnSpecs = SettlersOfCrutan.Domain.Specifications.EndTurn;
+using RollSpecs = SettlersOfCrutan.Domain.Specifications.RollAndResolveProduction;
 
 namespace SettlersOfCrutan.Domain.Games;
 public partial class Game
 {
+    private static readonly ISpecification<EndTurnSpecs.EndTurnContext>[] EndTurnSpecifications =
+    [
+        new EndTurnSpecs.GameMustBeInSetupOrTradeBuild(),
+        new EndTurnSpecs.MustBeCurrentPlayerTurn()
+    ];
+
     public Result<PlayerId> EndTurn(PlayerId playerId, IDateTimeProvider clock, TimeSpan? turnDuration = null)
     {
-        if (GamePhase != GamePhase.Setup && GamePhase != GamePhase.TradeBuild) return Result<PlayerId>.Failure(DomainError.WrongGamePhase);
+        var context = new EndTurnSpecs.EndTurnContext(GamePhase, CurrentPlayerId(), playerId);
 
-        if (CurrentPlayerId() != playerId)
-            return Result.Failure<PlayerId>(DomainError.WrongTurn);
+        foreach (var spec in EndTurnSpecifications)
+        {
+            var result = spec.IsSatisfiedBy(context);
+            if (result.IsFailure)
+                return Result.Failure<PlayerId>(result.Error);
+        }
 
         return GamePhase switch
         {
@@ -22,13 +35,22 @@ public partial class Game
         };
     }
 
+    private static readonly ISpecification<RollSpecs.RollAndResolveProductionContext>[] RollAndResolveProductionSpecifications =
+    [
+        new RollSpecs.GameMustBeInRollDicePhase(),
+        new RollSpecs.MustBeCurrentPlayerTurn()
+    ];
 
     public Result<(int, int)> RollAndResolveProduction(PlayerId playerId)
     {
-        if (GamePhase != GamePhase.RollDice)
-            return Result.Failure<(int, int)>(DomainError.CannotRollInCurrentPhase);
-        if (CurrentPlayerId() != playerId)
-            return Result.Failure<(int, int)>(DomainError.WrongTurn);
+        var context = new RollSpecs.RollAndResolveProductionContext(GamePhase, CurrentPlayerId(), playerId);
+
+        foreach (var spec in RollAndResolveProductionSpecifications)
+        {
+            var result = spec.IsSatisfiedBy(context);
+            if (result.IsFailure)
+                return Result.Failure<(int, int)>(result.Error);
+        }
 
         int d1 = Random.Shared.Next(1, 7);
         int d2 = Random.Shared.Next(1, 7);
@@ -143,7 +165,6 @@ public partial class Game
                 .ToList();
 
             var player = Players.First(p => p.Id == pid);
-            // Add resources to player & subtract from bank
             foreach (var ra in totalToGive)
             {
                 player.AddResource(ra.Type, ra.Quantity);

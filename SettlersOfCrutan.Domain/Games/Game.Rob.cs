@@ -1,17 +1,35 @@
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
 using SettlersOfCrutan.Domain.Games.Resources;
+using SettlersOfCrutan.Domain.Specifications;
+using RobSpecs = SettlersOfCrutan.Domain.Specifications.ResolveRobber;
 
 namespace SettlersOfCrutan.Domain.Games;
 public partial class Game
 {
+    private static readonly ISpecification<RobSpecs.ResolveRobberContext>[] ResolveRobberSpecifications =
+    [
+        new RobSpecs.GameMustBeInResolveRobberPhase(),
+        new RobSpecs.MustBeCurrentPlayerTurn(),
+        new RobSpecs.RobberDestinationMustBeValid(),
+        new RobSpecs.RobberVictimMustBeValid()
+    ];
+
     /// <param name="victimId">Required when at least one opponent has a settlement/city on the hex; otherwise omit (no steal).</param>
     public Result<ResourceCardType> ResolveRobber(PlayerId robbingPlayerId, HexCoord newRobberHexCoord, PlayerId? victimId)
     {
-        var can = CanResolveRobber(robbingPlayerId, newRobberHexCoord, victimId);
-        if (can.IsFailure) return Result.Failure<ResourceCardType>(can.Error);
+        var stealTargets = Board.GetOpponentIdsOnHex(newRobberHexCoord, robbingPlayerId);
+        var context = new RobSpecs.ResolveRobberContext(
+            GamePhase, CurrentPlayerId(), robbingPlayerId, Board, newRobberHexCoord, victimId, stealTargets);
+
+        foreach (var spec in ResolveRobberSpecifications)
+        {
+            var result = spec.IsSatisfiedBy(context);
+            if (result.IsFailure)
+                return Result.Failure<ResourceCardType>(result.Error);
+        }
+
         var stolen = ResolveRobberNoFail(robbingPlayerId, newRobberHexCoord, victimId);
         return Result.Success(stolen);
     }
@@ -21,31 +39,6 @@ public partial class Game
         List<ResourceCardType> resources = [];
         for (int i = 0; i < victim.CountResource(resourceType); i++) resources.Add(resourceType);
         return resources;
-    }
-
-    private Result<Nothing> CanResolveRobber(PlayerId robbingPlayerId, HexCoord newRobberHexCoord, PlayerId? victimId)
-    {
-        if (GamePhase != GamePhase.ResolveRobber)
-            return Result.Failure<Nothing>(DomainError.CannotResolveRobberInCurrentPhase);
-        if (CurrentPlayerId() != robbingPlayerId)
-            return Result.Failure<Nothing>(DomainError.WrongTurn);
-        if (!Board.CanMoveRobberTo(newRobberHexCoord))
-            return Result.Failure<Nothing>(DomainError.InvalidRobberMove);
-
-        var stealTargets = Board.GetOpponentIdsOnHex(newRobberHexCoord, robbingPlayerId);
-        if (stealTargets.Count == 0)
-        {
-            if (victimId is not null)
-                return Result.Failure<Nothing>(DomainError.RobberVictimNotAllowed);
-            return Result.Success();
-        }
-
-        if (victimId is null)
-            return Result.Failure<Nothing>(DomainError.RobberVictimRequired);
-        if (!stealTargets.Any(t => t.Equals(victimId)))
-            return Result.Failure<Nothing>(DomainError.RobberVictimNotEligible);
-
-        return Result.Success();
     }
 
     private ResourceCardType ResolveRobberNoFail(PlayerId robbingPlayerId, HexCoord newRobberHexCoord, PlayerId? victimId)

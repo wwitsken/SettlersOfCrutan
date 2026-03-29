@@ -1,38 +1,44 @@
-﻿using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
+using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
 using SettlersOfCrutan.Domain.Games.Resources;
+using SettlersOfCrutan.Domain.Specifications;
+using DiscardSpecs = SettlersOfCrutan.Domain.Specifications.DiscardHalf;
 
 namespace SettlersOfCrutan.Domain.Games;
 public partial class Game
 {
     public List<PlayerId> PlayersNeedingToDiscardHalf => [.. _discardHalfRequirements.Select(r => r.PlayerId)];
 
+    private static readonly ISpecification<DiscardSpecs.DiscardHalfContext>[] DiscardHalfSpecifications =
+    [
+        new DiscardSpecs.GameMustBeInDiscardHalfPhase(),
+        new DiscardSpecs.PlayerMustBeRequiredToDiscard(),
+        new DiscardSpecs.DiscardsMustBeValid(),
+        new DiscardSpecs.DiscardAmountMustBeCorrect(),
+        new DiscardSpecs.PlayerMustExist(),
+        new DiscardSpecs.PlayerMustHaveResourcesToDiscard()
+    ];
+
     public Result<Nothing> DiscardHalf(PlayerId playerId, List<ResourceCardAmount> discards)
     {
-        if (GamePhase != GamePhase.DiscardHalf)
-            return Result.Failure(DomainError.CannotDiscardInCurrentPhase);
-
         var req = _discardHalfRequirements.FirstOrDefault(r => r.PlayerId.Equals(playerId));
-        if (req is null) return Result.Failure(DomainError.PlayerNotRequiredToDiscard);
-        if (discards is null || discards.Count == 0) return Result.Failure(DomainError.InvalidDiscardsPayload);
-
-        int toDiscardTotal = discards.Sum(ra => Math.Max(0, ra.Quantity));
-        if (toDiscardTotal != req.ResourceAmount) return Result.Failure(DomainError.IncorrectDiscardAmount);
-
         var player = Players.FirstOrDefault(p => p.Id.Equals(playerId));
-        if (player is null) return Result.Failure(DomainError.NotFound);
+        int discardTotal = discards?.Sum(ra => Math.Max(0, ra.Quantity)) ?? 0;
+        var context = new DiscardSpecs.DiscardHalfContext(GamePhase, req, discards, discardTotal, player);
 
-        if (!player.HasAtLeast(discards))
-            return Result.Failure(DomainError.PlayerInsufficientResourcesToDiscard);
-
-        foreach (var (type, amount) in discards)
+        foreach (var spec in DiscardHalfSpecifications)
         {
-            player.SubtractResource(type, amount);
-            BankResourceHand.Add(type, amount); // return to bank
+            var result = spec.IsSatisfiedBy(context);
+            if (result.IsFailure) return result;
         }
 
-        _discardHalfRequirements.Remove(req);
+        foreach (var (type, amount) in discards!)
+        {
+            player!.SubtractResource(type, amount);
+            BankResourceHand.Add(type, amount);
+        }
+
+        _discardHalfRequirements.Remove(req!);
         AddDomainEvent(new PlayerDiscardedHalfDomainEvent(Id, playerId, discards));
 
         if (_discardHalfRequirements.Count == 0)
