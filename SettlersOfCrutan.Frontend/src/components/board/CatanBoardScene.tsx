@@ -18,6 +18,7 @@ import { RoadMesh } from "./RoadMesh";
 import { PopulationCenterMesh } from "./PopulationCenterMesh";
 import { PortMesh } from "./PortMesh";
 import { axisFromCoords, cubeToPosition, midpoint } from "./boardMath";
+import { playerColorToHex } from "../../domain/game/playerColorHex";
 
 type EdgeCoordDto = components["schemas"]["EdgeCoordDto"];
 type VertexCoordDto = components["schemas"]["VertexCoordDto"];
@@ -68,6 +69,13 @@ export function CatanBoardScene({
   onSettlementCityPicked,
 }: Props) {
   const board = game.board;
+
+  const pieceColorByPlayerId = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of game.players)
+      m.set(p.id, playerColorToHex(p.playerColor));
+    return m;
+  }, [game.players]);
 
   const [hoveredRoadKey, setHoveredRoadKey] = useState<string | null>(null);
   const [hoveredVertexKey, setHoveredVertexKey] = useState<string | null>(null);
@@ -341,7 +349,12 @@ export function CatanBoardScene({
           )}
 
           {board.roads.map((road, idx) => (
-            <RoadMesh key={`road-${idx}`} road={road} hexRadius={hexRadius} />
+            <RoadMesh
+              key={`road-${idx}`}
+              road={road}
+              hexRadius={hexRadius}
+              colorHex={pieceColorByPlayerId.get(road.playerOwnerId)}
+            />
           ))}
 
           {board.populationCenters.map((pc, idx) => (
@@ -349,6 +362,7 @@ export function CatanBoardScene({
               key={`pc-${idx}`}
               populationCenter={pc}
               hexRadius={hexRadius}
+              colorHex={pieceColorByPlayerId.get(pc.playerOwnerId)}
               enableCityUpgradeHover={boardPickMode === "cityUpgrade"}
               selectForCityUpgrade={
                 boardPickMode === "cityUpgrade" &&

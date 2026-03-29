@@ -3,9 +3,35 @@ using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 
 namespace SettlersOfCrutan.Domain.UnitTests;
+
+public class EdgeFactoryConnectivityTests
+{
+    [Fact]
+    public void ConnectsToEdge_OppositeEdgesOnSameHex_ShareNoVertex()
+    {
+        var hex = new HexCoord(0, 0, 0);
+        var north = EdgeFactory.FromHexEdge(hex, EdgeDirection.North).Normalize();
+        var south = EdgeFactory.FromHexEdge(hex, EdgeDirection.South).Normalize();
+        Assert.False(EdgeFactory.ConnectsToEdge(north, south));
+    }
+
+    [Fact]
+    public void ConnectsToEdge_TwoDistinctRoadEdgesAtSameVertex_ShareAVertex()
+    {
+        var hex = new HexCoord(0, 0, 0);
+        var v = VertexFactory.FromHexCorner(hex, HexCornerDirection.NW).Normalize();
+        var inc = VertexFactory.IncidentRoadEdges(v).Take(2).ToArray();
+        Assert.Equal(2, inc.Length);
+        Assert.True(EdgeFactory.ConnectsToEdge(inc[0], inc[1]));
+    }
+}
+
 public class BoardPlacementValidationTests
 {
     private static PlayerId NewPlayer() => new() { Value = "123" };
+
+    private static Edge FirstIncidentRoadEdge(Vertex v) =>
+        VertexFactory.IncidentRoadEdges(v.Normalize()).First();
 
     [Fact]
     public void SettlementPlacement_RejectsDuplicateAcrossEquivalentVertexCoords()
@@ -15,7 +41,7 @@ public class BoardPlacementValidationTests
 
         var hex = new HexCoord(0, 0, 0);
         var v0 = VertexFactory.FromHexCorner(hex, HexCornerDirection.NE);
-        var e0 = new Edge() { HexCoord1 = v0.HexCoord2, HexCoord2 = v0.HexCoord1 };
+        var e0 = FirstIncidentRoadEdge(v0);
 
         // Place initial settlement
         var r1 = board.PlaceInitialSettlementAndRoad(owner, v0, e0);
@@ -23,7 +49,7 @@ public class BoardPlacementValidationTests
 
         // Construct an equivalent vertex coordinate (same three hexes, different order)
         var vEq = new Vertex(v0.HexCoord2, v0.HexCoord1, v0.HexCoord3);
-        var e1 = new Edge() { HexCoord1 = v0.HexCoord1, HexCoord2 = v0.HexCoord3 };
+        var e1 = FirstIncidentRoadEdge(vEq);
 
         // Try to place another settlement at the same logical vertex
         var r2 = board.PlaceInitialSettlementAndRoad(owner, vEq, e1);
@@ -44,7 +70,7 @@ public class BoardPlacementValidationTests
 
         var hex = new HexCoord(0, 0, 0);
         var v0 = VertexFactory.FromHexCorner(hex, HexCornerDirection.NE);
-        var e0 = new Edge() { HexCoord1 = v0.HexCoord2, HexCoord2 = v0.HexCoord1 };
+        var e0 = FirstIncidentRoadEdge(v0);
 
         // Place initial settlement
         var r1 = board.PlaceInitialSettlementAndRoad(owner, v0, e0);
@@ -54,7 +80,7 @@ public class BoardPlacementValidationTests
         var candidateNeighbors = VertexFactory.GetAdjacentVertices(v0);
         var neighbor = candidateNeighbors.First(n => VertexFactory.GetAdjacentVertices(n).Contains(v0));
 
-        var e1 = new Edge() { HexCoord1 = neighbor.HexCoord1, HexCoord2 = neighbor.HexCoord2 };
+        var e1 = FirstIncidentRoadEdge(neighbor);
         var r2 = board.PlaceInitialSettlementAndRoad(owner, neighbor, e1);
         Assert.True(r2.IsFailure);
         Assert.Equal("SettlementPlacement", r2.Error.Code);
@@ -70,25 +96,28 @@ public class BoardPlacementValidationTests
 
         var hex = new HexCoord(0, 0, 0);
         var v0 = VertexFactory.FromHexCorner(hex, HexCornerDirection.NE);
-        var seedEdge = new Edge(v0.HexCoord1, v0.HexCoord2);
+        var seedEdge = FirstIncidentRoadEdge(v0);
         var seedNorm = seedEdge.Normalize();
         var initial = board.PlaceInitialSettlementAndRoad(owner, v0, seedEdge);
         Assert.True(initial.IsSuccess);
+
+        var v0Edges = VertexFactory.IncidentRoadEdges(v0).ToHashSet();
 
         // Pick an adjacent vertex whose shared edge with v0 is not the initial road (otherwise BuildRoad duplicates).
         Vertex v1 = default;
         Edge e0 = default;
         foreach (var cand in VertexFactory.GetAdjacentVertices(v0).OrderBy(v => v.ToString()))
         {
-            var s0 = new[] { v0.HexCoord1, v0.HexCoord2, v0.HexCoord3 };
-            var s1 = new[] { cand.HexCoord1, cand.HexCoord2, cand.HexCoord3 };
-            var shared = s0.Intersect(s1).ToList();
-            Assert.Equal(2, shared.Count);
-            var candEdge = new Edge(shared[0], shared[1]).Normalize();
-            if (candEdge.Equals(seedNorm)) continue;
-            v1 = cand;
-            e0 = new Edge(shared[0], shared[1]);
-            break;
+            foreach (var candEdge in VertexFactory.IncidentRoadEdges(cand))
+            {
+                if (candEdge.Equals(seedNorm)) continue;
+                if (!v0Edges.Contains(candEdge)) continue;
+                v1 = cand;
+                e0 = new Edge(candEdge.HexCoord1, candEdge.HexCoord2);
+                break;
+            }
+
+            if (v1 != default) break;
         }
 
         Assert.NotEqual(default(Vertex), v1);
@@ -106,5 +135,44 @@ public class BoardPlacementValidationTests
 
         // Only one road added for that edge (count only normalized matches)
         Assert.Equal(1, board.Roads.Count(r => r.EdgeCoordinate.Normalize().Equals(placedNorm)));
+    }
+
+    [Fact]
+    public void RoadPlacement_BlocksSecondRoadOnOppositeSideOfSameHexWithoutSharedVertex()
+    {
+        var board = new Board();
+        var owner = NewPlayer();
+        var hex = new HexCoord(0, 0, 0);
+        var v0 = VertexFactory.FromHexCorner(hex, HexCornerDirection.NW).Normalize();
+        var north = EdgeFactory.FromHexEdge(hex, EdgeDirection.North).Normalize();
+        var seedEdge = VertexFactory.IncidentRoadEdges(v0).First(e => !e.Equals(north));
+        Assert.True(board.PlaceInitialSettlementAndRoad(owner, v0, seedEdge).IsSuccess);
+
+        var south = EdgeFactory.FromHexEdge(hex, EdgeDirection.South);
+
+        Assert.True(board.BuildRoad(owner, north).IsSuccess);
+        Assert.True(board.BuildRoad(owner, south).IsFailure);
+    }
+
+    [Fact]
+    public void CanPlaceRoad_RoadBuildingSecondEdgeMayUseFirstEdgeBeforePlaced()
+    {
+        var board = new Board();
+        var owner = NewPlayer();
+        var hex = new HexCoord(0, 0, 0);
+        var v0 = VertexFactory.FromHexCorner(hex, HexCornerDirection.NW).Normalize();
+        var north = EdgeFactory.FromHexEdge(hex, EdgeDirection.North).Normalize();
+        var seedEdge = VertexFactory.IncidentRoadEdges(v0).First(e => !e.Equals(north));
+        Assert.True(board.PlaceInitialSettlementAndRoad(owner, v0, seedEdge).IsSuccess);
+
+        Assert.True(board.CanPlaceRoad(owner, north).IsSuccess);
+
+        var (epA, epB) = VertexFactory.EndpointsForEdge(north);
+        var nv = v0.Normalize();
+        var farEnd = epA.Equals(nv) ? epB : epA;
+        var extend = VertexFactory.IncidentRoadEdges(farEnd).First(e => !e.Equals(north));
+
+        Assert.False(board.CanPlaceRoad(owner, extend).IsSuccess);
+        Assert.True(board.CanPlaceRoad(owner, extend, hypotheticalExtraOwnerRoads: [north]).IsSuccess);
     }
 }

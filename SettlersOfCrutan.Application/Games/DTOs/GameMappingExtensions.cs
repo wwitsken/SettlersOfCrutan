@@ -1,4 +1,5 @@
 using System.Text.Json;
+using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
@@ -52,7 +53,10 @@ public static class GameMappingExtensions
                 DevelopmentCardCount = p.DevCardCount,
                 PieceReserve = p.GetBuildables().ToDictionary(),
                 DiscardRequirement = game.DiscardHalfRequirements.FirstOrDefault(r => r.PlayerId.Equals(p.Id))?.ResourceAmount ?? 0,
-                VictoryPoints = buildingVp.GetValueOrDefault(p.Id, 0),
+                VictoryPoints = GamePresentationScoring.ObservableVictoryPoints(
+                    buildingVp.GetValueOrDefault(p.Id, 0),
+                    longestRoad.Contains(p.Id),
+                    largestArmy.Contains(p.Id)),
                 HasLongestRoad = longestRoad.Contains(p.Id),
                 HasLargestArmy = largestArmy.Contains(p.Id),
             })]
@@ -64,6 +68,16 @@ public static class GameMappingExtensions
         ArgumentNullException.ThrowIfNull(game);
         ArgumentNullException.ThrowIfNull(userId);
         var player = game.Players.First(p => p.UserId == userId);
+        var buildingVp = GamePresentationScoring.BuildingVictoryPoints(game);
+        var longestRoad = GamePresentationScoring.LongestRoadHolders(game);
+        var largestArmy = GamePresentationScoring.LargestArmyHolders(game);
+        var observable = GamePresentationScoring.ObservableVictoryPoints(
+            buildingVp.GetValueOrDefault(player.Id, 0),
+            longestRoad.Contains(player.Id),
+            largestArmy.Contains(player.Id));
+        var hiddenVpCards = player.GetDevelopmentCards().TryGetValue(DevelopmentCardType.VictoryPoint, out var n)
+            ? n
+            : 0;
         return new PrivateGameDto
         {
             MyPlayerId = player.Id,
@@ -72,7 +86,7 @@ public static class GameMappingExtensions
                 DevCards: player.GetDevelopmentCards(),
                 Buildables: player.GetBuildables()
             ),
-            MyScore = 1000, // TODO: Implement score calculation
+            MyScore = observable + hiddenVpCards,
             BuildableRoads = [.. game.GetBuildableRoads(player.Id).Select(ToHexCoordinateDtos)],
             BuildableSettlements = [.. game.GetBuildableSettlements(player.Id).Select(ToHexCoordinateDtos)]
         };

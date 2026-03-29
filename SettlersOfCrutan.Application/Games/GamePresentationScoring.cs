@@ -11,6 +11,19 @@ public static class GamePresentationScoring
 {
     public const int MinLongestRoadSegments = 5;
     public const int MinLargestArmyKnights = 3;
+    public const int VictoryPointsLongestRoad = 2;
+    public const int VictoryPointsLargestArmy = 2;
+
+    /// <summary>
+    /// Visible VP from the board and public bonuses (excludes hidden VP development cards).
+    /// </summary>
+    public static int ObservableVictoryPoints(
+        int buildingVictoryPoints,
+        bool hasLongestRoad,
+        bool hasLargestArmy) =>
+        buildingVictoryPoints
+        + (hasLongestRoad ? VictoryPointsLongestRoad : 0)
+        + (hasLargestArmy ? VictoryPointsLargestArmy : 0);
 
     public static Dictionary<PlayerId, int> BuildingVictoryPoints(Game game)
     {

@@ -21,7 +21,7 @@ public partial class Game
 
         var can1 = Board.CanPlaceRoad(playerId, edge1);
         if (can1.IsFailure) return Result.Failure<(Road, Road)>(can1.Error);
-        var can2 = Board.CanPlaceRoad(playerId, edge2);
+        var can2 = Board.CanPlaceRoad(playerId, edge2, hypotheticalExtraOwnerRoads: [edge1.Normalize()]);
         if (can2.IsFailure) return Result.Failure<(Road, Road)>(can2.Error);
 
         if (edge1.HexCoords().Intersect(edge2.HexCoords()).Count() != 1)

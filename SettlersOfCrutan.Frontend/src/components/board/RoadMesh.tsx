@@ -9,9 +9,11 @@ import {
 type Props = {
   road: Road;
   hexRadius: number;
+  /** Piece color; defaults to neutral if omitted. */
+  colorHex?: string;
 };
 
-export function RoadMesh({ road, hexRadius }: Props) {
+export function RoadMesh({ road, hexRadius, colorHex = "#94a3b8" }: Props) {
   if (road.coordinates.length < 2) return null;
 
   const a = road.coordinates[0];
@@ -34,7 +36,7 @@ export function RoadMesh({ road, hexRadius }: Props) {
       receiveShadow
     >
       <boxGeometry args={[length, 0.1, 0.15]} />
-      <meshStandardMaterial color={"#654321"} />
+      <meshStandardMaterial color={colorHex} />
     </mesh>
   );
 }

@@ -68,10 +68,28 @@ public static class VertexFactory
     }
 
     /// <summary>
-    /// The two endpoints of a road edge (shared border between two adjacent hexes).
+    /// Up to three valid road edges meeting at this vertex (each borders two of the three hexes).
     /// </summary>
-    public static (Vertex A, Vertex B) EndpointsForEdge(Edge edge)
+    public static IEnumerable<Edge> IncidentRoadEdges(Vertex v)
     {
+        var n = v.Normalize();
+        var triple = new[] { n.HexCoord1, n.HexCoord2, n.HexCoord3 };
+        for (var i = 0; i < 3; i++)
+        {
+            for (var j = i + 1; j < 3; j++)
+            {
+                var a = triple[i];
+                var b = triple[j];
+                if (a.GetAdjacentHexCoords().Values.Contains(b))
+                    yield return new Edge(a, b).Normalize();
+            }
+        }
+    }
+
+    public static bool TryEndpointsForEdge(Edge edge, out Vertex a, out Vertex b)
+    {
+        a = default;
+        b = default;
         var norm = edge.Normalize();
         var h1 = norm.HexCoord1;
         var h2 = norm.HexCoord2;
@@ -84,10 +102,21 @@ public static class VertexFactory
         }
 
         var distinct = found.Distinct().ToArray();
-        if (distinct.Length < 2)
-            throw new InvalidOperationException($"Could not resolve edge endpoints for {norm}");
+        if (distinct.Length < 2) return false;
+        a = distinct[0];
+        b = distinct[1];
+        return true;
+    }
 
-        return (distinct[0], distinct[1]);
+    /// <summary>
+    /// The two endpoints of a road edge (shared border between two adjacent hexes).
+    /// </summary>
+    public static (Vertex A, Vertex B) EndpointsForEdge(Edge edge)
+    {
+        if (!TryEndpointsForEdge(edge, out var a, out var b))
+            throw new InvalidOperationException($"Could not resolve edge endpoints for {edge.Normalize()}");
+
+        return (a, b);
     }
 
     public static Vertex[] FromHex(HexCoord hex)

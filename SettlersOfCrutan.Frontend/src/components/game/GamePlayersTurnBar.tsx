@@ -1,23 +1,11 @@
 import type { Game } from "../../domain/game/game";
 import type { Player } from "../../domain/game/player";
-import type { PlayerColor } from "../../domain/game/gameTypes";
+import { PLAYER_COLOR_HEX } from "../../domain/game/playerColorHex";
 
 type Props = {
   show: boolean;
   game: Game | null;
   myPlayerId?: string;
-};
-
-const PLAYER_COLOR_HEX: Record<PlayerColor, string> = {
-  none: "#94a3b8",
-  red: "#dc2626",
-  blue: "#2563eb",
-  white: "#f8fafc",
-  orange: "#ea580c",
-  green: "#16a34a",
-  yellow: "#ca8a04",
-  brown: "#78350f",
-  purple: "#7c3aed",
 };
 
 function PlayerChip({

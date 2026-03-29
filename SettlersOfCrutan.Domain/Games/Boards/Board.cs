@@ -42,12 +42,21 @@ public class Board : Entity<BoardId>
                                                                          ports);
 
     // --- Pure validation methods (Result = precondition outcome) ---
-    public Result<Nothing> CanPlaceRoad(PlayerId owner, Edge coord, bool isInitialPlacement = false)
+    public Result<Nothing> CanPlaceRoad(PlayerId owner, Edge coord, bool isInitialPlacement = false, IReadOnlyList<Edge>? hypotheticalExtraOwnerRoads = null)
     {
         var norm = coord.Normalize();
         if (Roads.Any(r => r.EdgeCoordinate.Normalize().Equals(norm)))
             return Result.Failure<Nothing>(new DomainError("RoadBuild", "Edge already has a road"));
-        if (!IsEdgeBuildableBy(owner, coord) && !isInitialPlacement)
+        if (hypotheticalExtraOwnerRoads is not null)
+        {
+            foreach (var h in hypotheticalExtraOwnerRoads)
+            {
+                if (h.Normalize().Equals(norm))
+                    return Result.Failure<Nothing>(new DomainError("RoadBuild", "Edge already has a road"));
+            }
+        }
+
+        if (!IsEdgeBuildableBy(owner, coord, hypotheticalExtraOwnerRoads) && !isInitialPlacement)
             return Result.Failure<Nothing>(new DomainError("RoadBuild", "Road not connected to player's network"));
         return Result.Success();
     }
@@ -189,7 +198,7 @@ public class Board : Entity<BoardId>
             return Result<Road>.Failure(new DomainError("RoadBuild", "Edge already has a road"));
 
         // connectivity: adjacent to player's road or settlement/city at endpoints
-        if (!IsEdgeBuildableBy(owner, coord))
+        if (!IsEdgeBuildableBy(owner, coord, null))
             return Result<Road>.Failure(new DomainError("RoadBuild", "Road not connected to player's network"));
 
         var road = new Road(norm) { OwnerId = owner };
@@ -234,14 +243,19 @@ public class Board : Entity<BoardId>
             r.OwnerId.Equals(owner) && SettlementTouchesEdge(n, r.EdgeCoordinate));
     }
 
-    public bool IsEdgeBuildableBy(PlayerId owner, Edge edgeCoord)
+    public bool IsEdgeBuildableBy(PlayerId owner, Edge edgeCoord, IReadOnlyList<Edge>? hypotheticalExtraOwnerRoads = null)
     {
+        var normTarget = edgeCoord.Normalize();
         bool connectedToRoad = Roads.Any(r => r.OwnerId.Equals(owner)
-            && EdgeFactory.ConnectsToEdge(r.EdgeCoordinate, edgeCoord));
+            && EdgeFactory.ConnectsToEdge(r.EdgeCoordinate, normTarget));
+
+        if (hypotheticalExtraOwnerRoads is { Count: > 0 })
+            connectedToRoad = connectedToRoad || hypotheticalExtraOwnerRoads.Any(h =>
+                EdgeFactory.ConnectsToEdge(h.Normalize(), normTarget));
 
         bool connectedToPopulationCenter = PopulationCenters.Any(pc =>
             pc.PlayerOwner.Equals(owner)
-            && SettlementTouchesEdge(pc.VertexCoordinate, edgeCoord));
+            && SettlementTouchesEdge(pc.VertexCoordinate, normTarget));
 
         return connectedToRoad || connectedToPopulationCenter;
     }

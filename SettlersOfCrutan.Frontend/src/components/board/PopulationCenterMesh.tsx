@@ -5,6 +5,8 @@ import { vertexFromCoords } from "./boardMath";
 type Props = {
   populationCenter: PopulationCenter;
   hexRadius: number;
+  /** Settlement / city body color. */
+  colorHex?: string;
   enableCityUpgradeHover?: boolean;
   selectForCityUpgrade?: boolean;
   onCityUpgradeSelect?: (populationCenter: PopulationCenter) => void;
@@ -13,6 +15,7 @@ type Props = {
 export function PopulationCenterMesh({
   populationCenter,
   hexRadius,
+  colorHex = "#94a3b8",
   enableCityUpgradeHover = false,
   selectForCityUpgrade = false,
   onCityUpgradeSelect,
@@ -49,7 +52,7 @@ export function PopulationCenterMesh({
         ) : (
           <sphereGeometry args={[0.2, 16, 16]} />
         )}
-        <meshStandardMaterial color={isCity ? "#222" : "#ffcc00"} />
+        <meshStandardMaterial color={colorHex} />
       </mesh>
 
       {showUpgradeGhost && (

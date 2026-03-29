@@ -87,8 +87,26 @@ public partial class Game : AggregateRoot<GameId>
             0
         );
 
+        game.AssignDefaultPlayerColors();
         game.AddDomainEvent(new GameCreatedFromLobbyDomainEvent(game.Id, spawnerLobbyId, [.. game.Players.Select(p => p.Id.Value)]));
 
         return Result.Success(game);
+    }
+
+    private void AssignDefaultPlayerColors()
+    {
+        ReadOnlySpan<PlayerColor> order =
+        [
+            PlayerColor.Red,
+            PlayerColor.Blue,
+            PlayerColor.White,
+            PlayerColor.Orange,
+            PlayerColor.Green,
+            PlayerColor.Yellow,
+            PlayerColor.Brown,
+            PlayerColor.Purple
+        ];
+        for (var i = 0; i < _players.Count; i++)
+            _players[i].SetColor(order[i % order.Length]);
     }
 }
