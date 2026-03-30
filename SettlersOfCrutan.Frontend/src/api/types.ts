@@ -1747,6 +1747,8 @@ export interface components {
             gameName: null | string;
         };
         TradeOfferDto: {
+            /** Format: uuid */
+            id?: string;
             playerProposerId?: string;
             playerAcceptorId?: null | string;
             requestedResources?: {

@@ -1,5 +1,6 @@
 import type { Game } from "../../domain/game/game";
 import type { GamePageInteractionMode } from "../../hooks/useGamePageInteraction";
+import type { MaritimeRatio } from "./MaritimeTradeDialog";
 
 type Props = {
   show: boolean;
@@ -20,6 +21,8 @@ type Props = {
   onPlayYearOfPlenty: () => void;
   onPlayRoadBuilding: () => void;
   onStartRobber: () => void;
+  onProposeTrade: () => void;
+  onMaritimeTrade: (ratio: MaritimeRatio) => void;
 };
 
 const btn =
@@ -49,6 +52,8 @@ export function GameActionBar({
   onPlayYearOfPlenty,
   onPlayRoadBuilding,
   onStartRobber,
+  onProposeTrade,
+  onMaritimeTrade,
 }: Props) {
   if (!show || !game || !gameId) return null;
 
@@ -62,6 +67,7 @@ export function GameActionBar({
     isMyTurn && phase === "tradeBuild" && idle && hasPrivateSlice;
   const canBuyDev = canBuild;
   const canDevPlays = canBuild;
+  const canProposeTrade = canBuild && !game.currentTradeOffer;
   const canRobber =
     isMyTurn && phase === "resolveRobber" && idle && hasPrivateSlice;
   const setupPlacing =
@@ -126,6 +132,40 @@ export function GameActionBar({
           onClick={onBuyDevCard}
         >
           Buy dev card
+        </button>
+
+        <button
+          type="button"
+          className={btnPrimary}
+          disabled={!canProposeTrade}
+          onClick={onProposeTrade}
+        >
+          Propose trade
+        </button>
+
+        <button
+          type="button"
+          className={btnPrimary}
+          disabled={!canBuild}
+          onClick={() => onMaritimeTrade(4)}
+        >
+          Maritime 4:1
+        </button>
+        <button
+          type="button"
+          className={btnPrimary}
+          disabled={!canBuild}
+          onClick={() => onMaritimeTrade(3)}
+        >
+          Maritime 3:1
+        </button>
+        <button
+          type="button"
+          className={btnPrimary}
+          disabled={!canBuild}
+          onClick={() => onMaritimeTrade(2)}
+        >
+          Maritime 2:1
         </button>
 
         <button

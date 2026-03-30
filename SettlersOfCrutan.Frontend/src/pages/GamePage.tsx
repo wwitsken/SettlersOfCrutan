@@ -12,6 +12,12 @@ import { applyGamePayloadFromApi } from "../stores/applyGamePayload";
 import { GameActionBar } from "../components/game/GameActionBar";
 import { GamePlayersTurnBar } from "../components/game/GamePlayersTurnBar";
 import { PlayerInventoryStrip } from "../components/game/PlayerInventoryStrip";
+import { IncomingTradeBar } from "../components/game/IncomingTradeBar";
+import {
+  MaritimeTradeDialog,
+  type MaritimeRatio,
+} from "../components/game/MaritimeTradeDialog";
+import { ProposeTradeDialog } from "../components/game/ProposeTradeDialog";
 import { DiscardHalfDialog } from "../components/game/DiscardHalfDialog";
 import { RobberVictimPicker } from "../components/game/RobberVictimPicker";
 import { DevCardResourceDialog } from "../components/game/DevCardResourceDialog";
@@ -73,6 +79,9 @@ function GamePage() {
 
   const [monopolyOpen, setMonopolyOpen] = useState(false);
   const [yearOpen, setYearOpen] = useState(false);
+  const [proposeTradeOpen, setProposeTradeOpen] = useState(false);
+  const [maritimeOpen, setMaritimeOpen] = useState(false);
+  const [maritimeRatio, setMaritimeRatio] = useState<MaritimeRatio>(4);
   const [devBusy, setDevBusy] = useState(false);
   const [devErr, setDevErr] = useState<string | null>(null);
   const [robberBusy, setRobberBusy] = useState(false);
@@ -138,6 +147,22 @@ function GamePage() {
   );
 
   const showLiveHud = boardView === "live" && !!game && !!gameId;
+
+  const incomingTrade =
+    showLiveHud &&
+    privateGame &&
+    game!.currentTradeOffer &&
+    game!.currentTradeOffer.playerProposerId !== privateGame.myPlayerId
+      ? game!.currentTradeOffer
+      : undefined;
+
+  const tradeProposerName = useMemo(() => {
+    if (!incomingTrade || !game) return "";
+    return (
+      game.players.find((p) => p.id === incomingTrade.playerProposerId)
+        ?.displayName ?? incomingTrade.playerProposerId
+    );
+  }, [incomingTrade, game]);
 
   const mustDiscard =
     showLiveHud &&
@@ -400,6 +425,15 @@ function GamePage() {
               : "Example board — store has no loaded game yet (see debug panel below in dev)."}
           </div>
         )}
+        {incomingTrade && privateGame && gameId && (
+          <IncomingTradeBar
+            show
+            gameId={gameId}
+            offer={incomingTrade}
+            proposerDisplayName={tradeProposerName}
+            privateGame={privateGame}
+          />
+        )}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-950 shadow-inner">
           <div
             style={{ height: "min(70vh, 640px)", minHeight: 360 }}
@@ -482,9 +516,34 @@ function GamePage() {
             onPlayYearOfPlenty={onPlayYearOfPlenty}
             onPlayRoadBuilding={onPlayRoadBuilding}
             onStartRobber={handleStartRobber}
+            onProposeTrade={() => setProposeTradeOpen(true)}
+            onMaritimeTrade={(ratio) => {
+              setMaritimeRatio(ratio);
+              setMaritimeOpen(true);
+            }}
           />
         </div>
       </div>
+
+      {proposeTradeOpen && privateGame && gameId && (
+        <ProposeTradeDialog
+          open={proposeTradeOpen}
+          gameId={gameId}
+          privateGame={privateGame}
+          onClose={() => setProposeTradeOpen(false)}
+        />
+      )}
+
+      {maritimeOpen && game && privateGame && gameId && (
+        <MaritimeTradeDialog
+          open={maritimeOpen}
+          ratio={maritimeRatio}
+          gameId={gameId}
+          game={game}
+          privateGame={privateGame}
+          onClose={() => setMaritimeOpen(false)}
+        />
+      )}
 
       {mustDiscard && privateGame && gameId && (
         <DiscardHalfDialog

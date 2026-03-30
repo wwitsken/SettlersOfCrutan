@@ -231,7 +231,11 @@ function mapTradeOffer(
   dto: PublicGameDto["currentTradeOffer"],
 ): TradeOffer | undefined {
   if (!dto) return undefined;
+  const id =
+    dto.id != null && String(dto.id).length > 0 ? String(dto.id) : "";
+  if (!id || !(dto.playerProposerId ?? "").length) return undefined;
   return {
+    id,
     playerProposerId: dto.playerProposerId ?? "",
     playerAcceptorId: dto.playerAcceptorId ?? undefined,
     requestedResources: Object.fromEntries(

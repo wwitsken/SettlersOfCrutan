@@ -173,6 +173,7 @@ public static class GameMappingExtensions
 
         return new TradeOfferDto
         {
+            Id = offer.Id.Value,
             PlayerProposerId = offer.ProposerId.Value,
             PlayerAcceptorId = offer.AcceptorId?.Value,
             RequestedResources = offer.RequestedResources.ToDictionary(r => r.Type, r => r.Quantity),

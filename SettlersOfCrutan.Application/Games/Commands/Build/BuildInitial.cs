@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
 using SettlersOfCrutan.Application.Games.DTOs;
-using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
