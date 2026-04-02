@@ -114,9 +114,12 @@ public class Board : Entity<BoardId>
 
     public PopulationCenter UpgradeToCityNoFail(PlayerId owner, Vertex coord)
     {
-        var city = new PopulationCenter(coord) { Level = PopulationCenterLevel.City, PlayerOwner = owner };
-        _populationCenters.Add(city);
-        return city;
+        var settlement = _populationCenters.First(s =>
+            s.PlayerOwner == owner
+            && s.VertexCoordinate == coord
+            && s.Level == PopulationCenterLevel.Settlement);
+        settlement.Level = PopulationCenterLevel.City;
+        return settlement;
     }
 
     public (PopulationCenter settlement, Road road) PlaceInitialSettleAndRoadNoFail(PlayerId owner, Vertex vertex, Edge edge)
@@ -179,16 +182,15 @@ public class Board : Entity<BoardId>
         if (!PopulationCenters.Any(p => p.VertexCoordinate == coord))
             return Result<PopulationCenter>.Failure(new DomainError("CityUpgrade", "No settlement to upgrade"));
 
-        // must be owned by the same player
-        var settlement = PopulationCenters.FirstOrDefault(s => s.PlayerOwner == owner && s.VertexCoordinate == coord);
+        var settlement = PopulationCenters.FirstOrDefault(s =>
+            s.PlayerOwner == owner
+            && s.VertexCoordinate == coord
+            && s.Level == PopulationCenterLevel.Settlement);
         if (settlement is null)
-        {
             return Result<PopulationCenter>.Failure(new DomainError("CityUpgrade", "Settlement not owned by player"));
-        }
-        // perform upgrade
-        var city = new PopulationCenter(settlement.VertexCoordinate) { Level = PopulationCenterLevel.City, PlayerOwner = owner };
-        _populationCenters.Add(city);
-        return Result<PopulationCenter>.Success(city);
+
+        settlement.Level = PopulationCenterLevel.City;
+        return Result<PopulationCenter>.Success(settlement);
     }
 
     public Result<Road> BuildRoad(PlayerId owner, Edge coord)

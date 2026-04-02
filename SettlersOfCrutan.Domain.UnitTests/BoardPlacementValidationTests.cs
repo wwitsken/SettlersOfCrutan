@@ -62,6 +62,29 @@ public class BoardPlacementValidationTests
     }
 
     [Fact]
+    public void UpgradeToCityNoFail_ReplacesSettlement_KeepsSinglePopulationCenterAtVertex()
+    {
+        var board = new Board();
+        var owner = NewPlayer();
+
+        var hex = new HexCoord(0, 0, 0);
+        var v0 = VertexFactory.FromHexCorner(hex, HexCornerDirection.NE);
+        var e0 = FirstIncidentRoadEdge(v0);
+
+        Assert.True(board.PlaceInitialSettlementAndRoad(owner, v0, e0).IsSuccess);
+        Assert.Single(board.PopulationCenters);
+        Assert.Equal(PopulationCenterLevel.Settlement, board.PopulationCenters[0].Level);
+
+        var upgraded = board.UpgradeToCityNoFail(owner, v0.Normalize());
+
+        Assert.Single(board.PopulationCenters);
+        Assert.Same(upgraded, board.PopulationCenters[0]);
+        Assert.Equal(PopulationCenterLevel.City, upgraded.Level);
+        Assert.Equal(owner, upgraded.PlayerOwner);
+        Assert.True(board.PopulationCenters[0].VertexCoordinate.Equals(v0.Normalize()));
+    }
+
+    [Fact]
     public void SettlementPlacement_DistanceRuleBlocksAdjacentRegardlessOfMaterialization()
     {
         var board = new Board();
