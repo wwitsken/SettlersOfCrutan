@@ -14,7 +14,7 @@ export type GamePageInteractionMode =
   | "devRoad1"
   | "devRoad2";
 
-export type BoardPickMode = "none" | "road" | "settlement" | "cityUpgrade" | "robberHex";
+export type BoardPickMode = "none" | "build" | "moveRobber";
 
 type VertexCoordDto = components["schemas"]["VertexCoordDto"];
 type EdgeCoordDto = components["schemas"]["EdgeCoordDto"];
@@ -27,15 +27,13 @@ export function boardPickModeFromInteraction(
     case "initialRoad":
     case "devRoad1":
     case "devRoad2":
-      return "road";
     case "buildSettlement":
     case "initialSettle":
-      return "settlement";
     case "upgradeCity":
-      return "cityUpgrade";
+      return "build";
     case "robberHex":
     case "devKnightHex":
-      return "robberHex";
+      return "moveRobber";
     default:
       return "none";
   }

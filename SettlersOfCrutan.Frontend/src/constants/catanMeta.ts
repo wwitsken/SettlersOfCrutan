@@ -1,0 +1,59 @@
+import type { DevCardType, PlayerColor, ResourceType } from "../types/catan";
+
+export const COLOR_MAP: Record<PlayerColor, string> = {
+  red: "bg-red-500",
+  blue: "bg-blue-500",
+  orange: "bg-orange-400",
+  white: "bg-gray-100 border border-gray-400",
+  green: "bg-green-500",
+  yellow: "bg-yellow-400",
+  brown: "bg-amber-700",
+  purple: "bg-purple-500",
+  none: "bg-stone-600",
+};
+
+export const COLOR_TEXT_MAP: Record<PlayerColor, string> = {
+  red: "text-red-400",
+  blue: "text-blue-400",
+  orange: "text-orange-400",
+  white: "text-gray-400",
+  green: "text-green-400",
+  yellow: "text-yellow-400",
+  brown: "text-amber-600",
+  purple: "text-purple-400",
+  none: "text-stone-500",
+};
+
+export const COLOR_BORDER_MAP: Record<PlayerColor, string> = {
+  red: "border-red-500",
+  blue: "border-blue-500",
+  orange: "border-orange-400",
+  white: "border-gray-400",
+  green: "border-green-500",
+  yellow: "border-yellow-400",
+  brown: "border-amber-700",
+  purple: "border-purple-500",
+  none: "border-stone-600",
+};
+
+export const RESOURCE_META: Record<
+  ResourceType,
+  { label: string; emoji: string; bg: string; border: string }
+> = {
+  wood: { label: "Wood", emoji: "🌲", bg: "bg-emerald-950", border: "border-emerald-700" },
+  brick: { label: "Brick", emoji: "🧱", bg: "bg-red-950", border: "border-red-800" },
+  sheep: { label: "Sheep", emoji: "🐑", bg: "bg-lime-950", border: "border-lime-700" },
+  wheat: { label: "Wheat", emoji: "🌾", bg: "bg-yellow-950", border: "border-yellow-700" },
+  ore: { label: "Ore", emoji: "⛰️", bg: "bg-slate-800", border: "border-slate-600" },
+};
+
+export const DEV_META: Record<
+  DevCardType,
+  { label: string; emoji: string; bg: string; border: string }
+> = {
+  knight: { label: "Knight", emoji: "⚔️", bg: "bg-purple-950", border: "border-purple-700" },
+  monopoly: { label: "Monopoly", emoji: "🏦", bg: "bg-indigo-950", border: "border-indigo-700" },
+  road_building: { label: "Road Building", emoji: "🛣️", bg: "bg-amber-950", border: "border-amber-700" },
+  year_of_plenty: { label: "Year of Plenty", emoji: "🌟", bg: "bg-teal-950", border: "border-teal-700" },
+  vp: { label: "Victory Point", emoji: "🏆", bg: "bg-rose-950", border: "border-rose-700" },
+};

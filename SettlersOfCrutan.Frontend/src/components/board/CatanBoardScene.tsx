@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import type { Game } from "../../domain/game/game";
@@ -14,8 +14,11 @@ import {
   toVertexCoordDto,
 } from "../../domain/game/hexCoords";
 import { HexTile } from "./HexTile";
-import { RoadMesh } from "./RoadMesh";
-import { PopulationCenterMesh } from "./PopulationCenterMesh";
+import { RoadMesh } from "./Roads/RoadMesh";
+import { GhostRoadMesh } from "./Roads/GhostRoadMesh";
+import { SettlementMesh } from "./Settlements/SettlementMesh";
+import { CityMesh } from "./Settlements/CityMesh";
+import { GhostSettlementMesh } from "./Settlements/GhostSettlementMesh";
 import { PortMesh } from "./PortMesh";
 import { axisFromCoords, cubeToPosition, midpoint } from "./boardMath";
 import { playerColorToHex } from "../../domain/game/playerColorHex";
@@ -72,13 +75,9 @@ export function CatanBoardScene({
 
   const pieceColorByPlayerId = useMemo(() => {
     const m = new Map<string, string>();
-    for (const p of game.players)
-      m.set(p.id, playerColorToHex(p.playerColor));
+    for (const p of game.players) m.set(p.id, playerColorToHex(p.playerColor));
     return m;
   }, [game.players]);
-
-  const [hoveredRoadKey, setHoveredRoadKey] = useState<string | null>(null);
-  const [hoveredVertexKey, setHoveredVertexKey] = useState<string | null>(null);
 
   const resourceColors: Record<ResourceCardType, string> = {
     none: "#94a3b8",
@@ -121,11 +120,7 @@ export function CatanBoardScene({
           hex.coordinate.q,
           hex.coordinate.r,
         );
-        const pb = cubeToPosition(
-          hexRadius,
-          neighborCoord.q,
-          neighborCoord.r,
-        );
+        const pb = cubeToPosition(hexRadius, neighborCoord.q, neighborCoord.r);
         const m = midpoint(pa, pb);
 
         const axis = axisFromCoords(hex.coordinate, neighborCoord);
@@ -153,7 +148,7 @@ export function CatanBoardScene({
   }, [board.hexes, hexRadius]);
 
   const hoverRoadCandidates = useMemo(() => {
-    if (boardPickMode !== "road") return [];
+    if (boardPickMode !== "build") return [];
 
     let list = allRoadCandidates;
     const br = buildableRoads;
@@ -174,7 +169,7 @@ export function CatanBoardScene({
   ]);
 
   const hoverVertexCandidates = useMemo(() => {
-    if (boardPickMode !== "settlement") return [];
+    if (boardPickMode !== "build") return [];
 
     const directions = [
       { q: 1, r: -1, s: 0 },
@@ -231,9 +226,7 @@ export function CatanBoardScene({
     let list = Array.from(dedup.values());
     const bs = buildableSettlements;
     if (bs && bs.length > 0) {
-      list = list.filter((v) =>
-        isVertexInBuildableList(bs, v.h0, v.h1, v.h2),
-      );
+      list = list.filter((v) => isVertexInBuildableList(bs, v.h0, v.h1, v.h2));
     }
     return list;
   }, [board.hexes, hexRadius, boardPickMode, buildableSettlements]);
@@ -249,7 +242,7 @@ export function CatanBoardScene({
       <Canvas camera={{ position: [0, 5, 8], fov: 50 }}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 10, 5]} intensity={0.8} />
-        <OrbitControls enablePan enableZoom enableRotate />
+        <OrbitControls enableZoom enableRotate />
 
         <group>
           {board.hexes.map((hex, idx) => (
@@ -259,7 +252,7 @@ export function CatanBoardScene({
               hexRadius={hexRadius}
               color={resourceColors[hex.resource] ?? "#cccccc"}
               hexNumber={hex.numberToken}
-              robberPickMode={boardPickMode === "robberHex"}
+              robberPickMode={boardPickMode === "moveRobber"}
               onRobberHexPick={
                 onRobberHexPicked
                   ? (h) => onRobberHexPicked(h.coordinate)
@@ -268,83 +261,31 @@ export function CatanBoardScene({
             />
           ))}
 
-          {boardPickMode === "road" && (
+          {boardPickMode === "build" && (
             <group>
               {hoverRoadCandidates.map((c) => (
-                <group
+                <GhostRoadMesh
                   key={c.key}
                   position={[c.x, 0.2, c.z]}
-                  rotation={[0, c.angle, 0]}
-                >
-                  <mesh
-                    onPointerOver={() => setHoveredRoadKey(c.key)}
-                    onPointerOut={() =>
-                      setHoveredRoadKey((prev) =>
-                        prev === c.key ? null : prev,
-                      )
-                    }
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRoadPicked?.(toEdgeCoordDto(c.hexA, c.hexB));
-                    }}
-                  >
-                    <boxGeometry args={[hexRadius * 0.95, 0.1, 0.15]} />
-                    <meshStandardMaterial transparent opacity={0} />
-                  </mesh>
-
-                  {hoveredRoadKey === c.key && (
-                    <mesh castShadow>
-                      <boxGeometry args={[hexRadius * 0.95, 0.1, 0.15]} />
-                      <meshStandardMaterial
-                        color={"#ffffff"}
-                        transparent
-                        opacity={0.5}
-                      />
-                    </mesh>
-                  )}
-                </group>
+                  angle={c.angle}
+                  hexRadius={hexRadius}
+                  onClick={() => onRoadPicked?.(toEdgeCoordDto(c.hexA, c.hexB))}
+                />
               ))}
             </group>
           )}
 
-          {boardPickMode === "settlement" && (
+          {boardPickMode === "build" && (
             <group>
-              {hoverVertexCandidates.map((v) => {
-                const hitR = hexRadius * 0.22;
-                const ghostR = hexRadius * 0.2;
-                return (
-                  <group key={v.key} position={[v.x, 0.2, v.z]}>
-                    <mesh
-                      onPointerOver={() => setHoveredVertexKey(v.key)}
-                      onPointerOut={() =>
-                        setHoveredVertexKey((prev) =>
-                          prev === v.key ? null : prev,
-                        )
-                      }
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onVertexPicked?.(
-                          toVertexCoordDto(v.h0, v.h1, v.h2),
-                        );
-                      }}
-                    >
-                      <sphereGeometry args={[hitR, 12, 12]} />
-                      <meshStandardMaterial transparent opacity={0} />
-                    </mesh>
-
-                    {hoveredVertexKey === v.key && (
-                      <mesh castShadow>
-                        <sphereGeometry args={[ghostR, 16, 16]} />
-                        <meshStandardMaterial
-                          color={"#ffffff"}
-                          transparent
-                          opacity={0.5}
-                        />
-                      </mesh>
-                    )}
-                  </group>
-                );
-              })}
+              {hoverVertexCandidates.map((v) => (
+                <GhostSettlementMesh
+                  key={v.key}
+                  position={[v.x, 0.2, v.z]}
+                  onClick={() =>
+                    onVertexPicked?.(toVertexCoordDto(v.h0, v.h1, v.h2))
+                  }
+                />
+              ))}
             </group>
           )}
 
@@ -357,22 +298,29 @@ export function CatanBoardScene({
             />
           ))}
 
-          {board.populationCenters.map((pc, idx) => (
-            <PopulationCenterMesh
-              key={`pc-${idx}`}
-              populationCenter={pc}
-              hexRadius={hexRadius}
-              colorHex={pieceColorByPlayerId.get(pc.playerOwnerId)}
-              enableCityUpgradeHover={boardPickMode === "cityUpgrade"}
-              selectForCityUpgrade={
-                boardPickMode === "cityUpgrade" &&
-                !!myPlayerId &&
-                pc.playerOwnerId === myPlayerId &&
-                pc.type === "settlement"
-              }
-              onCityUpgradeSelect={handleCityClick}
-            />
-          ))}
+          {board.populationCenters.map((pc, idx) =>
+            pc.type === "city" ? (
+              <CityMesh
+                key={`pc-${idx}`}
+                populationCenter={pc}
+                hexRadius={hexRadius}
+                colorHex={pieceColorByPlayerId.get(pc.playerOwnerId)}
+              />
+            ) : (
+              <SettlementMesh
+                key={`pc-${idx}`}
+                populationCenter={pc}
+                hexRadius={hexRadius}
+                colorHex={pieceColorByPlayerId.get(pc.playerOwnerId)}
+                upgradeable={
+                  boardPickMode === "build" &&
+                  !!myPlayerId &&
+                  pc.playerOwnerId === myPlayerId
+                }
+                onUpgrade={handleCityClick}
+              />
+            )
+          )}
 
           {board.ports.map((port, idx) => (
             <PortMesh key={`port-${idx}`} port={port} hexRadius={hexRadius} />

@@ -27,9 +27,9 @@ type Props = {
 
 const btn =
   "rounded-md border px-2 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40";
-const btnPrimary = `${btn} border-slate-300 bg-white text-slate-800 hover:bg-slate-50`;
-const btnActive = `${btn} border-sky-500 bg-sky-50 text-sky-900`;
-const btnDanger = `${btn} border-red-200 bg-red-50 text-red-900 hover:bg-red-100`;
+const btnPrimary = `${btn} border-stone-600 bg-stone-800/60 text-stone-200 hover:bg-stone-700/60`;
+const btnActive = `${btn} border-sky-500 bg-sky-900/40 text-sky-300`;
+const btnDanger = `${btn} border-red-700/60 bg-red-900/30 text-red-400 hover:bg-red-900/50`;
 
 /**
  * DOM toolbar under the R3F canvas — never inside `<Canvas>`.
@@ -75,16 +75,16 @@ export function GameActionBar({
 
   return (
     <div
-      className="shrink-0 border-t border-slate-200 bg-slate-50 px-3 py-2"
+      className="shrink-0 border-t border-stone-700/60 bg-transparent px-3 py-2"
       role="toolbar"
       aria-label="Game actions"
     >
       {actionError && (
-        <div className="mb-2 flex items-start justify-between gap-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-900">
+        <div className="mb-2 flex items-start justify-between gap-2 rounded border border-red-700/40 bg-red-900/20 px-2 py-1 text-xs text-red-300">
           <span>{actionError}</span>
           <button
             type="button"
-            className="shrink-0 text-red-700 underline"
+            className="shrink-0 text-red-400 underline"
             onClick={onClearActionError}
           >
             Dismiss
@@ -93,14 +93,14 @@ export function GameActionBar({
       )}
 
       <div className="mb-1.5 flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium text-slate-600">
-          Phase <span className="text-slate-900">{phase}</span>
+        <span className="text-xs font-medium text-stone-400">
+          Phase <span className="text-stone-200">{phase}</span>
         </span>
         {!isMyTurn && (
-          <span className="text-xs text-slate-500">Waiting for other player…</span>
+          <span className="text-xs text-stone-500">Waiting for other player…</span>
         )}
         {interactionMode !== "idle" && (
-          <span className="text-xs font-medium text-sky-800">
+          <span className="text-xs font-medium text-sky-400">
             Mode: {interactionMode}
           </span>
         )}
@@ -177,7 +177,7 @@ export function GameActionBar({
           Move robber
         </button>
 
-        <span className="mx-1 hidden h-6 w-px bg-slate-300 sm:inline" />
+        <span className="mx-1 hidden h-6 w-px bg-stone-700 sm:inline" />
 
         <button
           type="button"
@@ -224,7 +224,7 @@ export function GameActionBar({
           Upgrade to city
         </button>
 
-        <span className="mx-1 hidden h-6 w-px bg-slate-300 sm:inline" />
+        <span className="mx-1 hidden h-6 w-px bg-stone-700 sm:inline" />
 
         <button
           type="button"
@@ -241,7 +241,7 @@ export function GameActionBar({
             : "Place initial settlement"}
         </button>
 
-        <span className="mx-1 hidden h-6 w-px bg-slate-300 sm:inline" />
+        <span className="mx-1 hidden h-6 w-px bg-stone-700 sm:inline" />
 
         <button
           type="button"

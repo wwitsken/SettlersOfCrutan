@@ -1,10 +1,10 @@
-import type { Road } from "../../domain/game/board";
+import type { Road } from "../../../domain/game/board";
 import {
   angleByAxis,
   axisFromCoords,
   cubeToPosition,
   midpoint,
-} from "./boardMath";
+} from "../boardMath";
 
 type Props = {
   road: Road;
