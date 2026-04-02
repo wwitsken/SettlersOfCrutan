@@ -1,8 +1,8 @@
-import type { ResourceType } from "../../types/catan";
+import type { ResourceCardType } from "../../domain/game/gameTypes";
 import { RESOURCE_META } from "../../constants/catanMeta";
 
 interface Props {
-  type: ResourceType;
+  type: ResourceCardType;
   count: number;
 }
 

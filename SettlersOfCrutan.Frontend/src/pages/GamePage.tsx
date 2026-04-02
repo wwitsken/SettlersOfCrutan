@@ -19,16 +19,12 @@ import { ProposeTradeDialog } from "../components/game/ProposeTradeDialog";
 import { DiscardHalfDialog } from "../components/game/DiscardHalfDialog";
 import { RobberVictimPicker } from "../components/game/RobberVictimPicker";
 import { DevCardResourceDialog } from "../components/game/DevCardResourceDialog";
-import {
-  boardPickModeFromInteraction,
-  useGamePageInteraction,
-} from "../hooks/useGamePageInteraction";
-import { getCurrentPlayer } from "../domain/game/selectors";
+import { useGamePageInteraction } from "../hooks/useGamePageInteraction";
+import { deriveBoardInteraction } from "../domain/game/boardInteraction";
+import { getCurrentPlayer, playersForLayout } from "../domain/game/selectors";
 import { getPlayerIdsExposedToHex } from "../domain/game/robberExposure";
-import {
-  toHexCoordDto,
-  vertexDtoToHexes,
-} from "../domain/game/hexCoords";
+import { toHexCoordDto, vertexDtoToHexes } from "../domain/game/hexCoords";
+import { expandUnplayedDevCards, emptyPlayedDevCards } from "../domain/game/devHandUi";
 import type { HexCoordinate } from "../domain/game/board";
 import type { components } from "../api/types";
 import {
@@ -46,13 +42,6 @@ import {
   postUseYearOfPlenty,
 } from "../api/gameCommands";
 import CatanLayout from "../components/layout/CatanLayout";
-import {
-  mapGamePlayers,
-  mapPlayedDevCards,
-  mapPlayerColor,
-  mapResourceHand,
-  mapUnplayedDevCards,
-} from "../domain/game/catanAdapters";
 import type { ChatMessage } from "../types/catan";
 
 type EdgeCoordDto = components["schemas"]["EdgeCoordDto"];
@@ -72,20 +61,22 @@ function GamePage() {
   const loadError = useGamesStore((s) => s.error);
 
   const {
-    interactionMode,
-    setInteractionMode,
     pendingInitialVertex,
     setPendingInitialVertex,
     pendingRobberHex,
     setPendingRobberHex,
-    robberKind,
-    setRobberKind,
+    awaitingKnightRobberHex,
+    setAwaitingKnightRobberHex,
+    devRoadFlow,
+    setDevRoadFlow,
     devRoadFirstEdge,
     setDevRoadFirstEdge,
+    devRoadPicking,
     actionError,
     setActionError,
     clearRobberPending,
     resetDevRoad,
+    startDevRoadFlow,
   } = useGamePageInteraction();
 
   const [monopolyOpen, setMonopolyOpen] = useState(false);
@@ -146,15 +137,36 @@ function GamePage() {
     currentPid === privateGame.myPlayerId
   );
 
-  const boardPickMode =
-    boardView === "live"
-      ? boardPickModeFromInteraction(interactionMode)
-      : "none";
-
   const initialRoadHexes = useMemo(
     () =>
       pendingInitialVertex ? vertexDtoToHexes(pendingInitialVertex) : null,
     [pendingInitialVertex],
+  );
+
+  const boardInteraction = useMemo(
+    () =>
+      deriveBoardInteraction({
+        boardViewLive: boardView === "live",
+        game,
+        privateGame,
+        isMyTurn,
+        pendingInitialVertex,
+        pendingRobberHex,
+        awaitingKnightRobberHex,
+        devRoadPicking,
+        initialRoadVertexHexes: initialRoadHexes,
+      }),
+    [
+      boardView,
+      game,
+      privateGame,
+      isMyTurn,
+      pendingInitialVertex,
+      pendingRobberHex,
+      awaitingKnightRobberHex,
+      devRoadPicking,
+      initialRoadHexes,
+    ],
   );
 
   const showLiveHud = boardView === "live" && !!game && !!gameId;
@@ -191,22 +203,15 @@ function GamePage() {
       }));
   }, [game, privateGame, pendingRobberHex]);
 
-  // ── Adapter-mapped data for CatanLayout ──
   const layoutPlayers = useMemo(
-    () => (game ? mapGamePlayers(game) : []),
+    () => (game ? playersForLayout(game) : []),
     [game],
   );
-  const layoutResourceHand = useMemo(
-    () => mapResourceHand(privateGame?.myHand.resources ?? {}),
-    [privateGame],
-  );
   const layoutUnplayedDevCards = useMemo(
-    () => mapUnplayedDevCards(privateGame?.myHand.devCards ?? {}),
+    () => expandUnplayedDevCards(privateGame?.myHand.devCards ?? {}),
     [privateGame],
   );
-  const layoutPlayedDevCards = useMemo(() => mapPlayedDevCards(), []);
-  const layoutCurrentPlayerName = me?.displayName ?? "";
-  const layoutCurrentPlayerColor = mapPlayerColor(me?.playerColor ?? "none");
+  const layoutPlayedDevCards = useMemo(() => emptyPlayedDevCards(), []);
 
   const runCmd = useCallback(
     async (fn: () => Promise<{ ok: boolean; errorMessage?: string }>) => {
@@ -233,14 +238,11 @@ function GamePage() {
     void runCmd(() => postBuyDevelopmentCard(gameId));
   };
 
-  const handleStartRobber = () => {
-    setRobberKind("resolve");
-    setInteractionMode("robberHex");
-  };
+  const robberCommandContext = boardInteraction.robberCommandContext;
 
   const handleRobberHexChosen = useCallback(
     (hex: HexCoordinate) => {
-      if (!game || !privateGame || !gameId || !robberKind) return;
+      if (!game || !privateGame || !gameId || !robberCommandContext) return;
 
       const victims = getPlayerIdsExposedToHex(game, hex).filter(
         (id) => id !== privateGame.myPlayerId,
@@ -254,7 +256,6 @@ function GamePage() {
         setRobberBusy(false);
         if (r.ok) {
           clearRobberPending();
-          setInteractionMode("idle");
         } else {
           setRobberErr(r.errorMessage);
         }
@@ -271,21 +272,19 @@ function GamePage() {
       }
 
       setPendingRobberHex(hex);
-      setInteractionMode("idle");
     },
     [
       game,
       privateGame,
       gameId,
-      robberKind,
+      robberCommandContext,
       clearRobberPending,
-      setInteractionMode,
       setPendingRobberHex,
     ],
   );
 
   const handleVictimPick = (victimId: string) => {
-    if (!pendingRobberHex || !gameId || !robberKind) return;
+    if (!pendingRobberHex || !gameId) return;
     void (async () => {
       setRobberBusy(true);
       setRobberErr(null);
@@ -301,37 +300,27 @@ function GamePage() {
   };
 
   const handleRoadPicked = (edge: EdgeCoordDto) => {
-    if (!gameId) return;
+    if (!gameId || !game) return;
 
-    if (interactionMode === "initialRoad" && pendingInitialVertex) {
+    if (game.gamePhase === "setup" && pendingInitialVertex) {
       void (async () => {
         const r = await runCmd(() =>
           postPlaceInitial(gameId, pendingInitialVertex, edge),
         );
         if (r.ok) {
           setPendingInitialVertex(null);
-          setInteractionMode("idle");
         }
       })();
       return;
     }
 
-    if (interactionMode === "buildRoad") {
-      void runCmd(() => postBuildRoad(gameId, edge));
-      return;
-    }
-
-    if (interactionMode === "devRoad1") {
+    if (devRoadFlow === "pickFirst") {
       setDevRoadFirstEdge(edge);
-      setInteractionMode("devRoad2");
+      setDevRoadFlow("pickSecond");
       return;
     }
 
-    if (
-      interactionMode === "devRoad2" &&
-      devRoadFirstEdge &&
-      privateGame
-    ) {
+    if (devRoadFlow === "pickSecond" && devRoadFirstEdge && privateGame) {
       void (async () => {
         const r = await runCmd(() =>
           postUseRoadBuilding(
@@ -343,26 +332,30 @@ function GamePage() {
         );
         if (r.ok) resetDevRoad();
       })();
+      return;
+    }
+
+    if (game.gamePhase === "tradeBuild") {
+      void runCmd(() => postBuildRoad(gameId, edge));
     }
   };
 
   const handleVertexPicked = (vertex: VertexCoordDto) => {
-    if (!gameId) return;
+    if (!gameId || !game) return;
 
-    if (interactionMode === "initialSettle") {
+    if (game.gamePhase === "setup" && !pendingInitialVertex) {
       setPendingInitialVertex(vertex);
-      setInteractionMode("initialRoad");
       return;
     }
 
-    if (interactionMode === "buildSettlement") {
+    if (game.gamePhase === "tradeBuild") {
       void runCmd(() => postBuildSettlement(gameId, vertex));
     }
   };
 
   const handleCityPicked = (vertex: VertexCoordDto) => {
-    if (!gameId) return;
-    if (interactionMode === "upgradeCity") {
+    if (!gameId || !game) return;
+    if (game.gamePhase === "tradeBuild") {
       void runCmd(() => postUpgradeCity(gameId, vertex));
     }
   };
@@ -375,8 +368,7 @@ function GamePage() {
       const r = await postUseKnight(gameId);
       setRobberBusy(false);
       if (r.ok) {
-        setRobberKind("knight");
-        setInteractionMode("devKnightHex");
+        setAwaitingKnightRobberHex(true);
       } else {
         setRobberErr(r.errorMessage);
       }
@@ -394,8 +386,7 @@ function GamePage() {
   };
 
   const onPlayRoadBuilding = () => {
-    setDevRoadFirstEdge(null);
-    setInteractionMode("devRoad1");
+    startDevRoadFlow();
   };
 
   const boardSlot = (
@@ -418,31 +409,20 @@ function GamePage() {
         <CatanBoardScene
           game={boardGame}
           hexRadius={1}
-          boardPickMode={boardPickMode}
-          buildableRoads={
-            boardView === "live" && privateGame
-              ? interactionMode === "initialRoad" ||
-                  interactionMode === "devRoad1" ||
-                  interactionMode === "devRoad2"
-                ? undefined
-                : privateGame.buildableRoads
-              : undefined
+          boardPickMode={boardInteraction.boardPickMode}
+          showGhostRoads={boardInteraction.showGhostRoads}
+          showGhostSettlementVertices={
+            boardInteraction.showGhostSettlementVertices
           }
-          buildableSettlements={
-            boardView === "live" && privateGame
-              ? privateGame.buildableSettlements
-              : undefined
-          }
-          initialRoadVertexHexes={
-            interactionMode === "initialRoad" ? initialRoadHexes : null
-          }
+          showGhostCityUpgrades={boardInteraction.showGhostCityUpgrades}
+          buildableRoads={boardInteraction.buildableRoads}
+          buildableSettlements={boardInteraction.buildableSettlements}
+          initialRoadVertexHexes={boardInteraction.initialRoadVertexHexes}
           myPlayerId={privateGame?.myPlayerId}
           onRoadPicked={boardView === "live" ? handleRoadPicked : undefined}
           onVertexPicked={boardView === "live" ? handleVertexPicked : undefined}
           onRobberHexPicked={
-            boardView === "live" &&
-            (interactionMode === "robberHex" ||
-              interactionMode === "devKnightHex")
+            boardView === "live" && boardInteraction.allowRobberHexPick
               ? handleRobberHexChosen
               : undefined
           }
@@ -454,6 +434,12 @@ function GamePage() {
     </>
   );
 
+  const setupAwaitingInitialRoad =
+    !!game &&
+    game.gamePhase === "setup" &&
+    isMyTurn &&
+    pendingInitialVertex != null;
+
   const actionBarSlot = (
     <GameActionBar
       show={showLiveHud}
@@ -461,15 +447,9 @@ function GamePage() {
       gameId={gameId}
       isMyTurn={isMyTurn}
       hasPrivateSlice={!!privateGame}
-      interactionMode={interactionMode}
-      onInteractionMode={(m) => {
-        if (m === "idle") {
-          setPendingInitialVertex(null);
-          resetDevRoad();
-          clearRobberPending();
-        }
-        setInteractionMode(m);
-      }}
+      setupAwaitingInitialRoad={setupAwaitingInitialRoad}
+      devRoadPicking={devRoadPicking}
+      awaitingKnightRobberHex={awaitingKnightRobberHex}
       actionError={actionError}
       onClearActionError={() => setActionError(null)}
       onRollDice={handleRollDice}
@@ -479,7 +459,6 @@ function GamePage() {
       onPlayMonopoly={onPlayMonopoly}
       onPlayYearOfPlenty={onPlayYearOfPlenty}
       onPlayRoadBuilding={onPlayRoadBuilding}
-      onStartRobber={handleStartRobber}
       onProposeTrade={() => setProposeTradeOpen(true)}
       onMaritimeTrade={(ratio) => {
         setMaritimeRatio(ratio);
@@ -490,7 +469,6 @@ function GamePage() {
 
   return (
     <>
-      {/* Header — connection status and load errors sit above the dark layout */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 bg-stone-900 border-b border-stone-700/60 text-sm">
         <div>
           <span className="font-semibold text-stone-100">
@@ -541,11 +519,11 @@ function GamePage() {
       <CatanLayout
         players={layoutPlayers}
         chatMessages={MOCK_CHAT_MESSAGES}
-        resourceHand={layoutResourceHand}
+        resourceHand={privateGame?.myHand.resources ?? {}}
         unplayedDevCards={layoutUnplayedDevCards}
         playedDevCards={layoutPlayedDevCards}
-        currentPlayerName={layoutCurrentPlayerName}
-        currentPlayerColor={layoutCurrentPlayerColor}
+        currentPlayerName={me?.displayName ?? ""}
+        currentPlayerColor={me?.playerColor ?? "none"}
         boardSlot={boardSlot}
         actionBarSlot={actionBarSlot}
       />

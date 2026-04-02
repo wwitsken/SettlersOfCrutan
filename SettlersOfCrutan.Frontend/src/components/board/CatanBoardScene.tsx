@@ -4,20 +4,22 @@ import { OrbitControls } from "@react-three/drei";
 import type { Game } from "../../domain/game/game";
 import type { HexCoordinate, PopulationCenter } from "../../domain/game/board";
 import type { ResourceCardType } from "../../domain/game/gameTypes";
-import type { BoardPickMode } from "../../hooks/useGamePageInteraction";
+import type { BoardPickMode } from "../../domain/game/boardInteraction";
 import type { components } from "../../api/types";
 import {
+  edgeKey,
   edgeTouchesVertex,
   isEdgeInBuildableList,
   isVertexInBuildableList,
   toEdgeCoordDto,
   toVertexCoordDto,
+  vertexKey,
 } from "../../domain/game/hexCoords";
 import { HexTile } from "./HexTile";
 import { RoadMesh } from "./Roads/RoadMesh";
 import { GhostRoadMesh } from "./Roads/GhostRoadMesh";
 import { SettlementMesh } from "./Settlements/SettlementMesh";
-import { CityMesh } from "./Settlements/CityMesh";
+import { CityMesh } from "./Cities/CityMesh";
 import { GhostSettlementMesh } from "./Settlements/GhostSettlementMesh";
 import { PortMesh } from "./PortMesh";
 import { axisFromCoords, cubeToPosition, midpoint } from "./boardMath";
@@ -48,6 +50,9 @@ type Props = {
   game: Game;
   hexRadius?: number;
   boardPickMode: BoardPickMode;
+  showGhostRoads?: boolean;
+  showGhostSettlementVertices?: boolean;
+  showGhostCityUpgrades?: boolean;
   buildableRoads?: HexCoordinate[][];
   buildableSettlements?: HexCoordinate[][];
   initialRoadVertexHexes?: HexCoordinate[] | null;
@@ -62,6 +67,9 @@ export function CatanBoardScene({
   game,
   hexRadius = 1,
   boardPickMode,
+  showGhostRoads = true,
+  showGhostSettlementVertices = true,
+  showGhostCityUpgrades = false,
   buildableRoads,
   buildableSettlements,
   initialRoadVertexHexes,
@@ -78,6 +86,27 @@ export function CatanBoardScene({
     for (const p of game.players) m.set(p.id, playerColorToHex(p.playerColor));
     return m;
   }, [game.players]);
+
+  const occupiedVertexKeys = useMemo(() => {
+    const s = new Set<string>();
+    for (const pc of board.populationCenters) {
+      if (pc.coordinates.length >= 3) {
+        const [a, b, c] = pc.coordinates;
+        s.add(vertexKey([a, b, c]));
+      }
+    }
+    return s;
+  }, [board.populationCenters]);
+
+  const occupiedRoadKeys = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of board.roads) {
+      if (r.coordinates.length >= 2) {
+        s.add(edgeKey(r.coordinates[0]!, r.coordinates[1]!));
+      }
+    }
+    return s;
+  }, [board.roads]);
 
   const resourceColors: Record<ResourceCardType, string> = {
     none: "#94a3b8",
@@ -148,28 +177,40 @@ export function CatanBoardScene({
   }, [board.hexes, hexRadius]);
 
   const hoverRoadCandidates = useMemo(() => {
-    if (boardPickMode !== "build") return [];
+    if (boardPickMode !== "build" || !showGhostRoads) return [];
 
-    let list = allRoadCandidates;
-    const br = buildableRoads;
-    if (br && br.length > 0) {
-      list = list.filter((c) => isEdgeInBuildableList(br, c.hexA, c.hexB));
-    } else if (initialRoadVertexHexes && initialRoadVertexHexes.length >= 3) {
-      list = list.filter((c) =>
+    let list: RoadCandidate[];
+
+    if (initialRoadVertexHexes && initialRoadVertexHexes.length >= 3) {
+      list = allRoadCandidates.filter((c) =>
         edgeTouchesVertex(initialRoadVertexHexes, [c.hexA, c.hexB]),
       );
+    } else if (buildableRoads !== undefined) {
+      if (buildableRoads.length === 0) {
+        list = [];
+      } else {
+        list = allRoadCandidates.filter((c) =>
+          isEdgeInBuildableList(buildableRoads, c.hexA, c.hexB),
+        );
+      }
+    } else {
+      list = allRoadCandidates;
     }
 
-    return list;
+    return list.filter(
+      (c) => !occupiedRoadKeys.has(edgeKey(c.hexA, c.hexB)),
+    );
   }, [
     allRoadCandidates,
     boardPickMode,
+    showGhostRoads,
     buildableRoads,
     initialRoadVertexHexes,
+    occupiedRoadKeys,
   ]);
 
   const hoverVertexCandidates = useMemo(() => {
-    if (boardPickMode !== "build") return [];
+    if (boardPickMode !== "build" || !showGhostSettlementVertices) return [];
 
     const directions = [
       { q: 1, r: -1, s: 0 },
@@ -211,31 +252,47 @@ export function CatanBoardScene({
         const kz = Math.round(vz * 1000);
         const vKey = `${kx},${kz}`;
 
-        const baseKey = `${hex.coordinate.q},${hex.coordinate.r},${hex.coordinate.s}`;
-        const n1Key = `${h1.q},${h1.r},${h1.s}`;
-        const n2Key = `${h2.q},${h2.r},${h2.s}`;
-        const tripleKey = [baseKey, n1Key, n2Key].sort().join("|");
-        const key = `${vKey}|${tripleKey}`;
-
         if (!dedup.has(vKey)) {
-          dedup.set(vKey, { key, x: vx, z: vz, h0, h1, h2 });
+          dedup.set(vKey, { key: vKey, x: vx, z: vz, h0, h1, h2 });
         }
       }
     }
 
     let list = Array.from(dedup.values());
+
     const bs = buildableSettlements;
-    if (bs && bs.length > 0) {
-      list = list.filter((v) => isVertexInBuildableList(bs, v.h0, v.h1, v.h2));
+    if (bs === undefined) {
+      // Unrestricted (e.g. legacy); still hide occupied vertices.
+    } else if (bs.length === 0) {
+      list = [];
+    } else {
+      list = list.filter((v) =>
+        isVertexInBuildableList(bs, v.h0, v.h1, v.h2),
+      );
     }
-    return list;
-  }, [board.hexes, hexRadius, boardPickMode, buildableSettlements]);
+
+    return list.filter(
+      (v) => !occupiedVertexKeys.has(vertexKey([v.h0, v.h1, v.h2])),
+    );
+  }, [
+    board.hexes,
+    hexRadius,
+    boardPickMode,
+    showGhostSettlementVertices,
+    buildableSettlements,
+    occupiedVertexKeys,
+  ]);
 
   const handleCityClick = (pc: PopulationCenter) => {
     if (pc.coordinates.length < 3) return;
     const [a, b, c] = pc.coordinates;
     onSettlementCityPicked?.(toVertexCoordDto(a, b, c));
   };
+
+  const settlementUpgradeable =
+    boardPickMode === "build" &&
+    showGhostCityUpgrades &&
+    !!myPlayerId;
 
   return (
     <div style={{ width: "100%", height: "100%" }}>
@@ -261,7 +318,7 @@ export function CatanBoardScene({
             />
           ))}
 
-          {boardPickMode === "build" && (
+          {boardPickMode === "build" && showGhostRoads && (
             <group>
               {hoverRoadCandidates.map((c) => (
                 <GhostRoadMesh
@@ -275,12 +332,12 @@ export function CatanBoardScene({
             </group>
           )}
 
-          {boardPickMode === "build" && (
+          {boardPickMode === "build" && showGhostSettlementVertices && (
             <group>
               {hoverVertexCandidates.map((v) => (
                 <GhostSettlementMesh
                   key={v.key}
-                  position={[v.x, 0.2, v.z]}
+                  position={[v.x, 0.22, v.z]}
                   onClick={() =>
                     onVertexPicked?.(toVertexCoordDto(v.h0, v.h1, v.h2))
                   }
@@ -313,13 +370,12 @@ export function CatanBoardScene({
                 hexRadius={hexRadius}
                 colorHex={pieceColorByPlayerId.get(pc.playerOwnerId)}
                 upgradeable={
-                  boardPickMode === "build" &&
-                  !!myPlayerId &&
+                  settlementUpgradeable &&
                   pc.playerOwnerId === myPlayerId
                 }
                 onUpgrade={handleCityClick}
               />
-            )
+            ),
           )}
 
           {board.ports.map((port, idx) => (

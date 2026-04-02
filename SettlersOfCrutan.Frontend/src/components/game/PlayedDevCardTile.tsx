@@ -1,8 +1,8 @@
-import type { DevCardType } from "../../types/catan";
+import type { DevelopmentCardType } from "../../domain/game/gameTypes";
 import { DEV_META } from "../../constants/catanMeta";
 
 interface Props {
-  type: DevCardType;
+  type: DevelopmentCardType;
   count: number;
 }
 

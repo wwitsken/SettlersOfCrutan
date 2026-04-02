@@ -2,7 +2,7 @@ import type { PopulationCenter } from "../../../domain/game/board";
 import { useState } from "react";
 import * as THREE from "three";
 import { vertexFromCoords } from "../boardMath";
-import { GhostCityMesh } from "./GhostCityMesh";
+import { GhostCityMesh } from "../Cities/GhostCityMesh";
 
 /** House footprint cube size (world units); roof sits flush on top. */
 const SETTLEMENT_S = 0.26;
@@ -51,7 +51,7 @@ type Props = {
   hexRadius: number;
   /** Settlement body color. */
   colorHex?: string;
-  /** When true, hovering shows a ghost city and clicking triggers onUpgrade. */
+  /** When true, hovering shows a city ghost; click settlement or ghost upgrades. */
   upgradeable?: boolean;
   onUpgrade?: (populationCenter: PopulationCenter) => void;
 };
@@ -91,11 +91,24 @@ export function SettlementMesh({
         <boxGeometry args={[SETTLEMENT_S, SETTLEMENT_S, SETTLEMENT_S]} />
         <meshStandardMaterial color={colorHex} />
       </mesh>
-      <mesh position={[0, halfS, 0]} castShadow geometry={settlementRoofGeometry}>
+      <mesh
+        position={[0, halfS, 0]}
+        castShadow
+        geometry={settlementRoofGeometry}
+      >
         <meshStandardMaterial color={colorHex} />
       </mesh>
 
-      {upgradeable && isHovered && <GhostCityMesh />}
+      {upgradeable && isHovered && (
+        <group position={[0, halfS + 0.2, 0]}>
+          <GhostCityMesh
+            position={[0, 0, 0]}
+            onClick={() => {
+              if (upgradeable && onUpgrade) onUpgrade(populationCenter);
+            }}
+          />
+        </group>
+      )}
     </group>
   );
 }

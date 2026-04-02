@@ -122,7 +122,9 @@ export function isEdgeInBuildableList(
   a: HexCoordinate,
   b: HexCoordinate,
 ): boolean {
-  return buildable.some((row) => rowMatchesEdge(row, a, b));
+  return buildable.some(
+    (row) => row.length === 2 && rowMatchesEdge(row, a, b),
+  );
 }
 
 export function isVertexInBuildableList(
@@ -131,5 +133,7 @@ export function isVertexInBuildableList(
   v2: HexCoordinate,
   v3: HexCoordinate,
 ): boolean {
-  return buildable.some((row) => rowMatchesVertex(row, v1, v2, v3));
+  return buildable.some(
+    (row) => row.length === 3 && rowMatchesVertex(row, v1, v2, v3),
+  );
 }

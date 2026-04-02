@@ -2,81 +2,55 @@ import { useCallback, useState } from "react";
 import type { components } from "../api/types";
 import type { HexCoordinate } from "../domain/game/board";
 
-export type GamePageInteractionMode =
-  | "idle"
-  | "buildRoad"
-  | "buildSettlement"
-  | "upgradeCity"
-  | "robberHex"
-  | "devKnightHex"
-  | "initialSettle"
-  | "initialRoad"
-  | "devRoad1"
-  | "devRoad2";
-
-export type BoardPickMode = "none" | "build" | "moveRobber";
+export type { BoardPickMode } from "../domain/game/boardInteraction";
 
 type VertexCoordDto = components["schemas"]["VertexCoordDto"];
 type EdgeCoordDto = components["schemas"]["EdgeCoordDto"];
 
-export function boardPickModeFromInteraction(
-  mode: GamePageInteractionMode,
-): BoardPickMode {
-  switch (mode) {
-    case "buildRoad":
-    case "initialRoad":
-    case "devRoad1":
-    case "devRoad2":
-    case "buildSettlement":
-    case "initialSettle":
-    case "upgradeCity":
-      return "build";
-    case "robberHex":
-    case "devKnightHex":
-      return "moveRobber";
-    default:
-      return "none";
-  }
-}
+export type DevRoadFlow = "idle" | "pickFirst" | "pickSecond";
 
 export function useGamePageInteraction() {
-  const [interactionMode, setInteractionMode] =
-    useState<GamePageInteractionMode>("idle");
   const [pendingInitialVertex, setPendingInitialVertex] =
     useState<VertexCoordDto | null>(null);
   const [pendingRobberHex, setPendingRobberHex] =
     useState<HexCoordinate | null>(null);
-  const [robberKind, setRobberKind] = useState<"resolve" | "knight" | null>(
-    null,
-  );
+  const [awaitingKnightRobberHex, setAwaitingKnightRobberHex] = useState(false);
+  const [devRoadFlow, setDevRoadFlow] = useState<DevRoadFlow>("idle");
   const [devRoadFirstEdge, setDevRoadFirstEdge] =
     useState<EdgeCoordDto | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const clearRobberPending = useCallback(() => {
     setPendingRobberHex(null);
-    setRobberKind(null);
+    setAwaitingKnightRobberHex(false);
   }, []);
 
   const resetDevRoad = useCallback(() => {
     setDevRoadFirstEdge(null);
-    setInteractionMode("idle");
+    setDevRoadFlow("idle");
+  }, []);
+
+  const startDevRoadFlow = useCallback(() => {
+    setDevRoadFirstEdge(null);
+    setDevRoadFlow("pickFirst");
   }, []);
 
   return {
-    interactionMode,
-    setInteractionMode,
     pendingInitialVertex,
     setPendingInitialVertex,
     pendingRobberHex,
     setPendingRobberHex,
-    robberKind,
-    setRobberKind,
+    awaitingKnightRobberHex,
+    setAwaitingKnightRobberHex,
+    devRoadFlow,
+    setDevRoadFlow,
     devRoadFirstEdge,
     setDevRoadFirstEdge,
+    devRoadPicking: devRoadFlow !== "idle",
     actionError,
     setActionError,
     clearRobberPending,
     resetDevRoad,
+    startDevRoadFlow,
   };
 }

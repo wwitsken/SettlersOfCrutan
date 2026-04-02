@@ -1,4 +1,8 @@
-import type { DevCardType, PlayerColor, ResourceType } from "../types/catan";
+import type {
+  DevelopmentCardType,
+  PlayerColor,
+  ResourceCardType,
+} from "../domain/game/gameTypes";
 
 export const COLOR_MAP: Record<PlayerColor, string> = {
   red: "bg-red-500",
@@ -36,24 +40,59 @@ export const COLOR_BORDER_MAP: Record<PlayerColor, string> = {
   none: "border-stone-600",
 };
 
+/** Resource types shown in the hand strip (OpenAPI / domain names). */
+export const RESOURCE_HAND_TYPES: ResourceCardType[] = [
+  "brick",
+  "lumber",
+  "wool",
+  "grain",
+  "ore",
+];
+
 export const RESOURCE_META: Record<
-  ResourceType,
+  ResourceCardType,
   { label: string; emoji: string; bg: string; border: string }
 > = {
-  wood: { label: "Wood", emoji: "🌲", bg: "bg-emerald-950", border: "border-emerald-700" },
+  none: { label: "None", emoji: "—", bg: "bg-stone-900", border: "border-stone-700" },
   brick: { label: "Brick", emoji: "🧱", bg: "bg-red-950", border: "border-red-800" },
-  sheep: { label: "Sheep", emoji: "🐑", bg: "bg-lime-950", border: "border-lime-700" },
-  wheat: { label: "Wheat", emoji: "🌾", bg: "bg-yellow-950", border: "border-yellow-700" },
+  lumber: { label: "Lumber", emoji: "🌲", bg: "bg-emerald-950", border: "border-emerald-700" },
+  wool: { label: "Wool", emoji: "🐑", bg: "bg-lime-950", border: "border-lime-700" },
+  grain: { label: "Grain", emoji: "🌾", bg: "bg-yellow-950", border: "border-yellow-700" },
   ore: { label: "Ore", emoji: "⛰️", bg: "bg-slate-800", border: "border-slate-600" },
+  desert: { label: "Desert", emoji: "🏜️", bg: "bg-amber-950", border: "border-amber-800" },
+  water: { label: "Water", emoji: "💧", bg: "bg-sky-950", border: "border-sky-700" },
 };
 
+export const DEV_TYPES_PLAYED_STRIP: DevelopmentCardType[] = [
+  "knight",
+  "monopoly",
+  "roadBuilding",
+  "yearOfPlenty",
+  "victoryPoint",
+];
+
 export const DEV_META: Record<
-  DevCardType,
+  DevelopmentCardType,
   { label: string; emoji: string; bg: string; border: string }
 > = {
   knight: { label: "Knight", emoji: "⚔️", bg: "bg-purple-950", border: "border-purple-700" },
   monopoly: { label: "Monopoly", emoji: "🏦", bg: "bg-indigo-950", border: "border-indigo-700" },
-  road_building: { label: "Road Building", emoji: "🛣️", bg: "bg-amber-950", border: "border-amber-700" },
-  year_of_plenty: { label: "Year of Plenty", emoji: "🌟", bg: "bg-teal-950", border: "border-teal-700" },
-  vp: { label: "Victory Point", emoji: "🏆", bg: "bg-rose-950", border: "border-rose-700" },
+  roadBuilding: {
+    label: "Road Building",
+    emoji: "🛣️",
+    bg: "bg-amber-950",
+    border: "border-amber-700",
+  },
+  yearOfPlenty: {
+    label: "Year of Plenty",
+    emoji: "🌟",
+    bg: "bg-teal-950",
+    border: "border-teal-700",
+  },
+  victoryPoint: {
+    label: "Victory Point",
+    emoji: "🏆",
+    bg: "bg-rose-950",
+    border: "border-rose-700",
+  },
 };

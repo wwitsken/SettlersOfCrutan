@@ -1,32 +1,28 @@
 import type { ReactNode } from "react";
-import type {
-  ChatMessage,
-  DevCardType,
-  Player,
-  PlayerColor,
-  PlayedDevCards,
-  ResourceHand,
-  ResourceType,
-  UnplayedDevCard,
-} from "../../types/catan";
-import { COLOR_TEXT_MAP } from "../../constants/catanMeta";
+import type { Player } from "../../domain/game/player";
+import type { DevelopmentCardType } from "../../domain/game/gameTypes";
+import type { ChatMessage } from "../../types/catan";
+import {
+  COLOR_TEXT_MAP,
+  DEV_TYPES_PLAYED_STRIP,
+  RESOURCE_HAND_TYPES,
+} from "../../constants/catanMeta";
 import PlayerRow from "../game/PlayerRow";
 import ResourceCard from "../game/ResourceCard";
-import UnplayedDevCardTile from "../game/UnplayedDevCardTile";
+import UnplayedDevCardTile, {
+  type UnplayedDevCardView,
+} from "../game/UnplayedDevCardTile";
 import PlayedDevCardTile from "../game/PlayedDevCardTile";
 import ChatPanel from "../game/ChatPanel";
 
-const RESOURCE_TYPES: ResourceType[] = ["wood", "brick", "sheep", "wheat", "ore"];
-const DEV_TYPES: DevCardType[] = ["knight", "monopoly", "road_building", "year_of_plenty", "vp"];
-
 interface CatanLayoutProps {
-  players: Player[];
+  players: (Player & { isCurrentTurn: boolean })[];
   chatMessages: ChatMessage[];
-  resourceHand: ResourceHand;
-  unplayedDevCards: UnplayedDevCard[];
-  playedDevCards: PlayedDevCards;
+  resourceHand: Record<string, number>;
+  unplayedDevCards: UnplayedDevCardView[];
+  playedDevCards: Record<DevelopmentCardType, number>;
   currentPlayerName: string;
-  currentPlayerColor: PlayerColor;
+  currentPlayerColor: Player["playerColor"];
   boardSlot: ReactNode;
   actionBarSlot: ReactNode;
 }
@@ -64,7 +60,11 @@ export default function CatanLayout({
               Players
             </div>
             {players.map((p) => (
-              <PlayerRow key={p.id} player={p} />
+              <PlayerRow
+                key={p.id}
+                player={p}
+                isCurrentTurn={p.isCurrentTurn}
+              />
             ))}
             {players.length === 0 && (
               <span className="text-xs text-stone-700 italic px-1">No players loaded</span>
@@ -97,8 +97,8 @@ export default function CatanLayout({
             )}
           </div>
           <div className="flex gap-2 flex-wrap">
-            {RESOURCE_TYPES.map((r) => (
-              <ResourceCard key={r} type={r} count={resourceHand[r]} />
+            {RESOURCE_HAND_TYPES.map((r) => (
+              <ResourceCard key={r} type={r} count={resourceHand[r] ?? 0} />
             ))}
           </div>
         </div>
@@ -124,10 +124,10 @@ export default function CatanLayout({
             Played Dev Cards
           </div>
           <div className="flex gap-2 flex-wrap">
-            {DEV_TYPES.map((t) => (
-              <PlayedDevCardTile key={t} type={t} count={playedDevCards[t]} />
+            {DEV_TYPES_PLAYED_STRIP.map((t) => (
+              <PlayedDevCardTile key={t} type={t} count={playedDevCards[t] ?? 0} />
             ))}
-            {DEV_TYPES.every((t) => playedDevCards[t] === 0) && (
+            {DEV_TYPES_PLAYED_STRIP.every((t) => (playedDevCards[t] ?? 0) === 0) && (
               <span className="text-xs text-stone-700 italic">None played yet</span>
             )}
           </div>
