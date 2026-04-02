@@ -12,6 +12,7 @@ import GamePage from "./pages/GamePage.tsx";
 import { MsalProvider } from "@azure/msal-react";
 
 import { msalInstance } from "./authConfig.ts";
+import { DevSessionUserProvider } from "./context/DevSessionUserContext";
 import { SignalRProvider } from "./context/SignalRProvider";
 
 await msalInstance.initialize();
@@ -36,9 +37,11 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <MsalProvider instance={msalInstance}>
-      <SignalRProvider>
-        <RouterProvider router={router} />
-      </SignalRProvider>
+      <DevSessionUserProvider>
+        <SignalRProvider>
+          <RouterProvider router={router} />
+        </SignalRProvider>
+      </DevSessionUserProvider>
     </MsalProvider>
   </StrictMode>
 );

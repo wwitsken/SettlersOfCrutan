@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Identity.Web;
@@ -31,10 +32,43 @@ builder.Services.AddSignalR()
 
 // HTTP Context
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IUserProvider, UserProvider>();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApi(builder.Configuration);
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddScoped<IUserProvider, DevelopmentUserProvider>();
+    const string devOrJwtScheme = "DevOrJwt";
+    builder.Services.AddAuthentication(devOrJwtScheme)
+        .AddPolicyScheme(devOrJwtScheme, devOrJwtScheme, options =>
+        {
+            options.ForwardDefaultSelector = context =>
+            {
+                if (context.Request.Headers.TryGetValue(DevUserImpersonation.HeaderName, out var headerValues))
+                {
+                    var h = headerValues.ToString();
+                    if (!string.IsNullOrWhiteSpace(h))
+                        return DevUserIdAuthenticationHandler.SchemeName;
+                }
+
+                if (context.Request.Path.StartsWithSegments("/api/realtime-hub")
+                    && context.Request.Query.TryGetValue(DevUserImpersonation.SignalRQueryParameter, out var q)
+                    && !string.IsNullOrWhiteSpace(q))
+                    return DevUserIdAuthenticationHandler.SchemeName;
+
+                return JwtBearerDefaults.AuthenticationScheme;
+            };
+        })
+        .AddScheme<AuthenticationSchemeOptions, DevUserIdAuthenticationHandler>(
+            DevUserIdAuthenticationHandler.SchemeName,
+            displayName: null,
+            configureOptions: null)
+        .AddMicrosoftIdentityWebApi(builder.Configuration);
+}
+else
+{
+    builder.Services.AddScoped<IUserProvider, UserProvider>();
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddMicrosoftIdentityWebApi(builder.Configuration);
+}
 
 
 builder.Services.AddAuthorizationBuilder()

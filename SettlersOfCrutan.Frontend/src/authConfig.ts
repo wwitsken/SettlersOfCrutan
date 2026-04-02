@@ -1,5 +1,6 @@
 import type { Configuration, SilentRequest } from "@azure/msal-browser";
 import { PublicClientApplication } from "@azure/msal-browser";
+import { isDevImpersonationActive } from "./auth/devSessionUser";
 
 export const msalConfig: Configuration = {
   auth: {
@@ -41,3 +42,22 @@ export const acquireAccessToken = async () => {
 
   return authResult.accessToken;
 };
+
+/** Silent MSAL token for API/SignalR; returns undefined if not signed in or silent acquisition fails. */
+export async function getAccessTokenForApi(): Promise<string | undefined> {
+  try {
+    return await acquireAccessToken();
+  } catch {
+    return undefined;
+  }
+}
+
+/** Token for openapi-fetch calls: in dev with mock user id, MSAL is optional. */
+export async function getAccessTokenForOpenApi(): Promise<string | undefined> {
+  if (isDevImpersonationActive()) return getAccessTokenForApi();
+  try {
+    return await acquireAccessToken();
+  } catch {
+    return undefined;
+  }
+}

@@ -1,4 +1,5 @@
-﻿using SettlersOfCrutan.Domain.Core;
+﻿using System.Text.Json.Serialization;
+using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.Resources;
 
@@ -15,7 +16,24 @@ public class TradeOffer : Entity<TradeOfferId>
 
     private List<ResourceCardAmount> _offeredResources = [];
     public List<ResourceCardAmount> OfferedResources { get => [.. _offeredResources]; set => _offeredResources = value; }
+
+    [JsonIgnore]
     public bool IsAccepted => AcceptorId is not null;
+
+    [JsonConstructor]
+    private TradeOffer(
+        TradeOfferId id,
+        PlayerId proposerId,
+        PlayerId? acceptorId,
+        List<ResourceCardAmount> requestedResources,
+        List<ResourceCardAmount> offeredResources)
+    {
+        Id = id;
+        ProposerId = proposerId;
+        AcceptorId = acceptorId;
+        _requestedResources = requestedResources ?? [];
+        _offeredResources = offeredResources ?? [];
+    }
 
     private TradeOffer(PlayerId proposerId, List<ResourceCardAmount> requestedResources, List<ResourceCardAmount> offeredResources)
     {

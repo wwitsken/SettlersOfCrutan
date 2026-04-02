@@ -5,7 +5,7 @@ import { GameStoreDebugView } from "../components/dev/GameStoreDebugView";
 import { useGameSignalR } from "../hooks/useGameSignalR";
 import { useGamesStore } from "../stores/gameStore";
 import { api } from "../api/client";
-import { acquireAccessToken } from "../authConfig";
+import { getAccessTokenForOpenApi } from "../authConfig";
 import { resolveBoardView } from "../domain/game/boardView";
 import { game as exampleGame } from "../domain/game/gameExample";
 import { applyGamePayloadFromApi } from "../stores/applyGamePayload";
@@ -101,7 +101,7 @@ function GamePage() {
       setLoading(gameId);
       const { data, error, response } = await api.GET("/api/games/{id}", {
         params: { path: { id: gameId } },
-        accessToken: await acquireAccessToken(),
+        accessToken: (await getAccessTokenForOpenApi()) ?? "",
       });
       if (cancelled) return;
       if (error || response.status !== 200 || !data) {

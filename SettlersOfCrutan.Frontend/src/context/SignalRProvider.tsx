@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PropsWithChildren } from "react";
 import * as signalR from "@microsoft/signalr";
-import { acquireAccessToken } from "../authConfig";
+import { getAccessTokenForApi } from "../authConfig";
+import { DEV_USER_QUERY_PARAM } from "../auth/devSessionUser";
 import {
   SignalRContext,
   type SignalRContextValue,
   type HandlerMap,
 } from "./SignalRContext";
+import { useDevSessionUser } from "./DevSessionUserContext";
 
 interface SignalRProviderProps {
   hubUrl?: string; // default to "/api/realtime-hub"
@@ -18,6 +20,14 @@ export function SignalRProvider({
   handlers,
   children,
 }: PropsWithChildren<SignalRProviderProps>) {
+  const { devUserId } = useDevSessionUser();
+  const resolvedHubUrl = useMemo(() => {
+    const trimmed = devUserId.trim();
+    if (!import.meta.env.DEV || !trimmed) return hubUrl;
+    const sep = hubUrl.includes("?") ? "&" : "?";
+    return `${hubUrl}${sep}${DEV_USER_QUERY_PARAM}=${encodeURIComponent(trimmed)}`;
+  }, [hubUrl, devUserId]);
+
   // Single connection instance owned by the provider
   const connectionRef = useRef<signalR.HubConnection | null>(null);
   // Idempotent start() management to avoid parallel starts
@@ -36,13 +46,13 @@ export function SignalRProvider({
   // Build a new HubConnection for the given hubUrl
   const buildHubConnection = useCallback(() => {
     return new signalR.HubConnectionBuilder()
-      .withUrl(hubUrl, {
-        accessTokenFactory: () => acquireAccessToken(),
+      .withUrl(resolvedHubUrl, {
+        accessTokenFactory: async () => (await getAccessTokenForApi()) ?? "",
       })
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Information)
       .build();
-  }, [hubUrl]);
+  }, [resolvedHubUrl]);
 
   // Attach lifecycle event handlers and register any pending handlers
   const configureConnection = useCallback((conn: signalR.HubConnection) => {
@@ -91,7 +101,7 @@ export function SignalRProvider({
 
     configureConnection(connection);
 
-    // Cleanup on unmount / hubUrl change
+    // Cleanup on unmount / hub URL change
     return () => {
       (async () => {
         try {
@@ -109,8 +119,7 @@ export function SignalRProvider({
         }
       })();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hubUrl, acquireAccessToken]);
+  }, [resolvedHubUrl, buildHubConnection, configureConnection]);
 
   const registerHandlers = useCallback((map: HandlerMap) => {
     if (!map) return;

@@ -1,24 +1,33 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "./types";
-import { acquireAccessToken } from "../authConfig";
+import { getAccessTokenForApi } from "../authConfig";
+import {
+  DEV_USER_HEADER,
+  readDevSessionUserIdFromStorage,
+} from "../auth/devSessionUser";
 
 let accessToken: string | undefined = undefined;
 
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
-    // fetch token, if it doesn’t exist
+    const devId = readDevSessionUserIdFromStorage();
+    if (import.meta.env.DEV && devId)
+      request.headers.set(DEV_USER_HEADER, devId);
+    else request.headers.delete(DEV_USER_HEADER);
+
     if (!accessToken) {
-      try {
-        accessToken = await acquireAccessToken();
-      } catch {
+      accessToken = await getAccessTokenForApi();
+      if (!accessToken && !devId) {
         console.warn(
-          "No access token found for request. Attempting unauthenticated request."
+          "No access token found for request. Attempting unauthenticated request.",
         );
-        accessToken = undefined;
       }
     }
 
-    request.headers.set("Authorization", `Bearer ${accessToken}`);
+    if (accessToken)
+      request.headers.set("Authorization", `Bearer ${accessToken}`);
+    else request.headers.delete("Authorization");
+
     return request;
   },
 };

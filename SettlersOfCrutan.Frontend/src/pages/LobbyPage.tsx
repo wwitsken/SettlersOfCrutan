@@ -7,7 +7,7 @@ import {
 } from "react-router";
 import { useLobbyStore } from "../stores/lobbyStore";
 import { api } from "../api/client";
-import { acquireAccessToken } from "../authConfig";
+import { getAccessTokenForOpenApi } from "../authConfig";
 import { useSignalRContext } from "../context/SignalRContext";
 import { lobbyDtoToDomain } from "../domain/lobby/mapLobbyDto";
 import { lobbyFullStateEvents } from "../realtime/realtimeEvents";
@@ -21,7 +21,7 @@ export async function LobbyLoader(args: LoaderFunctionArgs) {
         lobbyId: args.params.lobbyId,
       },
     },
-    accessToken: await acquireAccessToken(),
+    accessToken: (await getAccessTokenForOpenApi()) ?? "",
   });
   return { data, loadedStatus: response.status };
 }

@@ -1,5 +1,6 @@
 import { api } from "./client";
-import { acquireAccessToken } from "../authConfig";
+import { acquireAccessToken, getAccessTokenForApi } from "../authConfig";
+import { isDevImpersonationActive } from "../auth/devSessionUser";
 import type { components } from "./types";
 
 type EdgeCoordDto = components["schemas"]["EdgeCoordDto"];
@@ -20,6 +21,9 @@ function problemMessage(status: number, body: unknown): string {
 }
 
 async function tokenOrErr(): Promise<string | CommandResult> {
+  if (isDevImpersonationActive()) {
+    return (await getAccessTokenForApi()) ?? "";
+  }
   try {
     return await acquireAccessToken();
   } catch {
