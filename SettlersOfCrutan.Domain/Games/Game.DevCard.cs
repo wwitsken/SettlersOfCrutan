@@ -44,6 +44,7 @@ public partial class Game
         var r2 = Board.PlaceRoadNoFail(playerId, edge2);
 
         player.UseDevCardToBank(BankDevCardHand, DevelopmentCardType.RoadBuilding);
+        player.RecordNonKnightDevelopmentCardPlayed(DevelopmentCardType.RoadBuilding);
         player.ConsumePiece(BuildableType.Road, 2);
 
         AddDomainEvent(new RoadBuildingCardPlayedDomainEvent(Id, playerId, r1, r2));
@@ -81,6 +82,7 @@ public partial class Game
         }
 
         player.UseDevCardToBank(BankDevCardHand, DevelopmentCardType.Monopoly);
+        player.RecordNonKnightDevelopmentCardPlayed(DevelopmentCardType.Monopoly);
         AddDomainEvent(new MonopolyCardPlayedDomainEvent(Id, playerId, resourceType, stolenPerPlayer, totalStolen));
         return Result.Success(totalStolen);
     }
@@ -109,6 +111,7 @@ public partial class Game
         player.AddResource(t1); player.AddResource(t2);
         BankResourceHand.Subtract(t1); BankResourceHand.Subtract(t2);
         player.UseDevCardToBank(BankDevCardHand, DevelopmentCardType.YearOfPlenty);
+        player.RecordNonKnightDevelopmentCardPlayed(DevelopmentCardType.YearOfPlenty);
         AddDomainEvent(new YearOfPlentyCardPlayedDomainEvent(Id, playerId, t1, t2));
         return Result.Success((t1, t2));
     }

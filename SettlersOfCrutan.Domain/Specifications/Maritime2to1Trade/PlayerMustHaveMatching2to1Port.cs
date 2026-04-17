@@ -21,11 +21,8 @@ public class PlayerMustHaveMatching2to1Port : ISpecification<Maritime2to1TradeCo
 
         bool has2to1 = context.Board.PopulationCenters.Any(pc =>
             pc.PlayerOwner == context.ActingPlayerId &&
-            context.Board.Ports
-                .Where(p => p.Type == required)
-                .SelectMany(p => p.EdgeCoordinate.HexCoords())
-                .Intersect(pc.VertexCoordinate.HexCoords())
-                .Any());
+            context.Board.Ports.Any(p =>
+                p.Type == required && PortVertexAdjacency.PopulationCenterTouchesPort(p, pc)));
 
         return has2to1 ? Result.Success() : Result.Failure(DomainError.Missing2to1Port);
     }

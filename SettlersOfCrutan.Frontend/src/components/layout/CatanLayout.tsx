@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Player } from "../../domain/game/player";
 import type { DevelopmentCardType } from "../../domain/game/gameTypes";
+import type { ResourceCardType } from "../../domain/game/gameTypes";
 import type { ChatMessage } from "../../types/catan";
 import {
   COLOR_TEXT_MAP,
@@ -25,6 +26,13 @@ interface CatanLayoutProps {
   currentPlayerColor: Player["playerColor"];
   boardSlot: ReactNode;
   actionBarSlot: ReactNode;
+  resourceMaritimeEnabled: boolean;
+  onResourceCardMaritime?: (
+    resource: ResourceCardType,
+    anchorEl: HTMLButtonElement,
+  ) => void;
+  unplayedDevPlayEnabled: boolean;
+  onUnplayedDevCardClick?: (type: DevelopmentCardType) => void;
 }
 
 export default function CatanLayout({
@@ -37,6 +45,10 @@ export default function CatanLayout({
   currentPlayerColor,
   boardSlot,
   actionBarSlot,
+  resourceMaritimeEnabled,
+  onResourceCardMaritime,
+  unplayedDevPlayEnabled,
+  onUnplayedDevCardClick,
 }: CatanLayoutProps) {
   return (
     <div
@@ -98,7 +110,18 @@ export default function CatanLayout({
           </div>
           <div className="flex gap-2 flex-wrap">
             {RESOURCE_HAND_TYPES.map((r) => (
-              <ResourceCard key={r} type={r} count={resourceHand[r] ?? 0} />
+              <ResourceCard
+                key={r}
+                type={r}
+                count={resourceHand[r] ?? 0}
+                interactive={resourceMaritimeEnabled && !!onResourceCardMaritime}
+                disabled={!resourceMaritimeEnabled || !onResourceCardMaritime}
+                onClick={
+                  onResourceCardMaritime && resourceMaritimeEnabled
+                    ? (anchorEl) => onResourceCardMaritime(r, anchorEl)
+                    : undefined
+                }
+              />
             ))}
           </div>
         </div>
@@ -110,7 +133,16 @@ export default function CatanLayout({
           </div>
           <div className="flex gap-2 flex-wrap">
             {unplayedDevCards.map((card) => (
-              <UnplayedDevCardTile key={card.id} card={card} />
+              <UnplayedDevCardTile
+                key={card.id}
+                card={card}
+                disabled={!unplayedDevPlayEnabled || !onUnplayedDevCardClick}
+                onClick={
+                  onUnplayedDevCardClick && unplayedDevPlayEnabled
+                    ? () => onUnplayedDevCardClick(card.type)
+                    : undefined
+                }
+              />
             ))}
             {unplayedDevCards.length === 0 && (
               <span className="text-xs text-stone-700 italic">None held</span>

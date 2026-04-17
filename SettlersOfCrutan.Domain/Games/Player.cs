@@ -41,6 +41,10 @@ public class Player : Entity<PlayerId>
     [JsonInclude]
     public int KnightsPlayed { get; private set; }
 
+    /// <summary>Monopoly / year of plenty / road building cards played (face-up); knights use <see cref="KnightsPlayed"/>.</summary>
+    [JsonInclude]
+    public Dictionary<DevelopmentCardType, int> PlayedNonKnightDevelopmentCards { get; private set; } = [];
+
     // Public read-only projections
     public int TotalResources => ResourceHand.Total;
     public int DevCardCount => DevCardHand.Total;
@@ -69,7 +73,8 @@ public class Player : Entity<PlayerId>
                    PieceReserve pieceReserve,
                    DateTimeOffset? joinedAt,
                    bool ready,
-                   int knightsPlayed = 0)
+                   int knightsPlayed = 0,
+                   Dictionary<DevelopmentCardType, int>? playedNonKnightDevelopmentCards = null)
     {
         Id = id;
         UserId = userId;
@@ -81,9 +86,27 @@ public class Player : Entity<PlayerId>
         JoinedAt = joinedAt;
         _ready = ready;
         KnightsPlayed = knightsPlayed;
+        if (playedNonKnightDevelopmentCards is { Count: > 0 })
+            PlayedNonKnightDevelopmentCards = new Dictionary<DevelopmentCardType, int>(playedNonKnightDevelopmentCards);
     }
 
     public void IncrementKnightsPlayed() => KnightsPlayed++;
+
+    public int GetPlayedDevelopmentCardCount(DevelopmentCardType type) =>
+        type switch
+        {
+            DevelopmentCardType.Knight => KnightsPlayed,
+            DevelopmentCardType.VictoryPoint => 0,
+            _ => PlayedNonKnightDevelopmentCards.GetValueOrDefault(type),
+        };
+
+    /// <summary>Call after a non-knight dev card is used (card already moved to bank).</summary>
+    public void RecordNonKnightDevelopmentCardPlayed(DevelopmentCardType type)
+    {
+        if (type is DevelopmentCardType.Knight or DevelopmentCardType.VictoryPoint)
+            throw new ArgumentException($"Unexpected type: {type}", nameof(type));
+        PlayedNonKnightDevelopmentCards[type] = GetPlayedDevelopmentCardCount(type) + 1;
+    }
 
     // -------- Resource methods --------
     public bool CanPayResources(IEnumerable<ResourceCardAmount> cost) => ResourceHand.CanPay(cost);

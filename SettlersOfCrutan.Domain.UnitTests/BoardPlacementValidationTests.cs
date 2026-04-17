@@ -24,6 +24,15 @@ public class EdgeFactoryConnectivityTests
         Assert.Equal(2, inc.Length);
         Assert.True(EdgeFactory.ConnectsToEdge(inc[0], inc[1]));
     }
+
+    [Fact]
+    public void ConnectsToEdge_AdjacentNW_and_SW_edges_on_same_hex_share_vertex()
+    {
+        var h = new HexCoord(-1, 0, 1);
+        var road = new Edge(new HexCoord(-2, 0, 2), h).Normalize();
+        var candidate = new Edge(h, new HexCoord(-2, 1, 1)).Normalize();
+        Assert.True(EdgeFactory.ConnectsToEdge(road, candidate));
+    }
 }
 
 public class BoardPlacementValidationTests

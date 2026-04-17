@@ -1687,6 +1687,9 @@ export interface components {
             myHand: components["schemas"]["MyHandDto"];
             /** Format: int32 */
             myScore?: number;
+            playedDevelopmentCards?: {
+                [key: string]: number;
+            };
             buildableRoads?: components["schemas"]["HexCoordinateDto"][][];
             buildableSettlements?: components["schemas"]["HexCoordinateDto"][][];
         };

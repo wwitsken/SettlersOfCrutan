@@ -11,6 +11,8 @@ export type PrivateGameInfo = {
   myPlayerId: string;
   myHand: MyHand;
   myScore: number;
+  /** Face-up dev plays for this user (knight, monopoly, etc.). */
+  playedDevelopmentCards: Record<string, number>;
   buildableRoads: HexCoordinate[][];
   buildableSettlements: HexCoordinate[][];
 };

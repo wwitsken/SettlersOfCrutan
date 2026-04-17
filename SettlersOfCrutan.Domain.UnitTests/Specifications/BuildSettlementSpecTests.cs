@@ -112,22 +112,39 @@ public class BuildSettlementSpecTests
     {
         var board = new Board();
         var pid = new PlayerId { Value = "p1" };
-        var seedEdge = VertexFactory.IncidentRoadEdges(ValidVertex).First();
-        board.PlaceInitialSettlementAndRoad(pid, ValidVertex, seedEdge);
+        var v0 = ValidVertex.Normalize();
+        var seedEdge = VertexFactory.IncidentRoadEdges(v0).First();
+        Assert.True(board.PlaceInitialSettlementAndRoad(pid, v0, seedEdge).IsSuccess);
 
-        var farVertex = VertexFactory.FromHexCorner(Origin, HexCornerDirection.SW);
-        var farEdge = VertexFactory.IncidentRoadEdges(farVertex).First();
-        board.PlaceInitialSettlementAndRoad(pid, farVertex, farEdge);
+        var road1 = VertexFactory.IncidentRoadEdges(v0).First(e => !e.Normalize().Equals(seedEdge.Normalize()));
+        Assert.True(board.BuildRoad(pid, road1).IsSuccess);
 
-        var buildEdge = VertexFactory.IncidentRoadEdges(ValidVertex).Skip(1).First();
-        board.BuildRoad(pid, buildEdge);
+        var (a1, b1) = VertexFactory.EndpointsForEdge(road1);
+        var vm = (a1.Normalize().Equals(v0) ? b1 : a1).Normalize();
 
-        var (epA, epB) = VertexFactory.EndpointsForEdge(buildEdge);
-        var target = epA.Normalize().Equals(ValidVertex.Normalize()) ? epB : epA;
+        var v0Neighbors = VertexFactory.GetAdjacentVertices(v0).Select(n => n.Normalize()).ToHashSet();
+        Vertex? target = null;
+        Edge? road2 = null;
+        foreach (var e in VertexFactory.IncidentRoadEdges(vm))
+        {
+            if (e.Normalize().Equals(road1.Normalize())) continue;
+            var (a2, b2) = VertexFactory.EndpointsForEdge(e);
+            var far = (a2.Normalize().Equals(vm) ? b2 : a2).Normalize();
+            if (!v0Neighbors.Contains(far))
+            {
+                road2 = e;
+                target = far;
+                break;
+            }
+        }
+
+        Assert.NotNull(road2);
+        Assert.NotNull(target);
+        Assert.True(board.BuildRoad(pid, road2.Value).IsSuccess);
 
         var result = new BoardMustAllowSettlementPlacement().IsSatisfiedBy(
-            MakeContext(board: board, actingPlayerId: pid, vertex: target));
-        Assert.True(result.IsSuccess);
+            MakeContext(board: board, actingPlayerId: pid, vertex: target.Value));
+        Assert.True(result.IsSuccess, result.IsFailure ? $"{result.Error.Code}: {result.Error.Message}" : "");
     }
 
     [Fact]

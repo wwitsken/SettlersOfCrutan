@@ -87,9 +87,22 @@ public static class GameMappingExtensions
                 Buildables: player.GetBuildables()
             ),
             MyScore = observable + hiddenVpCards,
+            PlayedDevelopmentCards = BuildPlayedDevelopmentCards(player),
             BuildableRoads = [.. game.GetBuildableRoads(player.Id).Select(ToHexCoordinateDtos)],
             BuildableSettlements = [.. game.GetBuildableSettlements(player.Id).Select(ToHexCoordinateDtos)]
         };
+    }
+
+    private static Dictionary<DevelopmentCardType, int> BuildPlayedDevelopmentCards(Player player)
+    {
+        var d = new Dictionary<DevelopmentCardType, int>();
+        foreach (DevelopmentCardType t in Enum.GetValues<DevelopmentCardType>())
+        {
+            var c = player.GetPlayedDevelopmentCardCount(t);
+            if (c > 0)
+                d[t] = c;
+        }
+        return d;
     }
 
     private static AppBoardDto ToDto(this Board board)

@@ -11,10 +11,7 @@ import { game as exampleGame } from "../domain/game/gameExample";
 import { applyGamePayloadFromApi } from "../stores/applyGamePayload";
 import { GameActionBar } from "../components/game/GameActionBar";
 import { IncomingTradeBar } from "../components/game/IncomingTradeBar";
-import {
-  MaritimeTradeDialog,
-  type MaritimeRatio,
-} from "../components/game/MaritimeTradeDialog";
+import { ResourceMaritimePopover } from "../components/game/ResourceMaritimePopover";
 import { ProposeTradeDialog } from "../components/game/ProposeTradeDialog";
 import { DiscardHalfDialog } from "../components/game/DiscardHalfDialog";
 import { RobberVictimPicker } from "../components/game/RobberVictimPicker";
@@ -24,8 +21,14 @@ import { deriveBoardInteraction } from "../domain/game/boardInteraction";
 import { getCurrentPlayer, playersForLayout } from "../domain/game/selectors";
 import { getPlayerIdsExposedToHex } from "../domain/game/robberExposure";
 import { toHexCoordDto, vertexDtoToHexes } from "../domain/game/hexCoords";
-import { expandUnplayedDevCards, emptyPlayedDevCards } from "../domain/game/devHandUi";
+import {
+  expandUnplayedDevCards,
+  mergePlayedDevCardsFromApi,
+} from "../domain/game/devHandUi";
+import { bestMaritimeRatio } from "../domain/game/maritimeEligibility";
 import type { HexCoordinate } from "../domain/game/board";
+import type { DevelopmentCardType } from "../domain/game/gameTypes";
+import type { ResourceCardType } from "../domain/game/gameTypes";
 import type { components } from "../api/types";
 import {
   postBuildRoad,
@@ -82,8 +85,11 @@ function GamePage() {
   const [monopolyOpen, setMonopolyOpen] = useState(false);
   const [yearOpen, setYearOpen] = useState(false);
   const [proposeTradeOpen, setProposeTradeOpen] = useState(false);
-  const [maritimeOpen, setMaritimeOpen] = useState(false);
-  const [maritimeRatio, setMaritimeRatio] = useState<MaritimeRatio>(4);
+  const [maritimePopover, setMaritimePopover] = useState<{
+    discard: ResourceCardType;
+    anchorEl: HTMLButtonElement;
+  } | null>(null);
+  const [handHint, setHandHint] = useState<string | null>(null);
   const [devBusy, setDevBusy] = useState(false);
   const [devErr, setDevErr] = useState<string | null>(null);
   const [robberBusy, setRobberBusy] = useState(false);
@@ -120,6 +126,12 @@ function GamePage() {
       cancelled = true;
     };
   }, [gameId, setLoading, setError]);
+
+  useEffect(() => {
+    if (!handHint) return;
+    const t = window.setTimeout(() => setHandHint(null), 3200);
+    return () => window.clearTimeout(t);
+  }, [handHint]);
 
   const boardView = resolveBoardView(status, game);
   const boardGame = boardView === "loading" ? exampleGame : game ?? exampleGame;
@@ -171,6 +183,17 @@ function GamePage() {
 
   const showLiveHud = boardView === "live" && !!game && !!gameId;
 
+  const blockForRobberFlow =
+    !!(isMyTurn && game?.gamePhase === "resolveRobber") || awaitingKnightRobberHex;
+  const toolbarIdle = !devRoadPicking && !blockForRobberFlow;
+  const resourceMaritimeEnabled =
+    showLiveHud &&
+    isMyTurn &&
+    game?.gamePhase === "tradeBuild" &&
+    toolbarIdle &&
+    !!privateGame;
+  const unplayedDevPlayEnabled = resourceMaritimeEnabled;
+
   const incomingTrade =
     showLiveHud &&
     privateGame &&
@@ -211,7 +234,10 @@ function GamePage() {
     () => expandUnplayedDevCards(privateGame?.myHand.devCards ?? {}),
     [privateGame],
   );
-  const layoutPlayedDevCards = useMemo(() => emptyPlayedDevCards(), []);
+  const layoutPlayedDevCards = useMemo(
+    () => mergePlayedDevCardsFromApi(privateGame?.playedDevelopmentCards),
+    [privateGame],
+  );
 
   const runCmd = useCallback(
     async (fn: () => Promise<{ ok: boolean; errorMessage?: string }>) => {
@@ -389,6 +415,37 @@ function GamePage() {
     startDevRoadFlow();
   };
 
+  const handleUnplayedDevCardClick = (type: DevelopmentCardType) => {
+    if (!unplayedDevPlayEnabled) return;
+    switch (type) {
+      case "knight":
+        onPlayKnight();
+        break;
+      case "monopoly":
+        onPlayMonopoly();
+        break;
+      case "yearOfPlenty":
+        onPlayYearOfPlenty();
+        break;
+      case "roadBuilding":
+        onPlayRoadBuilding();
+        break;
+      case "victoryPoint":
+        setHandHint("Victory point cards cannot be played.");
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleResourceCardMaritime = (
+    discard: ResourceCardType,
+    anchorEl: HTMLButtonElement,
+  ) => {
+    if (!resourceMaritimeEnabled) return;
+    setMaritimePopover({ discard, anchorEl });
+  };
+
   const boardSlot = (
     <>
       {(showLoadingBanner || showExampleBanner) && (
@@ -455,15 +512,7 @@ function GamePage() {
       onRollDice={handleRollDice}
       onEndTurn={handleEndTurn}
       onBuyDevCard={handleBuyDevCard}
-      onPlayKnight={onPlayKnight}
-      onPlayMonopoly={onPlayMonopoly}
-      onPlayYearOfPlenty={onPlayYearOfPlenty}
-      onPlayRoadBuilding={onPlayRoadBuilding}
       onProposeTrade={() => setProposeTradeOpen(true)}
-      onMaritimeTrade={(ratio) => {
-        setMaritimeRatio(ratio);
-        setMaritimeOpen(true);
-      }}
     />
   );
 
@@ -506,6 +555,15 @@ function GamePage() {
         </div>
       )}
 
+      {handHint && (
+        <div
+          className="px-4 py-2 text-sm text-stone-200 bg-stone-800 border-b border-stone-600"
+          role="status"
+        >
+          {handHint}
+        </div>
+      )}
+
       {incomingTrade && privateGame && gameId && (
         <IncomingTradeBar
           show
@@ -526,6 +584,10 @@ function GamePage() {
         currentPlayerColor={me?.playerColor ?? "none"}
         boardSlot={boardSlot}
         actionBarSlot={actionBarSlot}
+        resourceMaritimeEnabled={resourceMaritimeEnabled}
+        onResourceCardMaritime={handleResourceCardMaritime}
+        unplayedDevPlayEnabled={unplayedDevPlayEnabled}
+        onUnplayedDevCardClick={handleUnplayedDevCardClick}
       />
 
       {proposeTradeOpen && privateGame && gameId && (
@@ -537,14 +599,20 @@ function GamePage() {
         />
       )}
 
-      {maritimeOpen && game && privateGame && gameId && (
-        <MaritimeTradeDialog
-          open={maritimeOpen}
-          ratio={maritimeRatio}
+      {maritimePopover && game && privateGame && gameId && (
+        <ResourceMaritimePopover
           gameId={gameId}
           game={game}
           privateGame={privateGame}
-          onClose={() => setMaritimeOpen(false)}
+          discard={maritimePopover.discard}
+          ratio={bestMaritimeRatio(
+            game,
+            privateGame.myPlayerId,
+            maritimePopover.discard,
+            privateGame.myHand.resources[maritimePopover.discard] ?? 0,
+          )}
+          anchorEl={maritimePopover.anchorEl}
+          onClose={() => setMaritimePopover(null)}
         />
       )}
 

@@ -19,9 +19,9 @@ public static class VertexFactory
         // 2. For a given hex and corner, find the two adjacent hexes that share that corner.
         // 3. Return a VertexCoord with the three hexes.
 
-        // Hex corners in axial coordinates:
-        // NE: hex, hex + NE, hex + NW
-        // E:  hex, hex + SE, hex + NE
+        // Hex corners (each is the three hexes meeting at that vertex — the two edge neighbors must share an edge):
+        // NE: hex, hex + N,  hex + NE   (between N and NE edges)
+        // E:  hex, hex + SE, hex + NE (between SE and NE edges)
         // SE: hex, hex + S,  hex + SE
         // SW: hex, hex + SW, hex + S
         // W:  hex, hex + NW, hex + SW
@@ -31,8 +31,8 @@ public static class VertexFactory
         switch (corner)
         {
             case HexCornerDirection.NE:
-                h2 = FromHexEdge(hex, HexEdgeDirection.NE);
-                h3 = FromHexEdge(hex, HexEdgeDirection.NW);
+                h2 = FromHexEdge(hex, HexEdgeDirection.N);
+                h3 = FromHexEdge(hex, HexEdgeDirection.NE);
                 break;
             case HexCornerDirection.E:
                 h2 = FromHexEdge(hex, HexEdgeDirection.SE);

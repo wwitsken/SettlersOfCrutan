@@ -295,6 +295,9 @@ function mapPrivateGameFromPayload(root: Record<string, unknown>): PrivateGameIn
     myPlayerId,
     myHand,
     myScore: num(o.myScore as number | undefined),
+    playedDevelopmentCards: mapStringNumDict(
+      o.playedDevelopmentCards ?? o.PlayedDevelopmentCards ?? {},
+    ),
     buildableRoads: mapCoordMatrix(roadLists),
     buildableSettlements: mapCoordMatrix(settleLists),
   };

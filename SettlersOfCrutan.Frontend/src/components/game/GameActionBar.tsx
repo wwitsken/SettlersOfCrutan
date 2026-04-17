@@ -1,5 +1,4 @@
 import type { Game } from "../../domain/game/game";
-import type { MaritimeRatio } from "./MaritimeTradeDialog";
 
 type Props = {
   show: boolean;
@@ -16,12 +15,7 @@ type Props = {
   onRollDice: () => void;
   onEndTurn: () => void;
   onBuyDevCard: () => void;
-  onPlayKnight: () => void;
-  onPlayMonopoly: () => void;
-  onPlayYearOfPlenty: () => void;
-  onPlayRoadBuilding: () => void;
   onProposeTrade: () => void;
-  onMaritimeTrade: (ratio: MaritimeRatio) => void;
 };
 
 const btn =
@@ -45,12 +39,7 @@ export function GameActionBar({
   onRollDice,
   onEndTurn,
   onBuyDevCard,
-  onPlayKnight,
-  onPlayMonopoly,
-  onPlayYearOfPlenty,
-  onPlayRoadBuilding,
   onProposeTrade,
-  onMaritimeTrade,
 }: Props) {
   if (!show || !game || !gameId) return null;
 
@@ -69,7 +58,6 @@ export function GameActionBar({
   const canBuild =
     isMyTurn && phase === "tradeBuild" && toolbarIdle && hasPrivateSlice;
   const canBuyDev = canBuild;
-  const canDevPlays = canBuild;
   const canProposeTrade = canBuild && !game.currentTradeOffer;
 
   return (
@@ -150,66 +138,6 @@ export function GameActionBar({
           onClick={onProposeTrade}
         >
           Propose trade
-        </button>
-
-        <button
-          type="button"
-          className={btnPrimary}
-          disabled={!canBuild}
-          onClick={() => onMaritimeTrade(4)}
-        >
-          Maritime 4:1
-        </button>
-        <button
-          type="button"
-          className={btnPrimary}
-          disabled={!canBuild}
-          onClick={() => onMaritimeTrade(3)}
-        >
-          Maritime 3:1
-        </button>
-        <button
-          type="button"
-          className={btnPrimary}
-          disabled={!canBuild}
-          onClick={() => onMaritimeTrade(2)}
-        >
-          Maritime 2:1
-        </button>
-
-        <span className="mx-1 hidden h-6 w-px bg-stone-700 sm:inline" />
-
-        <button
-          type="button"
-          className={btnPrimary}
-          disabled={!canDevPlays}
-          onClick={onPlayKnight}
-        >
-          Play knight
-        </button>
-        <button
-          type="button"
-          className={btnPrimary}
-          disabled={!canDevPlays}
-          onClick={onPlayMonopoly}
-        >
-          Monopoly
-        </button>
-        <button
-          type="button"
-          className={btnPrimary}
-          disabled={!canDevPlays}
-          onClick={onPlayYearOfPlenty}
-        >
-          Year of plenty
-        </button>
-        <button
-          type="button"
-          className={btnPrimary}
-          disabled={!canDevPlays}
-          onClick={onPlayRoadBuilding}
-        >
-          Road building (2 roads)
         </button>
       </div>
     </div>
