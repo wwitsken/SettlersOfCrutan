@@ -4,7 +4,7 @@ import { getAccessTokenForApi } from "../authConfig";
 import {
   DEV_USER_HEADER,
   readDevSessionUserIdFromStorage,
-} from "../auth/devSessionUser";
+} from "./devSessionUser";
 
 let accessToken: string | undefined = undefined;
 

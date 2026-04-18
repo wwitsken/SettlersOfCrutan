@@ -1,30 +1,149 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   useLoaderData,
   useNavigate,
   useParams,
   type LoaderFunctionArgs,
 } from "react-router";
+import { useIdentity } from "../hooks/useIdentity";
 import { useLobbyStore } from "../stores/lobbyStore";
 import { api } from "../api/client";
 import { getAccessTokenForOpenApi } from "../authConfig";
 import { useSignalRContext } from "../context/SignalRContext";
 import { lobbyDtoToDomain } from "../domain/lobby/mapLobbyDto";
-import { lobbyFullStateEvents } from "../realtime/realtimeEvents";
+import { lobbyFullStateEvents } from "../api/realtimeEvents";
 import type { components } from "../api/types";
+import ParchmentCard from "../components/ui/ParchmentCard";
+import CatanButton from "../components/ui/CatanButton";
+import CatanAvatar from "../components/ui/CatanAvatar";
+import CatanColorPicker from "../components/ui/CatanColorPicker";
+import CatanNameEdit from "../components/ui/CatanNameEdit";
+import ReadyToggle from "../components/ui/ReadyToggle";
+import CodeChip from "../components/ui/CodeChip";
+import ChatStub from "../components/ui/ChatStub";
+
+// ── Loader (unchanged) ──────────────────────────────────────────────────────
 
 export async function LobbyLoader(args: LoaderFunctionArgs) {
   if (!args.params.lobbyId) return { status: 404 };
   const { data, response } = await api.GET("/api/lobby/{lobbyId}", {
-    params: {
-      path: {
-        lobbyId: args.params.lobbyId,
-      },
-    },
+    params: { path: { lobbyId: args.params.lobbyId } },
     accessToken: (await getAccessTokenForOpenApi()) ?? "",
   });
   return { data, loadedStatus: response.status };
 }
+
+// ── Sub-components ──────────────────────────────────────────────────────────
+
+interface PlayerSlotProps {
+  displayName?: string;
+  isMe: boolean;
+  isHost: boolean;
+  isReady: boolean;
+  myName: string;
+  myColor: string;
+  takenColors: string[];
+  onNameChange: (n: string) => void;
+  onColorChange: (c: string) => void;
+  onReadyToggle: () => void;
+}
+
+function PlayerSlotRow({
+  displayName,
+  isMe,
+  isHost,
+  isReady,
+  myName,
+  myColor,
+  takenColors,
+  onNameChange,
+  onColorChange,
+  onReadyToggle,
+}: PlayerSlotProps) {
+  const shownName = isMe ? myName : (displayName ?? "Player");
+  const shownColor = isMe ? myColor : "none";
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border-2 border-(--ink) bg-(--parchment-2) px-3 py-2.5 shadow-[2px_2px_0_var(--ink)] flex-wrap">
+      <CatanAvatar
+        color={shownColor}
+        name={shownName}
+        host={isHost}
+        size="md"
+      />
+
+      <div className="flex flex-1 min-w-0 items-center gap-3 flex-wrap">
+        {isMe ? (
+          <>
+            <CatanNameEdit value={myName} onChange={onNameChange} />
+            <CatanColorPicker
+              value={myColor}
+              onChange={onColorChange}
+              taken={takenColors}
+            />
+          </>
+        ) : (
+          <span style={{ fontFamily: "var(--font-serif)", fontSize: "1.1rem" }}>
+            {shownName}
+            {isHost && (
+              <span
+                style={{
+                  marginLeft: 8,
+                  fontSize: "0.85rem",
+                  color: "var(--ink-faint)",
+                }}
+              >
+                host
+              </span>
+            )}
+          </span>
+        )}
+      </div>
+
+      {isMe ? (
+        <ReadyToggle
+          on={isReady}
+          onChange={() => {
+            onReadyToggle();
+          }}
+        />
+      ) : (
+        <span
+          className="whitespace-nowrap rounded-full border-2 border-(--ink) px-3 py-0.5 text-sm"
+          style={{
+            fontFamily: "var(--font-hand)",
+            background: isReady ? "#c9d9a8" : "var(--parchment)",
+            color: isReady ? "var(--ink)" : "var(--ink-faint)",
+          }}
+        >
+          {isReady ? "ready" : "not ready"}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function EmptySeat({ onInvite }: { onInvite: () => void }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border-2 border-dashed border-(--ink-soft) px-3 py-2.5">
+      <span
+        className="h-8 w-8 rounded-full border-2 border-dashed border-(--ink-soft) shrink-0"
+        style={{ background: "transparent" }}
+      />
+      <span
+        className="flex-1 italic"
+        style={{ color: "var(--ink-faint)", fontFamily: "var(--font-hand)" }}
+      >
+        — empty seat —
+      </span>
+      <CatanButton size="sm" variant="ghost" onClick={onInvite}>
+        invite 📜
+      </CatanButton>
+    </div>
+  );
+}
+
+// ── Page ────────────────────────────────────────────────────────────────────
 
 function LobbyPage() {
   const {
@@ -37,7 +156,6 @@ function LobbyPage() {
   const { lobbyId } = useParams() ?? null;
   const navigate = useNavigate();
   const { data, loadedStatus } = useLoaderData<typeof LobbyLoader>();
-  const [copyHint, setCopyHint] = useState<string | null>(null);
 
   const status = useLobbyStore((s) => s.status);
   const error = useLobbyStore((s) => s.error);
@@ -45,9 +163,13 @@ function LobbyPage() {
   const setLobby = useLobbyStore((s) => s.setLobby);
   const clearLobby = useLobbyStore((s) => s.clear);
 
+  const { name, color, setName, setColor } = useIdentity();
+
   useEffect(() => {
     if (loadedStatus === 200 && data !== undefined) {
-      const mapped = lobbyDtoToDomain(data as components["schemas"]["LobbyDto"]);
+      const mapped = lobbyDtoToDomain(
+        data as components["schemas"]["LobbyDto"],
+      );
       if (mapped) setLobby(mapped);
     }
   }, [loadedStatus, data, setLobby]);
@@ -62,12 +184,11 @@ function LobbyPage() {
           unknown,
         ];
         if (!lobbyFullStateEvents.has(eventName)) {
-          if (import.meta.env.DEV) {
+          if (import.meta.env.DEV)
             console.debug(
               "[SignalR] LobbyReceive ignored (unknown event)",
               eventName,
             );
-          }
           return;
         }
         try {
@@ -101,172 +222,229 @@ function LobbyPage() {
   const me = currentLobby?.lobbyMembers.find((m) => m.isMe);
   const isInLobby = !!me;
   const isReady = !!me?.isReady;
-  const activeLobbyId = currentLobby?.lobbyId ?? lobbyId;
+  const activeLobbyId = currentLobby?.lobbyId ?? lobbyId ?? "";
+  const allReady =
+    !!currentLobby?.lobbyMembers.length &&
+    currentLobby.lobbyMembers.every((m) => m.isReady);
 
-  const copyLobbyCode = async () => {
-    if (!activeLobbyId) return;
-    try {
-      await navigator.clipboard.writeText(activeLobbyId);
-      setCopyHint("Copied to clipboard");
-      setTimeout(() => setCopyHint(null), 2000);
-    } catch {
-      setCopyHint("Could not copy");
-      setTimeout(() => setCopyHint(null), 2000);
+  // Colors taken by other players (visual only until backend wires color assignment)
+  const takenColors =
+    currentLobby?.lobbyMembers.filter((m) => !m.isMe).map(() => "none") ?? [];
+
+  const handleReadyToggle = async () => {
+    if (!lobbyId) return;
+    if (isReady) {
+      await api.POST("/api/lobby/{lobbyId}/unready", {
+        params: { path: { lobbyId } },
+      });
+    } else {
+      await api.POST("/api/lobby/{lobbyId}/ready", {
+        params: { path: { lobbyId } },
+      });
     }
   };
 
+  // ── Connection states ────────────────────────────────────────────────────
+
   if (isConnecting && !isConnected) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
-        Connecting to game services…
-      </div>
+      <ParchmentCard
+        className="text-center"
+        style={{ color: "var(--ink-soft)" }}
+      >
+        <span style={{ fontFamily: "var(--font-hand)", fontSize: "1.2rem" }}>
+          Connecting to game services…
+        </span>
+      </ParchmentCard>
     );
   }
 
   if (signalRError && !isConnected) {
     return (
-      <div
-        className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-800"
-        role="alert"
-      >
-        Could not connect to game services: {signalRError}
-      </div>
+      <ParchmentCard className="border-(--catan-accent)" role="alert">
+        <span
+          style={{
+            fontFamily: "var(--font-hand)",
+            fontSize: "1.1rem",
+            color: "var(--catan-accent)",
+          }}
+        >
+          Could not connect to game services: {signalRError}
+        </span>
+      </ParchmentCard>
     );
   }
 
-  return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-          Lobby
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Share this code with other players so they can join from the home
-          page.
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <code className="rounded-lg bg-slate-100 px-3 py-2 font-mono text-sm text-slate-800">
-            {activeLobbyId ?? "—"}
-          </code>
-          <button
-            type="button"
-            onClick={() => void copyLobbyCode()}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Copy code
-          </button>
-          {copyHint && (
-            <span className="text-sm text-emerald-600">{copyHint}</span>
-          )}
-        </div>
-      </div>
+  // ── Main UI ───────────────────────────────────────────────────────────────
 
-      <div className="flex flex-wrap items-center gap-2">
-        {!isInLobby && lobbyId && (
-          <button
-            type="button"
-            onClick={async () =>
-              await api.POST("/api/lobby/{lobbyId}/join", {
-                params: { path: { lobbyId: lobbyId } },
-              })
-            }
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
-            disabled={!lobbyId || status === "loading"}
-          >
-            {status === "loading" ? "Joining…" : "Join lobby"}
-          </button>
-        )}
-        {isInLobby && lobbyId && (
-          <button
-            type="button"
-            onClick={() => {
-              void api.POST("/api/lobby/{lobbyId}/leave", {
-                params: { path: { lobbyId } },
-              });
-              navigate("/");
-            }}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
-            disabled={status === "loading"}
-          >
-            {status === "loading" ? "Leaving…" : "Leave"}
-          </button>
-        )}
-        {isInLobby && lobbyId && !isReady && (
-          <button
-            type="button"
-            onClick={async () =>
-              await api.POST("/api/lobby/{lobbyId}/ready", {
-                params: { path: { lobbyId } },
-              })
-            }
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-            disabled={status === "loading"}
-          >
-            {status === "loading" ? "Updating…" : "Ready"}
-          </button>
-        )}
-        {isInLobby && lobbyId && isReady && (
-          <button
-            type="button"
-            onClick={async () =>
-              await api.POST("/api/lobby/{lobbyId}/unready", {
-                params: { path: { lobbyId } },
-              })
-            }
-            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
-            disabled={status === "loading"}
-          >
-            {status === "loading" ? "Updating…" : "Unready"}
-          </button>
-        )}
-        {isInLobby &&
-          lobbyId &&
-          currentLobby?.lobbyMembers.length &&
-          currentLobby.lobbyMembers.every((m) => m.isReady) && (
-            <button
-              type="button"
-              onClick={async () =>
-                await api.POST("/api/lobby/{lobbyId}/start-game", {
-                  params: { path: { lobbyId } },
-                  body: {
-                    gameName: "Crutan Game",
-                    gameType: "baseGame",
-                  },
-                })
-              }
-              className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
-              disabled={status === "loading"}
+  const hostName =
+    currentLobby?.lobbyMembers.find((m) => m.isHost)?.displayName ?? "Host";
+
+  const MAX_PLAYERS = 4;
+  const seatCount = currentLobby?.lobbyMembers.length ?? 0;
+  const emptySeats = Math.max(0, MAX_PLAYERS - seatCount);
+
+  return (
+    <div className="flex flex-col gap-5 py-4">
+      <ParchmentCard>
+        {/* Header row */}
+        <div className="flex flex-wrap items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <div
+              style={{ fontFamily: "var(--font-serif)", fontSize: "1.6rem" }}
             >
-              Start game
-            </button>
-          )}
-      </div>
+              {hostName}'s Merry Hall
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-hand)",
+                color: "var(--ink-soft)",
+                marginTop: 2,
+              }}
+            >
+              Waiting for the fellowship · {seatCount}/{MAX_PLAYERS}
+            </div>
+          </div>
+          {activeLobbyId && <CodeChip code={activeLobbyId} />}
+        </div>
+
+        {/* Divider */}
+        <div
+          className="my-4 h-0.5"
+          style={{
+            background:
+              "repeating-linear-gradient(90deg, var(--ink-soft) 0 6px, transparent 6px 10px)",
+          }}
+        />
+
+        <div className="flex flex-wrap items-start gap-5">
+          {/* Players column */}
+          <div className="flex flex-col gap-2" style={{ flex: "2 1 340px" }}>
+            <div
+              className="mb-1"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.7rem",
+                letterSpacing: "0.15em",
+                color: "var(--ink-faint)",
+              }}
+            >
+              PLAYERS ·{" "}
+              {currentLobby?.lobbyMembers.filter((m) => m.isReady).length ?? 0}/
+              {seatCount} READY
+            </div>
+
+            {currentLobby?.lobbyMembers.map((p) => (
+              <PlayerSlotRow
+                key={p.id}
+                displayName={p.displayName}
+                isMe={p.isMe}
+                isHost={p.isHost}
+                isReady={p.isReady}
+                myName={name}
+                myColor={color}
+                takenColors={takenColors}
+                onNameChange={setName}
+                onColorChange={setColor}
+                onReadyToggle={() => void handleReadyToggle()}
+              />
+            ))}
+
+            {Array.from({ length: emptySeats }).map((_, i) => (
+              <EmptySeat
+                key={i}
+                onInvite={() =>
+                  void navigator.clipboard?.writeText(activeLobbyId)
+                }
+              />
+            ))}
+
+            {!isInLobby && lobbyId && (
+              <CatanButton
+                onClick={async () =>
+                  await api.POST("/api/lobby/{lobbyId}/join", {
+                    params: { path: { lobbyId } },
+                  })
+                }
+                disabled={status === "loading"}
+              >
+                {status === "loading" ? "Joining…" : "Join lobby"}
+              </CatanButton>
+            )}
+          </div>
+
+          {/* Actions + chat column */}
+          <div className="flex flex-col gap-4" style={{ flex: "1 1 260px" }}>
+            {/* Start quest card */}
+            <ParchmentCard padding="p-4">
+              <div
+                style={{ fontFamily: "var(--font-serif)", fontSize: "1.25rem" }}
+              >
+                Start the Quest
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-hand)",
+                  color: "var(--ink-soft)",
+                  margin: "4px 0 12px",
+                }}
+              >
+                {allReady
+                  ? "All souls ready. Onward!"
+                  : "Wait for all to ready up."}
+              </div>
+              <CatanButton
+                variant="primary"
+                className="w-full justify-center text-lg"
+                disabled={!allReady || status === "loading"}
+                onClick={async () => {
+                  if (!lobbyId || !allReady) return;
+                  await api.POST("/api/lobby/{lobbyId}/start-game", {
+                    params: { path: { lobbyId } },
+                    body: { gameName: "Crutan Game", gameType: "baseGame" },
+                  });
+                }}
+              >
+                ⚔︎ Start Game
+              </CatanButton>
+
+              {isInLobby && lobbyId && (
+                <CatanButton
+                  size="sm"
+                  variant="ghost"
+                  className="mt-2 w-full justify-center"
+                  onClick={() => {
+                    void api.POST("/api/lobby/{lobbyId}/leave", {
+                      params: { path: { lobbyId } },
+                    });
+                    navigate("/");
+                  }}
+                >
+                  Leave lobby
+                </CatanButton>
+              )}
+            </ParchmentCard>
+
+            {/* Pre-game chat stub */}
+            {/* STUB: Pass onSend prop wired to SignalR when lobby chat is implemented */}
+            <ChatStub
+              title="Pre-game Chat"
+              initialMessages={[]}
+              className="flex-1"
+            />
+          </div>
+        </div>
+      </ParchmentCard>
 
       {error && (
-        <p className="text-sm text-red-600" role="alert">
+        <p
+          className="rounded-xl border-2 border-(--catan-accent) bg-red-50 px-4 py-3 text-sm text-center"
+          style={{ color: "var(--catan-accent)" }}
+          role="alert"
+        >
           {error}
         </p>
       )}
-
-      <ul className="space-y-2">
-        {currentLobby?.lobbyMembers?.map((p) => (
-          <li
-            key={p.id}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
-          >
-            <div className="flex justify-between gap-2">
-              <span className="font-medium text-slate-900">
-                {p.displayName || "Player"}
-              </span>
-              <span className="text-xs text-slate-500">
-                {p.isHost ? "Host" : "Player"} ·{" "}
-                {p.isReady ? "Ready" : "Not ready"}
-                {p.isMe ? " · You" : ""}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

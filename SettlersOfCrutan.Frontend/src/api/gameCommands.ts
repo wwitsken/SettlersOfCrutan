@@ -1,6 +1,6 @@
 import { api } from "./client";
 import { acquireAccessToken, getAccessTokenForApi } from "../authConfig";
-import { isDevImpersonationActive } from "../auth/devSessionUser";
+import { isDevImpersonationActive } from "./devSessionUser";
 import type { components } from "./types";
 
 type EdgeCoordDto = components["schemas"]["EdgeCoordDto"];

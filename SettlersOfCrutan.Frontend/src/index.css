@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+:root {
+  --parchment:    #f2e7cf;
+  --parchment-2:  #ecdeba;
+  --parchment-3:  #e4d2a3;
+  --ink:          #2b2318;
+  --ink-soft:     #4a3f2e;
+  --ink-faint:    #7a6a4e;
+  --catan-accent: #b23a2a;
+  --catan-accent-soft: #d96a55;
+
+  --font-serif: 'IM Fell English', Georgia, serif;
+  --font-hand:  'Caveat', cursive;
+  --font-mono:  'Special Elite', 'Courier New', monospace;
+}
+
 @keyframes game-toast-in {
   from {
     opacity: 0;

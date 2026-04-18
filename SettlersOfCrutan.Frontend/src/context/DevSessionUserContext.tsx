@@ -6,7 +6,7 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-import { DEV_SESSION_USER_STORAGE_KEY } from "../auth/devSessionUser";
+import { DEV_SESSION_USER_STORAGE_KEY } from "../api/devSessionUser";
 
 export type DevSessionUserContextValue = {
   devUserId: string;
@@ -19,7 +19,8 @@ const DevSessionUserContext = createContext<DevSessionUserContextValue | null>(
 
 export function DevSessionUserProvider({ children }: PropsWithChildren) {
   const [devUserId, setDevUserIdState] = useState(() => {
-    if (!import.meta.env.DEV || typeof sessionStorage === "undefined") return "";
+    if (!import.meta.env.DEV || typeof sessionStorage === "undefined")
+      return "";
     return sessionStorage.getItem(DEV_SESSION_USER_STORAGE_KEY)?.trim() ?? "";
   });
 

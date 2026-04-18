@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PropsWithChildren } from "react";
 import * as signalR from "@microsoft/signalr";
 import { getAccessTokenForApi } from "../authConfig";
-import { DEV_USER_QUERY_PARAM } from "../auth/devSessionUser";
+import { DEV_USER_QUERY_PARAM } from "../api/devSessionUser";
 import {
   SignalRContext,
   type SignalRContextValue,
@@ -78,7 +78,7 @@ export function SignalRProvider({
     // If any handlers were queued before connection existed, register them now
     if (pendingHandlersRef.current) {
       for (const [methodName, handler] of Object.entries(
-        pendingHandlersRef.current
+        pendingHandlersRef.current,
       )) {
         conn.off(methodName);
         conn.on(methodName, handler);
@@ -238,7 +238,7 @@ export function SignalRProvider({
       invoke,
       send,
       registerHandlers,
-    ]
+    ],
   );
 
   return (

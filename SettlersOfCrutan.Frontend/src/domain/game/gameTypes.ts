@@ -7,3 +7,11 @@ export type GamePhase = components["schemas"]["GamePhase"];
 export type PlayerDirection = components["schemas"]["PlayerDirection"];
 export type GameType = components["schemas"]["GameType"];
 export type DevelopmentCardType = components["schemas"]["DevelopmentCardType"];
+
+export interface ChatMessage {
+  id: number;
+  player: string;
+  color: PlayerColor;
+  text: string;
+  time: string;
+}

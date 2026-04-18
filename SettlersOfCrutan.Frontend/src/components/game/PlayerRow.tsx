@@ -1,5 +1,5 @@
 import type { Player } from "../../domain/game/player";
-import { COLOR_MAP } from "../../constants/catanMeta";
+import CatanAvatar from "../ui/CatanAvatar";
 
 type Props = {
   player: Player;
@@ -9,31 +9,51 @@ type Props = {
 export default function PlayerRow({ player, isCurrentTurn }: Props) {
   return (
     <div
-      className={`
-        flex items-center gap-3 px-3 py-2 rounded-lg border transition-all
-        ${isCurrentTurn
-          ? "border-yellow-500/60 bg-yellow-500/5"
-          : "border-stone-700/50 bg-stone-800/40"}
-      `}
+      className="flex items-center gap-2.5 rounded-xl border-2 px-3 py-2 shadow-[2px_2px_0_var(--ink)] transition-all"
+      style={{
+        borderColor: isCurrentTurn ? "var(--catan-accent)" : "var(--ink)",
+        background: isCurrentTurn ? "rgba(178,58,42,0.07)" : "var(--parchment-2)",
+        outline: isCurrentTurn ? "3px dashed var(--catan-accent)" : undefined,
+        outlineOffset: isCurrentTurn ? "2px" : undefined,
+      }}
     >
-      <div className={`w-3.5 h-3.5 rounded-full flex-shrink-0 ${COLOR_MAP[player.playerColor]}`} />
+      <CatanAvatar color={player.playerColor} name={player.displayName} size="sm" />
 
-      <span className={`flex-1 text-sm tracking-wide ${isCurrentTurn ? "font-bold text-yellow-100" : "font-normal text-stone-300"}`}>
-        {player.displayName}
-        {isCurrentTurn && <span className="ml-2 text-xs text-yellow-400 font-normal">● TURN</span>}
-      </span>
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <div
+          className="truncate"
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: "0.95rem",
+            color: "var(--ink)",
+          }}
+        >
+          {player.displayName}
+        </div>
+        {isCurrentTurn && (
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.65rem",
+              letterSpacing: "0.1em",
+              color: "var(--catan-accent)",
+            }}
+          >
+            THEIR TURN
+          </div>
+        )}
+      </div>
 
-      <div className="flex items-center gap-3 text-xs text-stone-400">
-        <span title="Victory Points" className="flex items-center gap-0.5">
-          <span className="text-yellow-500">★</span>
-          <span className={isCurrentTurn ? "text-yellow-200 font-semibold" : ""}>{player.victoryPoints}</span>
+      <div
+        className="flex items-center gap-2 shrink-0"
+        style={{ fontFamily: "var(--font-hand)", color: "var(--ink-faint)", fontSize: "0.9rem" }}
+      >
+        <span title="Victory Points" style={{ fontFamily: "var(--font-serif)", fontSize: "1.1rem", color: "var(--ink)" }}>
+          {player.victoryPoints}
+          <span style={{ fontSize: "0.7rem", color: "var(--ink-faint)", marginLeft: 2 }}>VP</span>
         </span>
-        <span title="Resource cards" className="flex items-center gap-0.5">
-          <span>🃏</span>{player.resourceCardCount}
-        </span>
-        <span title="Dev cards" className="flex items-center gap-0.5">
-          <span>🎴</span>{player.developmentCardCount}
-        </span>
+        <span title="Resource cards">🃏{player.resourceCardCount}</span>
+        <span title="Dev cards">🎴{player.developmentCardCount}</span>
       </div>
     </div>
   );

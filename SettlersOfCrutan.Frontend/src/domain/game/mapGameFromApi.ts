@@ -371,10 +371,3 @@ export function mapGamePayload(payload: unknown): {
   const privateGame = mapPrivateGameFromPayload(payload);
   return { game, privateGame };
 }
-
-/**
- * @deprecated Use {@link mapPublicGameFromPayload} — this name implied the full DTO. Returns public `Game` only.
- */
-export function gamePayloadToDomain(payload: unknown): Game | null {
-  return mapPublicGameFromPayload(payload);
-}

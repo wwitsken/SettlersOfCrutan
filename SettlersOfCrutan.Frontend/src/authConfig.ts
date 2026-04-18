@@ -1,25 +1,25 @@
 import type { Configuration, SilentRequest } from "@azure/msal-browser";
 import { PublicClientApplication } from "@azure/msal-browser";
-import { isDevImpersonationActive } from "./auth/devSessionUser";
+import { isDevImpersonationActive } from "./api/devSessionUser";
 
 export const msalConfig: Configuration = {
   auth: {
-        clientId: "767bc2e9-1317-41b2-87c6-f77fa8683dc3",
-        authority: "https://settlersofcrutan.ciamlogin.com/63ba9d01-deb0-4f35-bca3-756e31e2c98c",
+    clientId: "767bc2e9-1317-41b2-87c6-f77fa8683dc3",
+    authority:
+      "https://settlersofcrutan.ciamlogin.com/63ba9d01-deb0-4f35-bca3-756e31e2c98c",
   },
   cache: {
     cacheLocation: "localStorage", // dev-friendly
     storeAuthStateInCookie: false,
-  }, 
+  },
 };
 
-export const msalInstance =
-    new PublicClientApplication(msalConfig);
-    //await createStandardPublicClientApplication(msalConfig);
+export const msalInstance = new PublicClientApplication(msalConfig);
+//await createStandardPublicClientApplication(msalConfig);
 
 export const loginRequest = {
-    scopes: ['api://76494224-a444-443a-9dee-39ac7271494e/access_as_user']
-}
+  scopes: ["api://76494224-a444-443a-9dee-39ac7271494e/access_as_user"],
+};
 
 export const acquireAccessToken = async () => {
   const activeAccount = msalInstance.getActiveAccount(); // This will only return a non-null value if you have logic somewhere else that calls the setActiveAccount API

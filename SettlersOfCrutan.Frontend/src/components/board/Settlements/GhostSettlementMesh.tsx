@@ -1,43 +1,7 @@
 import { useState } from "react";
-import * as THREE from "three";
+import { SETTLEMENT_S, settlementRoofGeometry } from "./settlementGeometry";
 
-const S = 0.26;
-const halfS = S / 2;
-
-function makeRoofGeometry(width: number, depth: number, height: number) {
-  const hw = width / 2;
-  const hd = depth / 2;
-  const v = new Float32Array([
-    -hw,
-    0,
-    -hd,
-    hw,
-    0,
-    -hd,
-    0,
-    height,
-    -hd,
-    -hw,
-    0,
-    hd,
-    hw,
-    0,
-    hd,
-    0,
-    height,
-    hd,
-  ]);
-  const idx = [
-    0, 2, 1, 3, 4, 5, 0, 1, 4, 0, 4, 3, 0, 3, 5, 0, 5, 2, 1, 2, 5, 1, 5, 4,
-  ];
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.BufferAttribute(v, 3));
-  geo.setIndex(idx);
-  geo.computeVertexNormals();
-  return geo;
-}
-
-const roofGeometry = makeRoofGeometry(S, S, S * 0.65);
+const halfS = SETTLEMENT_S / 2;
 
 type Props = {
   position: [number, number, number];
@@ -60,10 +24,10 @@ export function GhostSettlementMesh({ position, onClick }: Props) {
       }}
     >
       <mesh>
-        <boxGeometry args={[S, S, S]} />
+        <boxGeometry args={[SETTLEMENT_S, SETTLEMENT_S, SETTLEMENT_S]} />
         <meshStandardMaterial color="#ffffff" transparent opacity={opacity} />
       </mesh>
-      <mesh position={[0, halfS, 0]} geometry={roofGeometry}>
+      <mesh position={[0, halfS, 0]} geometry={settlementRoofGeometry}>
         <meshStandardMaterial color="#ffffff" transparent opacity={opacity} />
       </mesh>
     </group>

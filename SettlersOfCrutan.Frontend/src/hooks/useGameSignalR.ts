@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useSignalRContext } from "../context/SignalRContext";
 import { applyGamePayloadFromApi } from "../stores/applyGamePayload";
-import { RealtimeEvents } from "../realtime/realtimeEvents";
+import { RealtimeEvents } from "../api/realtimeEvents";
 
 type GameReceiveArgs = [string, string | Date, string, unknown];
 
@@ -32,7 +32,10 @@ export function useGameSignalR(gameId?: string | null) {
 
         try {
           if (!applyGamePayloadFromApi(payload) && import.meta.env.DEV) {
-            console.warn("GameStateUpdated payload could not be mapped", payload);
+            console.warn(
+              "GameStateUpdated payload could not be mapped",
+              payload,
+            );
           }
         } catch (e) {
           console.error("Failed to project GameReceive payload:", e);

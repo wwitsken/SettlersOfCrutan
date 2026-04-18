@@ -47,13 +47,19 @@ import {
 import { GameBoardToasts } from "../components/game/GameBoardToasts";
 import CatanLayout from "../components/layout/CatanLayout";
 import { useGameToastStore } from "../stores/gameToastStore";
-import type { ChatMessage } from "../types/catan";
+import type { ChatMessage } from "../domain/game/gameTypes";
 
 type EdgeCoordDto = components["schemas"]["EdgeCoordDto"];
 type VertexCoordDto = components["schemas"]["VertexCoordDto"];
 
 const MOCK_CHAT_MESSAGES: ChatMessage[] = [
-  { id: 1, player: "System", color: "none", text: "Game started. Chat coming soon.", time: "" },
+  {
+    id: 1,
+    player: "System",
+    color: "none",
+    text: "Game started. Chat coming soon.",
+    time: "",
+  },
 ];
 
 function GamePage() {
@@ -97,9 +103,7 @@ function GamePage() {
   const [robberBusy, setRobberBusy] = useState(false);
   const [robberErr, setRobberErr] = useState<string | null>(null);
 
-  const { isConnected, isConnecting, error: hubError } = useGameSignalR(
-    gameId ?? null,
-  );
+  useGameSignalR(gameId ?? null);
 
   const clearGameToasts = useGameToastStore((s) => s.clear);
   useEffect(() => {
@@ -141,11 +145,13 @@ function GamePage() {
   }, [handHint]);
 
   const boardView = resolveBoardView(status, game);
-  const boardGame = boardView === "loading" ? exampleGame : game ?? exampleGame;
+  const boardGame =
+    boardView === "loading" ? exampleGame : (game ?? exampleGame);
   const showLoadingBanner = boardView === "loading";
   const showExampleBanner = boardView === "example";
 
-  const me = game && privateGame ? getCurrentPlayer(game, privateGame) : undefined;
+  const me =
+    game && privateGame ? getCurrentPlayer(game, privateGame) : undefined;
   const currentPid =
     game && game.players.length > 0
       ? game.players[game.playerIndex]?.id
@@ -191,7 +197,8 @@ function GamePage() {
   const showLiveHud = boardView === "live" && !!game && !!gameId;
 
   const blockForRobberFlow =
-    !!(isMyTurn && game?.gamePhase === "resolveRobber") || awaitingKnightRobberHex;
+    !!(isMyTurn && game?.gamePhase === "resolveRobber") ||
+    awaitingKnightRobberHex;
   const toolbarIdle = !devRoadPicking && !blockForRobberFlow;
   const resourceMaritimeEnabled =
     showLiveHud &&
@@ -526,7 +533,7 @@ function GamePage() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 bg-stone-900 border-b border-stone-700/60 text-sm">
+      {/* <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 bg-stone-900 border-b border-stone-700/60 text-sm">
         <div>
           <span className="font-semibold text-stone-100">
             {game?.gameName ?? "Game"}
@@ -552,7 +559,7 @@ function GamePage() {
           )}
           {isConnected && <span className="text-emerald-400">Live updates</span>}
         </div>
-      </div>
+      </div> */}
 
       {loadError && (
         <div

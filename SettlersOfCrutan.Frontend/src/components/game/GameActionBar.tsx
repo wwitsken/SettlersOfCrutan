@@ -1,4 +1,5 @@
 import type { Game } from "../../domain/game/game";
+import CatanButton from "../ui/CatanButton";
 
 type Props = {
   show: boolean;
@@ -18,12 +19,9 @@ type Props = {
   onProposeTrade: () => void;
 };
 
-const btn =
-  "rounded-md border px-2 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40";
-const btnPrimary = `${btn} border-stone-600 bg-stone-800/60 text-stone-200 hover:bg-stone-700/60`;
-
 /**
- * DOM toolbar under the R3F canvas — never inside `<Canvas>`.
+ * Vertical action tent rendered in the left column of CatanLayout.
+ * Not inside the R3F Canvas.
  */
 export function GameActionBar({
   show,
@@ -41,10 +39,21 @@ export function GameActionBar({
   onBuyDevCard,
   onProposeTrade,
 }: Props) {
-  if (!show || !game || !gameId) return null;
+  if (!show || !game || !gameId) {
+    return (
+      <div
+        style={{
+          color: "var(--ink-faint)",
+          fontFamily: "var(--font-hand)",
+          fontSize: "1rem",
+        }}
+      >
+        Waiting for game…
+      </div>
+    );
+  }
 
   const phase = game.gamePhase;
-
   const blockForRobberFlow =
     (isMyTurn && phase === "resolveRobber") || awaitingKnightRobberHex;
   const toolbarIdle = !devRoadPicking && !blockForRobberFlow;
@@ -62,84 +71,83 @@ export function GameActionBar({
 
   return (
     <div
-      className="shrink-0 border-t border-stone-700/60 bg-transparent px-3 py-2"
+      className="flex flex-col gap-2"
       role="toolbar"
       aria-label="Game actions"
     >
+      {/* Phase / status hint */}
+      <div
+        className="text-xs tracking-widest"
+        style={{ fontFamily: "var(--font-mono)", color: "var(--ink-faint)" }}
+      >
+        {devRoadPicking
+          ? "PLACE ROADS"
+          : awaitingKnightRobberHex || (isMyTurn && phase === "resolveRobber")
+            ? "MOVE ROBBER"
+            : isMyTurn
+              ? phase.toUpperCase()
+              : "WAITING…"}
+      </div>
+
       {actionError && (
-        <div className="mb-2 flex items-start justify-between gap-2 rounded border border-red-700/40 bg-red-900/20 px-2 py-1 text-xs text-red-300">
-          <span>{actionError}</span>
+        <div
+          className="rounded-xl border-2 border-(--catan-accent) bg-red-50 px-2 py-1.5 text-xs"
+          style={{ color: "var(--catan-accent)" }}
+          role="alert"
+        >
+          <span>{actionError}</span>{" "}
           <button
             type="button"
-            className="shrink-0 text-red-400 underline"
+            className="underline"
             onClick={onClearActionError}
+            style={{ color: "var(--catan-accent)" }}
           >
             Dismiss
           </button>
         </div>
       )}
 
-      <div className="mb-1.5 flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium text-stone-400">
-          Phase <span className="text-stone-200">{phase}</span>
-        </span>
-        {!isMyTurn && (
-          <span className="text-xs text-stone-500">Waiting for other player…</span>
-        )}
-        {devRoadPicking && (
-          <span className="text-xs font-medium text-sky-400">
-            Place two roads (road building card)
-          </span>
-        )}
-        {awaitingKnightRobberHex && (
-          <span className="text-xs font-medium text-sky-400">
-            Move the robber (knight)
-          </span>
-        )}
-        {isMyTurn && phase === "resolveRobber" && (
-          <span className="text-xs font-medium text-sky-400">
-            Move the robber
-          </span>
-        )}
-      </div>
+      <div
+        className="my-0.5 h-0.5"
+        style={{
+          background:
+            "repeating-linear-gradient(90deg, var(--ink-soft) 0 6px, transparent 6px 10px)",
+        }}
+      />
 
-      <div className="flex flex-wrap gap-1.5">
-        <button
-          type="button"
-          className={btnPrimary}
-          disabled={!canRoll}
-          onClick={onRollDice}
-        >
-          Roll dice
-        </button>
+      <CatanButton
+        variant="primary"
+        className="w-full justify-center"
+        disabled={!canRoll}
+        onClick={onRollDice}
+      >
+        🎲 Roll Dice
+      </CatanButton>
 
-        <button
-          type="button"
-          className={btnPrimary}
-          disabled={!canEndTurn}
-          onClick={onEndTurn}
-        >
-          End turn
-        </button>
+      <CatanButton
+        variant="ghost"
+        className="w-full justify-center"
+        disabled={!canEndTurn}
+        onClick={onEndTurn}
+      >
+        End Turn ▸
+      </CatanButton>
 
-        <button
-          type="button"
-          className={btnPrimary}
-          disabled={!canBuyDev}
-          onClick={onBuyDevCard}
-        >
-          Buy dev card
-        </button>
+      <CatanButton
+        className="w-full justify-center"
+        disabled={!canProposeTrade}
+        onClick={onProposeTrade}
+      >
+        🤝 Offer Trade
+      </CatanButton>
 
-        <button
-          type="button"
-          className={btnPrimary}
-          disabled={!canProposeTrade}
-          onClick={onProposeTrade}
-        >
-          Propose trade
-        </button>
-      </div>
+      <CatanButton
+        className="w-full justify-center"
+        disabled={!canBuyDev}
+        onClick={onBuyDevCard}
+      >
+        📜 Buy Dev Card
+      </CatanButton>
     </div>
   );
 }
