@@ -294,12 +294,53 @@ export function CatanBoardScene({
     showGhostCityUpgrades &&
     !!myPlayerId;
 
+  /** Wide plane under the island so open water reads as ocean. */
+  const oceanPlaneSize = useMemo(() => {
+    let maxDist = hexRadius * 4;
+    for (const h of board.hexes) {
+      const p = cubeToPosition(hexRadius, h.coordinate.q, h.coordinate.r);
+      maxDist = Math.max(maxDist, Math.hypot(p.x, p.z) + hexRadius * 2.5);
+    }
+    for (const port of board.ports) {
+      const pa = cubeToPosition(
+        hexRadius,
+        port.inCoordinate.q,
+        port.inCoordinate.r,
+      );
+      const pb = cubeToPosition(
+        hexRadius,
+        port.outCoordinate.q,
+        port.outCoordinate.r,
+      );
+      maxDist = Math.max(
+        maxDist,
+        Math.hypot(pa.x, pa.z) + hexRadius,
+        Math.hypot(pb.x, pb.z) + hexRadius,
+      );
+    }
+    return maxDist * 2 + hexRadius * 6;
+  }, [board.hexes, board.ports, hexRadius]);
+
   return (
     <div style={{ width: "100%", height: "100%" }}>
       <Canvas camera={{ position: [0, 5, 8], fov: 50 }}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 10, 5]} intensity={0.8} />
         <OrbitControls enableZoom enableRotate />
+
+        {/* Ocean floor — sits just below hex bases */}
+        <mesh
+          receiveShadow
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, -0.11, 0]}
+        >
+          <planeGeometry args={[oceanPlaneSize, oceanPlaneSize]} />
+          <meshStandardMaterial
+            color="#0f5680"
+            roughness={0.86}
+            metalness={0.07}
+          />
+        </mesh>
 
         <group>
           {board.hexes.map((hex, idx) => (

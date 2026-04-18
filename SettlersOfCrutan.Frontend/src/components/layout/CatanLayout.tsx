@@ -60,13 +60,13 @@ export default function CatanLayout({
         className="flex gap-3 flex-1 min-h-0"
         style={{ height: "calc(100vh - 280px)" }}
       >
-        {/* Board slot */}
-        <div className="flex-1 rounded-2xl border border-stone-700/60 bg-stone-900/60 overflow-hidden flex flex-col">
+        {/* Board slot — 2/3 of row width (flex 2 : 1 with sidebar) */}
+        <div className="min-w-0 flex-[2_1_0%] rounded-2xl border border-stone-700/60 bg-stone-900/60 overflow-hidden flex flex-col">
           {boardSlot}
         </div>
 
-        {/* Sidebar */}
-        <div className="sm:w-sm lg:w-lg flex flex-col gap-3 shrink-0">
+        {/* Sidebar — 1/3 */}
+        <div className="min-w-0 flex-[1_1_0%] flex flex-col gap-3">
           <div className="rounded-2xl border border-stone-700/60 bg-stone-900/60 p-3 flex flex-col gap-2">
             <div className="text-xs font-semibold text-stone-500 uppercase tracking-widest mb-1 px-1">
               Players

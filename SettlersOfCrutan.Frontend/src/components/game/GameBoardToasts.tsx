@@ -1,0 +1,51 @@
+import { useEffect, useRef } from "react";
+import { useGameToastStore, type GameToast } from "../../stores/gameToastStore";
+
+const AUTO_DISMISS_MS = 5200;
+
+function ToastLine({
+  toast,
+  onDismiss,
+}: {
+  toast: GameToast;
+  onDismiss: (id: string) => void;
+}) {
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+
+  useEffect(() => {
+    const id = toast.id;
+    const t = window.setTimeout(() => onDismissRef.current(id), AUTO_DISMISS_MS);
+    return () => window.clearTimeout(t);
+  }, [toast.id]);
+
+  return (
+    <button
+      type="button"
+      className="game-toast-animate pointer-events-auto max-w-[min(92vw,28rem)] cursor-pointer rounded-xl border border-amber-700/50 bg-stone-900/95 px-4 py-3 text-center text-sm font-medium text-stone-100 shadow-xl backdrop-blur-sm transition hover:bg-stone-800/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/80"
+      onClick={() => onDismiss(toast.id)}
+    >
+      {toast.message}
+    </button>
+  );
+}
+
+/**
+ * Centered stack over the board region; click a toast to dismiss early.
+ */
+export function GameBoardToasts() {
+  const toasts = useGameToastStore((s) => s.toasts);
+  const dismiss = useGameToastStore((s) => s.dismiss);
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-2 pt-3"
+      aria-live="polite"
+      aria-relevant="additions"
+    >
+      {toasts.map((t) => (
+        <ToastLine key={t.id} toast={t} onDismiss={dismiss} />
+      ))}
+    </div>
+  );
+}

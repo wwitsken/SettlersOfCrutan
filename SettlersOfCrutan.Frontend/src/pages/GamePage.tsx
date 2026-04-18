@@ -44,7 +44,9 @@ import {
   postUseRoadBuilding,
   postUseYearOfPlenty,
 } from "../api/gameCommands";
+import { GameBoardToasts } from "../components/game/GameBoardToasts";
 import CatanLayout from "../components/layout/CatanLayout";
+import { useGameToastStore } from "../stores/gameToastStore";
 import type { ChatMessage } from "../types/catan";
 
 type EdgeCoordDto = components["schemas"]["EdgeCoordDto"];
@@ -98,6 +100,11 @@ function GamePage() {
   const { isConnected, isConnecting, error: hubError } = useGameSignalR(
     gameId ?? null,
   );
+
+  const clearGameToasts = useGameToastStore((s) => s.clear);
+  useEffect(() => {
+    clearGameToasts();
+  }, [gameId, clearGameToasts]);
 
   useEffect(() => {
     if (!gameId) return;
@@ -462,7 +469,8 @@ function GamePage() {
             : "Example board — store has no loaded game yet."}
         </div>
       )}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 relative">
+        <GameBoardToasts />
         <CatanBoardScene
           game={boardGame}
           hexRadius={1}
