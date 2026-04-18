@@ -4,4 +4,7 @@
     <AspireHostingModel>None</AspireHostingModel>
     <RootNamespace>SettlersOfCrutan.Frontend</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.6" />
+  </ItemGroup>
 </Project>
