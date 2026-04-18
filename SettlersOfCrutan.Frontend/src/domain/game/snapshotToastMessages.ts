@@ -39,7 +39,10 @@ function pcLocationKey(pc: PopulationCenter): string {
 function populationByLocation(
   board: Board,
 ): Map<string, { type: PopulationCenter["type"]; ownerId: string }> {
-  const m = new Map<string, { type: PopulationCenter["type"]; ownerId: string }>();
+  const m = new Map<
+    string,
+    { type: PopulationCenter["type"]; ownerId: string }
+  >();
   for (const pc of board.populationCenters) {
     m.set(pcLocationKey(pc), { type: pc.type, ownerId: pc.playerOwnerId });
   }
@@ -57,8 +60,15 @@ function summarizeTradeResources(rec: Record<string, number>): string {
   return parts.length ? parts.join(", ") : "nothing";
 }
 
-function phaseToast(prev: GamePhase, next: GamePhase, nextGame: Game): string | null {
-  const name = playerName(nextGame, nextGame.players[nextGame.playerIndex]?.id ?? "");
+function phaseToast(
+  prev: GamePhase,
+  next: GamePhase,
+  nextGame: Game,
+): string | null {
+  const name = playerName(
+    nextGame,
+    nextGame.players[nextGame.playerIndex]?.id ?? "",
+  );
   if (prev === "rollDice" && next === "tradeBuild")
     return "Dice rolled — trade & build phase.";
   if (prev === "rollDice" && next === "discardHalf")
@@ -74,12 +84,15 @@ function phaseToast(prev: GamePhase, next: GamePhase, nextGame: Game): string | 
   if (next === "gameEnd") return "Game over.";
   if (prev !== "setup" && next === "setup") return "Setup phase.";
   if (prev === "setup" && next === "rollDice")
-    return name ? `${name} finishes setup — roll the dice.` : "Setup complete — roll the dice.";
+    return name
+      ? `${name} finishes setup — roll the dice.`
+      : "Setup complete — roll the dice.";
   return null;
 }
 
 function turnHandoffToast(prev: Game, next: Game): string | null {
-  if (prev.gamePhase !== "tradeBuild" || next.gamePhase !== "tradeBuild") return null;
+  if (prev.gamePhase !== "tradeBuild" || next.gamePhase !== "tradeBuild")
+    return null;
   if (prev.playerIndex === next.playerIndex) return null;
   const name = playerName(next, next.players[next.playerIndex]?.id ?? "");
   return name ? `${name}'s turn.` : "Next player's turn.";
@@ -146,7 +159,13 @@ export function snapshotToastMessages(
   const prevOffer = prev.currentTradeOffer;
   const nextOffer = next.currentTradeOffer;
 
-  if (prevOffer && nextOffer && prevOffer.id === nextOffer.id && nextOffer.isAccepted && !prevOffer.isAccepted) {
+  if (
+    prevOffer &&
+    nextOffer &&
+    prevOffer.id === nextOffer.id &&
+    nextOffer.isAccepted &&
+    !prevOffer.isAccepted
+  ) {
     push("Trade accepted.");
   }
 
@@ -180,10 +199,6 @@ export function snapshotToastMessages(
         break;
       }
     }
-  }
-
-  if (next.round > prev.round) {
-    push(`Round ${next.round} begins.`);
   }
 
   return out;
