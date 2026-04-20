@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
 using SettlersOfCrutan.Application.Games;
@@ -9,14 +10,18 @@ using SettlersOfCrutan.Domain.Games;
 namespace SettlersOfCrutan.Application.Games.Commands.TurnFlow;
 
 public record RollDiceCommandResult(int Dice1, int Dice2);
-public record RollDiceCommand(GameId GameId, PlayerId PlayerId) : ICommand<RollDiceCommandResult>;
+public record RollDiceCommand(GameId GameId) : ICommand<RollDiceCommandResult>;
 public sealed class RollDiceCommandHandler(
     IGameRepository gameRepository,
+    ICurrentUser currentUser,
+    IUserRepository userRepository,
     IRealtimePublisher realtimePublisher,
     IDateTimeProvider clock,
     ILogger<RollDiceCommandHandler> logger) : ICommandHandler<RollDiceCommand, RollDiceCommandResult>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
+    private readonly ICurrentUser _currentUser = currentUser;
+    private readonly IUserRepository _userRepository = userRepository;
     private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
     private readonly IDateTimeProvider _clock = clock;
     private readonly ILogger<RollDiceCommandHandler> _logger = logger;
@@ -27,7 +32,7 @@ public sealed class RollDiceCommandHandler(
 
         if (game is null) return Result<RollDiceCommandResult>.Failure(new Error("NotFound", "Game not found"));
 
-        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        var actor = GamePlayerResolution.ResolveActor(game, await _currentUser.UserId());
         if (actor.IsFailure) return Result<RollDiceCommandResult>.Failure(actor.Error);
 
         var result = game.RollAndResolveProduction(actor.Value);
@@ -43,16 +48,13 @@ public sealed class RollDiceCommandHandler(
 
             try
             {
-                var publishTasks = userViews.Select(kvp =>
-                    _realtimePublisher.UpdateGameAsync(
-                        game.Id,
-                        kvp.Key,
-                        now,
-                        RealtimeEvents.GameStateUpdated,
-                        kvp.Value,
-                        ct));
-
-                await Task.WhenAll(publishTasks);
+                await _realtimePublisher.PublishGameStateToAllPlayersAsync(
+                    _userRepository,
+                    game.Id,
+                    userViews,
+                    now,
+                    RealtimeEvents.GameStateUpdated,
+                    ct);
             }
             catch (Exception ex)
             {

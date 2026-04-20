@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
 using SettlersOfCrutan.Application.Games;
@@ -11,16 +12,20 @@ using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Application.Games.Commands.Build;
 
-public record BuyDevelopmentCardCommand(GameId GameId, PlayerId PlayerId) : ICommand<DevelopmentCardType>;
+public record BuyDevelopmentCardCommand(GameId GameId) : ICommand<DevelopmentCardType>;
 
 public sealed class BuyDevelopmentCardCommandHandler(
     IGameRepository gameRepository,
+    ICurrentUser currentUser,
+    IUserRepository userRepository,
     IRealtimePublisher realtimePublisher,
     IDateTimeProvider clock,
     ILogger<BuyDevelopmentCardCommandHandler> logger,
     StandardPriceCalculator priceCalculator) : ICommandHandler<BuyDevelopmentCardCommand, DevelopmentCardType>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
+    private readonly ICurrentUser _currentUser = currentUser;
+    private readonly IUserRepository _userRepository = userRepository;
     private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
     private readonly IDateTimeProvider _clock = clock;
     private readonly ILogger<BuyDevelopmentCardCommandHandler> _logger = logger;
@@ -31,7 +36,7 @@ public sealed class BuyDevelopmentCardCommandHandler(
         var game = await _gameRepository.GetAsync(command.GameId, ct);
         if (game is null) return Result<DevelopmentCardType>.Failure(DomainError.NotFound);
 
-        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        var actor = GamePlayerResolution.ResolveActor(game, await _currentUser.UserId());
         if (actor.IsFailure) return Result<DevelopmentCardType>.Failure(actor.Error);
 
         var result = game.BuyDevelopmentCard(_priceCalculator, actor.Value);
@@ -46,16 +51,13 @@ public sealed class BuyDevelopmentCardCommandHandler(
 
             try
             {
-                var publishTasks = userViews.Select(kvp =>
-                    _realtimePublisher.UpdateGameAsync(
-                        game.Id,
-                        kvp.Key,
-                        now,
-                        RealtimeEvents.GameStateUpdated,
-                        kvp.Value,
-                        ct));
-
-                await Task.WhenAll(publishTasks);
+                await _realtimePublisher.PublishGameStateToAllPlayersAsync(
+                    _userRepository,
+                    game.Id,
+                    userViews,
+                    now,
+                    RealtimeEvents.GameStateUpdated,
+                    ct);
             }
             catch (Exception ex)
             {

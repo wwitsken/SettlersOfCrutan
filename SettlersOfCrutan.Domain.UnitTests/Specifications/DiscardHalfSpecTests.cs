@@ -93,7 +93,7 @@ public class DiscardHalfSpecTests
     [Fact]
     public void PlayerMustExist_PlayerPresent_Succeeds()
     {
-        var result = new PlayerMustExist().IsSatisfiedBy(MakeContext(player: Player.Create("u1")));
+        var result = new PlayerMustExist().IsSatisfiedBy(MakeContext(player: Player.Create(TestIds.User(11))));
         Assert.True(result.IsSuccess);
     }
 
@@ -108,7 +108,7 @@ public class DiscardHalfSpecTests
     [Fact]
     public void PlayerMustHaveResourcesToDiscard_PlayerHasResources_Succeeds()
     {
-        var player = Player.Create("u1");
+        var player = Player.Create(TestIds.User(11));
         player.AddResource(ResourceCardType.Brick, 2);
         player.AddResource(ResourceCardType.Lumber, 2);
         var discards = new List<ResourceCardAmount> { new(ResourceCardType.Brick, 1), new(ResourceCardType.Lumber, 1) };
@@ -120,7 +120,7 @@ public class DiscardHalfSpecTests
     [Fact]
     public void PlayerMustHaveResourcesToDiscard_PlayerLacksResources_Fails()
     {
-        var player = Player.Create("u1");
+        var player = Player.Create(TestIds.User(11));
         player.AddResource(ResourceCardType.Brick, 1);
         var discards = new List<ResourceCardAmount> { new(ResourceCardType.Brick, 3) };
         var result = new PlayerMustHaveResourcesToDiscard().IsSatisfiedBy(

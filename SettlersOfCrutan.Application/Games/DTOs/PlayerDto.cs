@@ -6,9 +6,9 @@ namespace SettlersOfCrutan.Application.Games.DTOs;
 public record PlayerDto
 {
     public required string Id { get; set; }
+    public required Guid UserId { get; set; }
     public required int PlayOrder { get; set; }
     public bool IsPlaying { get; set; } = false;
-    public string DisplayName { get; set; } = "";
     public PlayerColor PlayerColor { get; set; }
     public int ResourceCardCount { get; set; }
     public int DevelopmentCardCount { get; set; }

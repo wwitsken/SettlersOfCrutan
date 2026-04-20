@@ -5,7 +5,6 @@ using SettlersOfCrutan.Application.Games.Commands.TurnFlow;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Resources;
-using SettlersOfCrutan.Presentation.Auth;
 using SettlersOfCrutan.Presentation.Dtos;
 using SettlersOfCrutan.Presentation.Extensions;
 
@@ -19,13 +18,11 @@ public static class GameTurnFlowEndpoints
 
         group.MapPost("/end", async Task<Results<Ok<string>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
-            [FromServices] IUserProvider userProvider,
             ICommandHandler<EndTurnCommand, PlayerId> handler,
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
-            var cmd = new EndTurnCommand(gameId, playerId);
+            var cmd = new EndTurnCommand(gameId);
             Result<PlayerId> result = await handler.Handle(cmd, ct);
             return result.UnwrapId<PlayerId, string>().ToHttpResult();
         });
@@ -33,16 +30,14 @@ public static class GameTurnFlowEndpoints
         group.MapPost("/resolve-robber", async Task<Results<Ok<ResourceCardType>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
             [FromBody] ResolveRobberRequest request,
-            IUserProvider userProvider,
             ICommandHandler<ResolveRobberCommand, ResourceCardType> handler,
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             PlayerId? victimId = string.IsNullOrWhiteSpace(request.VictimPlayerId)
                 ? null
                 : new PlayerId { Value = request.VictimPlayerId! };
-            var cmd = new ResolveRobberCommand(gameId, playerId, request.NewRobberHex.ToDomain(), victimId);
+            var cmd = new ResolveRobberCommand(gameId, request.NewRobberHex.ToDomain(), victimId);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
@@ -50,13 +45,11 @@ public static class GameTurnFlowEndpoints
         group.MapPost("/discard-half", async Task<Results<NoContent, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
             [FromBody] DiscardHalfRequest request,
-            IUserProvider userProvider,
             ICommandHandler<DiscardHalfCommand> handler,
             CancellationToken ct) =>
         {
             GameId gameId = new() { Value = id };
-            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
-            var cmd = new DiscardHalfCommand(gameId, playerId, request.Discards.Select(d => new ResourceCardAmount(d.Type, d.Quantity)).ToList());
+            var cmd = new DiscardHalfCommand(gameId, request.Discards.Select(d => new ResourceCardAmount(d.Type, d.Quantity)).ToList());
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });

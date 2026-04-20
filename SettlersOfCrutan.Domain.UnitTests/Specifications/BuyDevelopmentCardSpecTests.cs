@@ -20,7 +20,7 @@ public class BuyDevelopmentCardSpecTests
             phase,
             currentPlayerId ?? pid,
             pid,
-            player ?? Player.Create("p1"),
+            player ?? Player.Create(TestIds.User(1)),
             cost ?? [],
             playerDevCardCount,
             bankDevCardCount);
@@ -59,7 +59,7 @@ public class BuyDevelopmentCardSpecTests
     [Fact]
     public void PlayerMustAffordDevelopmentCard_HasResources_Succeeds()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         player.AddResource(ResourceCardType.Ore, 1);
         player.AddResource(ResourceCardType.Wool, 1);
         player.AddResource(ResourceCardType.Grain, 1);
@@ -75,7 +75,7 @@ public class BuyDevelopmentCardSpecTests
     [Fact]
     public void PlayerMustAffordDevelopmentCard_NoResources_Fails()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         var cost = new List<ResourceCardAmount> { new(ResourceCardType.Ore, 1) };
 
         var result = new PlayerMustAffordDevelopmentCard().IsSatisfiedBy(MakeContext(player: player, cost: cost));

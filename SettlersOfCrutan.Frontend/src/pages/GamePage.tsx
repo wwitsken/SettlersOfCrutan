@@ -1,5 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useLoaderData,
+  useParams,
+  type LoaderFunctionArgs,
+} from "react-router";
 import { CatanBoardScene } from "../components/board/CatanBoardScene";
 import { GameStoreDebugView } from "../components/dev/GameStoreDebugView";
 import { useGameSignalR } from "../hooks/useGameSignalR";
@@ -48,6 +52,8 @@ import { GameBoardToasts } from "../components/game/GameBoardToasts";
 import CatanLayout from "../components/layout/CatanLayout";
 import { useGameToastStore } from "../stores/gameToastStore";
 import type { ChatMessage } from "../domain/game/gameTypes";
+import { useUserProfiles } from "../hooks/useUserName";
+import { fetchUserProfiles, type UserProfile } from "../api/userProfiles";
 
 type EdgeCoordDto = components["schemas"]["EdgeCoordDto"];
 type VertexCoordDto = components["schemas"]["VertexCoordDto"];
@@ -62,8 +68,51 @@ const MOCK_CHAT_MESSAGES: ChatMessage[] = [
   },
 ];
 
+// ── Loader ──────────────────────────────────────────────────────
+
+type GameDto = components["schemas"]["GameDto"];
+
+type GameLoaderResult = {
+  loadedStatus: number;
+  gameData: GameDto | null;
+  users: UserProfile[];
+};
+
+export async function GameLoader(
+  args: LoaderFunctionArgs,
+): Promise<GameLoaderResult> {
+  if (!args.params.gameId)
+    return { loadedStatus: 404, gameData: null, users: [] };
+
+  const { data: gameData, response: gameResponse } = await api.GET(
+    "/api/games/{id}",
+    {
+      params: { path: { id: args.params.gameId } },
+      accessToken: (await getAccessTokenForOpenApi()) ?? "",
+    },
+  );
+
+  if (gameResponse.status !== 200 || !gameData) {
+    return { loadedStatus: gameResponse.status, gameData: null, users: [] };
+  }
+
+  const userIds = (gameData.game?.players ?? [])
+    .map((p) => p.userId)
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+  const users = await fetchUserProfiles(userIds);
+
+  return { loadedStatus: 200, gameData, users };
+}
+
+// ── Page ────────────────────────────────────────────────────────
+
 function GamePage() {
   const { gameId } = useParams();
+  const {
+    loadedStatus,
+    gameData,
+    users: initialUsers,
+  } = useLoaderData<typeof GameLoader>();
   const game = useGamesStore((s) => s.game);
   const privateGame = useGamesStore((s) => s.privateGame);
   const setLoading = useGamesStore((s) => s.setLoading);
@@ -103,6 +152,40 @@ function GamePage() {
   const [robberBusy, setRobberBusy] = useState(false);
   const [robberErr, setRobberErr] = useState<string | null>(null);
 
+  const { users, fetchProfiles } = useUserProfiles(initialUsers);
+
+  // Fetch user profiles once per unique set of players (not on every SignalR tick).
+  // Seed the cache key with the ids the loader already fetched so the initial
+  // render does not re-request them.
+  const initialFetchKey = useMemo(
+    () =>
+      [...initialUsers.map((u) => u.userId)].sort().join(","),
+    [initialUsers],
+  );
+  const fetchedForRef = useRef(initialFetchKey);
+  useEffect(() => {
+    if (!game?.players.length) return;
+    const userIds = game.players.map((p) => p.userId).filter(Boolean);
+    const key = [...userIds].sort().join(",");
+    if (key === fetchedForRef.current) return;
+    fetchedForRef.current = key;
+    void fetchProfiles(userIds);
+  }, [game, fetchProfiles]);
+
+  // Merge fetched display names into a derived game object used for rendering.
+  const enrichedGame = useMemo(() => {
+    if (!game) return null;
+    if (users.length === 0) return game;
+    const byUserId = new Map(users.map((u) => [u.userId, u]));
+    return {
+      ...game,
+      players: game.players.map((p) => ({
+        ...p,
+        displayName: byUserId.get(p.userId)?.displayName ?? p.displayName,
+      })),
+    };
+  }, [game, users]);
+
   useGameSignalR(gameId ?? null);
 
   const clearGameToasts = useGameToastStore((s) => s.clear);
@@ -112,31 +195,16 @@ function GamePage() {
 
   useEffect(() => {
     if (!gameId) return;
+    setLoading(gameId);
 
-    let cancelled = false;
-    (async () => {
-      setLoading(gameId);
-      const { data, error, response } = await api.GET("/api/games/{id}", {
-        params: { path: { id: gameId } },
-        accessToken: (await getAccessTokenForOpenApi()) ?? "",
-      });
-      if (cancelled) return;
-      if (error || response.status !== 200 || !data) {
-        setError(
-          error
-            ? "Could not load game."
-            : `Game request failed (${response.status}).`,
-        );
-        return;
-      }
-      if (!applyGamePayloadFromApi(data))
-        setError("Game response could not be mapped.");
-    })();
+    if (loadedStatus !== 200 || !gameData) {
+      setError(`Game request failed (${loadedStatus}).`);
+      return;
+    }
 
-    return () => {
-      cancelled = true;
-    };
-  }, [gameId, setLoading, setError]);
+    if (!applyGamePayloadFromApi(gameData))
+      setError("Game response could not be mapped.");
+  }, [gameId, loadedStatus, gameData, setLoading, setError]);
 
   useEffect(() => {
     if (!handHint) return;
@@ -151,7 +219,7 @@ function GamePage() {
   const showExampleBanner = boardView === "example";
 
   const me =
-    game && privateGame ? getCurrentPlayer(game, privateGame) : undefined;
+    enrichedGame && privateGame ? getCurrentPlayer(enrichedGame, privateGame) : undefined;
   const currentPid =
     game && game.players.length > 0
       ? game.players[game.playerIndex]?.id
@@ -217,12 +285,12 @@ function GamePage() {
       : undefined;
 
   const tradeProposerName = useMemo(() => {
-    if (!incomingTrade || !game) return "";
+    if (!incomingTrade || !enrichedGame) return "";
     return (
-      game.players.find((p) => p.id === incomingTrade.playerProposerId)
-        ?.displayName ?? incomingTrade.playerProposerId
+      enrichedGame.players.find((p) => p.id === incomingTrade.playerProposerId)
+        ?.displayName || incomingTrade.playerProposerId
     );
-  }, [incomingTrade, game]);
+  }, [incomingTrade, enrichedGame]);
 
   const mustDiscard =
     showLiveHud &&
@@ -236,13 +304,13 @@ function GamePage() {
       .filter((id) => id !== privateGame.myPlayerId)
       .map((id) => ({
         id,
-        displayName: game.players.find((p) => p.id === id)?.displayName ?? id,
+        displayName: enrichedGame?.players.find((p) => p.id === id)?.displayName || id,
       }));
-  }, [game, privateGame, pendingRobberHex]);
+  }, [game, privateGame, pendingRobberHex, enrichedGame]);
 
   const layoutPlayers = useMemo(
-    () => (game ? playersForLayout(game) : []),
-    [game],
+    () => (enrichedGame ? playersForLayout(enrichedGame) : []),
+    [enrichedGame],
   );
   const layoutUnplayedDevCards = useMemo(
     () => expandUnplayedDevCards(privateGame?.myHand.devCards ?? {}),
@@ -533,34 +601,6 @@ function GamePage() {
 
   return (
     <>
-      {/* <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 bg-stone-900 border-b border-stone-700/60 text-sm">
-        <div>
-          <span className="font-semibold text-stone-100">
-            {game?.gameName ?? "Game"}
-          </span>
-          {gameId && (
-            <span className="ml-2 text-xs text-stone-500">
-              Id {gameId}
-              {game && (
-                <>
-                  {" · Phase "}
-                  <span className="text-stone-300">{game.gamePhase}</span>
-                  {" · Round "}
-                  {game.round}
-                </>
-              )}
-            </span>
-          )}
-        </div>
-        <div className="text-xs text-stone-500">
-          {isConnecting && !isConnected && <span>Connecting to hub…</span>}
-          {hubError && !isConnected && (
-            <span className="text-red-400">Hub: {hubError}</span>
-          )}
-          {isConnected && <span className="text-emerald-400">Live updates</span>}
-        </div>
-      </div> */}
-
       {loadError && (
         <div
           className="px-4 py-2 text-sm text-red-300 bg-red-900/20 border-b border-red-700/40"

@@ -28,7 +28,7 @@ public class PlayRoadBuildingSpecTests
             phase,
             currentPlayerId ?? P1,
             actingPlayerId ?? P1,
-            actingPlayer ?? Player.Create("p1"),
+            actingPlayer ?? Player.Create(TestIds.User(1)),
             board ?? new Board(),
             edge1 ?? SeedEdge,
             edge2 ?? SecondEdgeFromVertex);
@@ -74,7 +74,7 @@ public class PlayRoadBuildingSpecTests
     [Fact]
     public void PlayerMustHaveRoadBuildingCard_HasCard_Succeeds()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         player.AddDevCard(DevelopmentCardType.RoadBuilding);
         var result = new PlayerMustHaveRoadBuildingCard().IsSatisfiedBy(MakeContext(actingPlayer: player));
         Assert.True(result.IsSuccess);
@@ -83,7 +83,7 @@ public class PlayRoadBuildingSpecTests
     [Fact]
     public void PlayerMustHaveRoadBuildingCard_NoCard_Fails()
     {
-        var result = new PlayerMustHaveRoadBuildingCard().IsSatisfiedBy(MakeContext(actingPlayer: Player.Create("p1")));
+        var result = new PlayerMustHaveRoadBuildingCard().IsSatisfiedBy(MakeContext(actingPlayer: Player.Create(TestIds.User(1))));
         Assert.True(result.IsFailure);
         Assert.Equal("DevCard", result.Error.Code);
     }
@@ -91,14 +91,14 @@ public class PlayRoadBuildingSpecTests
     [Fact]
     public void PlayerMustHaveTwoRoadPieces_DefaultPlayer_Succeeds()
     {
-        var result = new PlayerMustHaveTwoRoadPieces().IsSatisfiedBy(MakeContext(actingPlayer: Player.Create("p1")));
+        var result = new PlayerMustHaveTwoRoadPieces().IsSatisfiedBy(MakeContext(actingPlayer: Player.Create(TestIds.User(1))));
         Assert.True(result.IsSuccess);
     }
 
     [Fact]
     public void PlayerMustHaveTwoRoadPieces_OnlyOneRoadLeft_Fails()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         for (var i = 0; i < 14; i++) player.ConsumePiece(BuildableType.Road);
         var result = new PlayerMustHaveTwoRoadPieces().IsSatisfiedBy(MakeContext(actingPlayer: player));
         Assert.True(result.IsFailure);

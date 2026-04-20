@@ -6,6 +6,7 @@ public interface IRepository<TAgg, TId>
     where TId : BaseId
 {
     Task<TAgg?> GetAsync(TId id, CancellationToken ct = default);
+    Task<IReadOnlyList<TAgg>> GetManyAsync(IEnumerable<TId> ids, CancellationToken ct = default);
     Task<bool> SaveAsync(TAgg aggregate, CancellationToken ct = default);
     Task<bool> DeleteAsync(TId id, CancellationToken ct = default);
 }

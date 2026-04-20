@@ -26,7 +26,7 @@ public class PlaceInitialSpecTests
             phase,
             currentPlayerId ?? pid,
             pid,
-            player ?? Player.Create("p1"),
+            player ?? Player.Create(TestIds.User(1)),
             board ?? new Board(),
             vertex ?? ValidVertex,
             edge ?? ValidEdge);
@@ -74,7 +74,7 @@ public class PlaceInitialSpecTests
     [Fact]
     public void PlayerMustHaveInitialPieces_NoSettlements_Fails()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         for (int i = 0; i < 5; i++) player.ConsumePiece(BuildableType.Settlement);
 
         var result = new PlayerMustHaveInitialPieces().IsSatisfiedBy(MakeContext(player: player));

@@ -25,7 +25,7 @@ public class BuildCitySpecTests
             phase,
             currentPlayerId ?? pid,
             pid,
-            player ?? Player.Create("p1"),
+            player ?? Player.Create(TestIds.User(1)),
             cost ?? [],
             board ?? new Board(),
             vertex ?? ValidVertex);
@@ -64,7 +64,7 @@ public class BuildCitySpecTests
     [Fact]
     public void PlayerMustAffordCity_HasResources_Succeeds()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         player.AddResource(ResourceCardType.Ore, 3);
         player.AddResource(ResourceCardType.Grain, 2);
         var cost = new List<ResourceCardAmount> { new(ResourceCardType.Ore, 3), new(ResourceCardType.Grain, 2) };
@@ -76,7 +76,7 @@ public class BuildCitySpecTests
     [Fact]
     public void PlayerMustAffordCity_NoResources_Fails()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         var cost = new List<ResourceCardAmount> { new(ResourceCardType.Ore, 3) };
 
         var result = new PlayerMustAffordCity().IsSatisfiedBy(MakeContext(player: player, cost: cost));
@@ -93,7 +93,7 @@ public class BuildCitySpecTests
     [Fact]
     public void PlayerMustHaveCityPiece_NoPieces_Fails()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         for (int i = 0; i < 4; i++) player.ConsumePiece(BuildableType.City);
 
         var result = new PlayerMustHaveCityPiece().IsSatisfiedBy(MakeContext(player: player));

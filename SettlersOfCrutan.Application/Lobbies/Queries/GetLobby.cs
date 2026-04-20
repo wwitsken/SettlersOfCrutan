@@ -5,30 +5,22 @@ using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Lobbies;
 
 namespace SettlersOfCrutan.Application.Lobbies.Queries;
-public record GetLobbyQuery(Guid LobbyId, string UserViewerId) : IQuery<LobbyDto>;
 
-public sealed class GetLobbyQueryHandler(ILobbyRepository lobbyRepository) : IQueryHandler<GetLobbyQuery, LobbyDto>
+public record GetLobbyQuery(LobbyId LobbyId) : IQuery<LobbyDto>;
+
+public sealed class GetLobbyQueryHandler(ILobbyRepository lobbyRepository, ICurrentUser currentUser) : IQueryHandler<GetLobbyQuery, LobbyDto>
 {
     private readonly ILobbyRepository _lobbyRepository = lobbyRepository;
+    private readonly ICurrentUser _currentUser = currentUser;
 
     public async Task<Result<LobbyDto>> Handle(GetLobbyQuery query, CancellationToken ct = default)
     {
-        var lobby = await _lobbyRepository.GetAsync(new LobbyId() { Value = query.LobbyId }, ct);
+        var lobby = await _lobbyRepository.GetAsync(query.LobbyId, ct);
 
         if (lobby is null) return Result.Failure<LobbyDto>(DomainError.NotFound);
 
-        var dto = new LobbyDto()
-        {
-            LobbyId = lobby.Id.Value,
-            LobbyMembers = [.. lobby.Members.Select(p => new LobbyMemberDto
-            {
-                Id = p.Id.ToString(),
-                DisplayName = p.DisplayName ?? "",
-                IsHost = p.IsHost,
-                IsReady = p.IsReady,
-                IsMe = p.UserId == query.UserViewerId
-            })]
-        };
+        var viewerId = await _currentUser.UserId();
+        var dto = LobbyDto.FromLobby(lobby, viewerId);
 
         return Result.Success(dto);
     }

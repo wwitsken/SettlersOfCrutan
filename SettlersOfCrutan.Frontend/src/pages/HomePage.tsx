@@ -77,7 +77,7 @@ function HeroBanner({
             type="button"
             disabled={!joinCode}
             onClick={onJoin}
-            className="rounded-xl border-2 border-[#fff6df] bg-white/15 px-4 py-2 text-sm font-medium text-[#fff6df] transition-colors hover:bg-white/25 disabled:opacity-40"
+            className="cursor-pointer rounded-xl border-2 border-[#fff6df] bg-white/15 px-4 py-2 text-sm font-medium text-[#fff6df] transition-colors hover:bg-white/25 disabled:opacity-40"
             style={{ fontFamily: "var(--font-hand)", fontSize: "1.1rem" }}
           >
             Join →
@@ -93,11 +93,15 @@ function IdentitySheet({
   color,
   onNameChange,
   onColorChange,
+  profileLoading,
+  profileError,
 }: {
   name: string;
   color: string;
   onNameChange: (n: string) => void;
   onColorChange: (c: string) => void;
+  profileLoading: boolean;
+  profileError: string | null;
 }) {
   return (
     <ParchmentCard tape style={{ flex: 2, minWidth: 320 }}>
@@ -119,6 +123,23 @@ function IdentitySheet({
       >
         This is how others shall know thee.
       </div>
+      {profileLoading && (
+        <div
+          className="mb-2 text-xs"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--ink-faint)" }}
+        >
+          Syncing profile…
+        </div>
+      )}
+      {profileError && (
+        <div
+          className="mb-2 rounded-lg border border-amber-700/40 bg-amber-50 px-2 py-1.5 text-xs"
+          style={{ color: "var(--catan-accent)" }}
+          role="status"
+        >
+          {profileError}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-4">
         <CatanAvatar color={color} name={name} size="lg" />
         <div className="flex flex-col gap-1">
@@ -225,7 +246,14 @@ function HomePage() {
   const navigate = useNavigate();
   const status = useLobbyStore((s) => s.status);
   const error = useLobbyStore((s) => s.error);
-  const { name, color, setName, setColor } = useIdentity();
+  const {
+    name,
+    color,
+    setName,
+    setColor,
+    profileLoading,
+    profileError,
+  } = useIdentity();
 
   const handleCreateLobby = async () => {
     const { data } = await api.POST("/api/lobby/create");
@@ -254,6 +282,8 @@ function HomePage() {
             color={color}
             onNameChange={setName}
             onColorChange={setColor}
+            profileLoading={profileLoading}
+            profileError={profileError}
           />
           <LastGameCard />
         </div>

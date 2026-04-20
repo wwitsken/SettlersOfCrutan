@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
 using SettlersOfCrutan.Application.Games;
@@ -11,15 +12,19 @@ using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 
 namespace SettlersOfCrutan.Application.Games.Commands.DevelopmentCards;
 
-public record UseRoadBuildingCommand(GameId GameId, PlayerId PlayerId, Edge Edge1, Edge Edge2) : ICommand;
+public record UseRoadBuildingCommand(GameId GameId, Edge Edge1, Edge Edge2) : ICommand;
 
 public sealed class UseRoadBuildingCommandHandler(
     IGameRepository gameRepository,
+    ICurrentUser currentUser,
+    IUserRepository userRepository,
     IRealtimePublisher realtimePublisher,
     IDateTimeProvider clock,
     ILogger<UseRoadBuildingCommandHandler> logger) : ICommandHandler<UseRoadBuildingCommand>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
+    private readonly ICurrentUser _currentUser = currentUser;
+    private readonly IUserRepository _userRepository = userRepository;
     private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
     private readonly IDateTimeProvider _clock = clock;
     private readonly ILogger<UseRoadBuildingCommandHandler> _logger = logger;
@@ -29,7 +34,7 @@ public sealed class UseRoadBuildingCommandHandler(
         var game = await _gameRepository.GetAsync(command.GameId, ct);
         if (game is null) return Result.Failure(DomainError.NotFound);
 
-        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        var actor = GamePlayerResolution.ResolveActor(game, await _currentUser.UserId());
         if (actor.IsFailure) return Result.Failure(actor.Error);
 
         Result<(Road r1, Road r2)> result = game.PlayRoadBuilding(actor.Value, command.Edge1, command.Edge2);
@@ -44,16 +49,13 @@ public sealed class UseRoadBuildingCommandHandler(
 
             try
             {
-                var publishTasks = userViews.Select(kvp =>
-                    _realtimePublisher.UpdateGameAsync(
-                        game.Id,
-                        kvp.Key,
-                        now,
-                        RealtimeEvents.GameStateUpdated,
-                        kvp.Value,
-                        ct));
-
-                await Task.WhenAll(publishTasks);
+                await _realtimePublisher.PublishGameStateToAllPlayersAsync(
+                    _userRepository,
+                    game.Id,
+                    userViews,
+                    now,
+                    RealtimeEvents.GameStateUpdated,
+                    ct);
             }
             catch (Exception ex)
             {

@@ -17,7 +17,7 @@ public class PlayKnightSpecTests
             phase,
             currentPlayerId ?? P1,
             actingPlayerId ?? P1,
-            actingPlayer ?? Player.Create("p1"));
+            actingPlayer ?? Player.Create(TestIds.User(1)));
 
     [Fact]
     public void GameMustBeInTradeBuildPhase_TradeBuild_Succeeds()
@@ -53,7 +53,7 @@ public class PlayKnightSpecTests
     [Fact]
     public void PlayerMustHaveKnightCard_HasCard_Succeeds()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         player.AddDevCard(DevelopmentCardType.Knight);
         var result = new PlayerMustHaveKnightCard().IsSatisfiedBy(MakeContext(actingPlayer: player));
         Assert.True(result.IsSuccess);
@@ -62,7 +62,7 @@ public class PlayKnightSpecTests
     [Fact]
     public void PlayerMustHaveKnightCard_NoCard_Fails()
     {
-        var result = new PlayerMustHaveKnightCard().IsSatisfiedBy(MakeContext(actingPlayer: Player.Create("p1")));
+        var result = new PlayerMustHaveKnightCard().IsSatisfiedBy(MakeContext(actingPlayer: Player.Create(TestIds.User(1))));
         Assert.True(result.IsFailure);
         Assert.Equal("DevCard", result.Error.Code);
     }

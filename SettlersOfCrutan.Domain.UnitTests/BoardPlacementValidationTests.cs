@@ -89,7 +89,7 @@ public class BoardPlacementValidationTests
         Assert.Single(board.PopulationCenters);
         Assert.Same(upgraded, board.PopulationCenters[0]);
         Assert.Equal(PopulationCenterLevel.City, upgraded.Level);
-        Assert.Equal(owner, upgraded.PlayerOwner);
+        Assert.Equal(owner, upgraded.OwnerId);
         Assert.True(board.PopulationCenters[0].VertexCoordinate.Equals(v0.Normalize()));
     }
 

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
 using SettlersOfCrutan.Application.Games;
@@ -9,15 +10,19 @@ using SettlersOfCrutan.Domain.Games;
 
 namespace SettlersOfCrutan.Application.Games.Commands.TurnFlow;
 
-public record EndTurnCommand(GameId GameId, PlayerId PlayerId) : ICommand<PlayerId>;
+public record EndTurnCommand(GameId GameId) : ICommand<PlayerId>;
 
 public sealed class EndTurnCommandHandler(
     IGameRepository gameRepository,
+    ICurrentUser currentUser,
+    IUserRepository userRepository,
     IRealtimePublisher realtimePublisher,
     IDateTimeProvider clock,
     ILogger<EndTurnCommandHandler> logger) : ICommandHandler<EndTurnCommand, PlayerId>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
+    private readonly ICurrentUser _currentUser = currentUser;
+    private readonly IUserRepository _userRepository = userRepository;
     private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
     private readonly IDateTimeProvider _clock = clock;
     private readonly ILogger<EndTurnCommandHandler> _logger = logger;
@@ -27,7 +32,7 @@ public sealed class EndTurnCommandHandler(
         var game = await _gameRepository.GetAsync(command.GameId, ct);
         if (game is null) return Result<PlayerId>.Failure(DomainError.NotFound);
 
-        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        var actor = GamePlayerResolution.ResolveActor(game, await _currentUser.UserId());
         if (actor.IsFailure) return Result<PlayerId>.Failure(actor.Error);
 
         var result = game.EndTurn(actor.Value, _clock);
@@ -42,16 +47,13 @@ public sealed class EndTurnCommandHandler(
 
             try
             {
-                var publishTasks = userViews.Select(kvp =>
-                    _realtimePublisher.UpdateGameAsync(
-                        game.Id,
-                        kvp.Key,
-                        now,
-                        RealtimeEvents.GameStateUpdated,
-                        kvp.Value,
-                        ct));
-
-                await Task.WhenAll(publishTasks);
+                await _realtimePublisher.PublishGameStateToAllPlayersAsync(
+                    _userRepository,
+                    game.Id,
+                    userViews,
+                    now,
+                    RealtimeEvents.GameStateUpdated,
+                    ct);
             }
             catch (Exception ex)
             {

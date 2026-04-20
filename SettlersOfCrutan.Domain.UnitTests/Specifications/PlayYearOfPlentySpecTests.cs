@@ -20,7 +20,7 @@ public class PlayYearOfPlentySpecTests
             phase,
             currentPlayerId ?? P1,
             actingPlayerId ?? P1,
-            actingPlayer ?? Player.Create("p1"),
+            actingPlayer ?? Player.Create(TestIds.User(1)),
             type1 ?? ResourceCardType.Brick,
             type2 ?? ResourceCardType.Lumber,
             bank ?? ResourceHand.StandardBankResources());
@@ -59,7 +59,7 @@ public class PlayYearOfPlentySpecTests
     [Fact]
     public void PlayerMustHaveYearOfPlentyCard_HasCard_Succeeds()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         player.AddDevCard(DevelopmentCardType.YearOfPlenty);
         var result = new PlayerMustHaveYearOfPlentyCard().IsSatisfiedBy(MakeContext(actingPlayer: player));
         Assert.True(result.IsSuccess);
@@ -68,7 +68,7 @@ public class PlayYearOfPlentySpecTests
     [Fact]
     public void PlayerMustHaveYearOfPlentyCard_NoCard_Fails()
     {
-        var result = new PlayerMustHaveYearOfPlentyCard().IsSatisfiedBy(MakeContext(actingPlayer: Player.Create("p1")));
+        var result = new PlayerMustHaveYearOfPlentyCard().IsSatisfiedBy(MakeContext(actingPlayer: Player.Create(TestIds.User(1))));
         Assert.True(result.IsFailure);
         Assert.Equal("DevCard", result.Error.Code);
     }

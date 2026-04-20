@@ -9,7 +9,7 @@ public class PlayerMustHave3to1Port : ISpecification<Maritime3to1TradeContext>
     public Result<Nothing> IsSatisfiedBy(Maritime3to1TradeContext context)
     {
         bool has3to1 = context.Board.PopulationCenters.Any(pc =>
-            pc.PlayerOwner == context.ActingPlayerId &&
+            pc.OwnerId == context.ActingPlayerId &&
             context.Board.Ports.Any(p =>
                 p.Type == PortType.Generic3to1 &&
                 PortVertexAdjacency.PopulationCenterTouchesPort(p, pc)));

@@ -20,7 +20,7 @@ public class PlayerMustHaveMatching2to1Port : ISpecification<Maritime2to1TradeCo
         };
 
         bool has2to1 = context.Board.PopulationCenters.Any(pc =>
-            pc.PlayerOwner == context.ActingPlayerId &&
+            pc.OwnerId == context.ActingPlayerId &&
             context.Board.Ports.Any(p =>
                 p.Type == required && PortVertexAdjacency.PopulationCenterTouchesPort(p, pc)));
 

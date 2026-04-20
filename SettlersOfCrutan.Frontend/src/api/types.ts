@@ -106,11 +106,7 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["JoinGameRequest"];
-                };
-            };
+            requestBody?: never;
             responses: {
                 /** @description OK */
                 200: {
@@ -1549,6 +1545,202 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["GetUserProfilesRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UserProfileDto"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UserProfileDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UserProfileDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateUserProfileRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1590,6 +1782,9 @@ export interface components {
         GamePhase: "pendingStart" | "setup" | "rollDice" | "discardHalf" | "resolveRobber" | "tradeBuild" | "gameEnd";
         /** @enum {unknown} */
         GameType: "baseGame" | "seafarers" | "citiesAndKnights" | "tradersAndBarbarians" | "explorersAndPirates";
+        GetUserProfilesRequest: {
+            userIds: string[];
+        };
         HexCoordDto: {
             /** Format: int32 */
             q: number;
@@ -1611,9 +1806,6 @@ export interface components {
             numberToken?: number;
             hasRobber?: boolean;
         };
-        JoinGameRequest: {
-            playerId: string;
-        };
         LobbyDto: {
             /** Format: uuid */
             lobbyId?: string;
@@ -1621,7 +1813,8 @@ export interface components {
         };
         LobbyMemberDto: {
             id: string;
-            displayName?: string;
+            /** Format: uuid */
+            userId: string;
             isHost?: boolean;
             isReady?: boolean;
             isMe?: boolean;
@@ -1651,10 +1844,11 @@ export interface components {
         PlayerDirection: "clockwise" | "counterClockwise";
         PlayerDto: {
             id: string;
+            /** Format: uuid */
+            userId: string;
             /** Format: int32 */
             playOrder: number;
             isPlaying?: boolean;
-            displayName?: string;
             playerColor?: components["schemas"]["PlayerColor"];
             /** Format: int32 */
             resourceCardCount?: number;
@@ -1762,6 +1956,10 @@ export interface components {
             };
             isAccepted?: boolean;
         };
+        UpdateUserProfileRequest: {
+            displayName: null | string;
+            preferredColor: null | components["schemas"]["PlayerColor"];
+        };
         UpgradeSettlementToCityRequest: {
             vertexCoordinate: components["schemas"]["VertexCoordDto"];
         };
@@ -1773,6 +1971,12 @@ export interface components {
             playerId: string;
             edge1: components["schemas"]["EdgeCoordDto"];
             edge2: components["schemas"]["EdgeCoordDto"];
+        };
+        UserProfileDto: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+            preferredColor: components["schemas"]["PlayerColor"];
         };
         UseYearOfPlentyCommandResult: {
             resourceType1: components["schemas"]["ResourceCardType"];

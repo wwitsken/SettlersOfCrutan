@@ -12,12 +12,12 @@ public class PopulationCenter(Vertex vertexCoordinate) : Entity<PopulationCenter
 {
     public override PopulationCenterId Id { get; init; } = new() { Value = vertexCoordinate };
     public Vertex VertexCoordinate => Id.Value;
-    public PlayerId PlayerOwner { get; set; }
+    public PlayerId OwnerId { get; set; }
     public PopulationCenterLevel Level { get; set; } = PopulationCenterLevel.Settlement;
     public static PopulationCenter CreateSettlement(Vertex vertexCoord, PlayerId playerId) =>
         new(vertexCoord)
         {
-            PlayerOwner = playerId,
+            OwnerId = playerId,
             Level = PopulationCenterLevel.Settlement
         };
 }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
 using SettlersOfCrutan.Application.Games;
@@ -11,15 +12,19 @@ using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Application.Games.Commands.TurnFlow;
 
-public record ResolveRobberCommand(GameId GameId, PlayerId PlayerId, HexCoord NewRobberHexCoord, PlayerId? VictimId) : ICommand<ResourceCardType>;
+public record ResolveRobberCommand(GameId GameId, HexCoord NewRobberHexCoord, PlayerId? VictimId) : ICommand<ResourceCardType>;
 
 public sealed class ResolveRobberCommandHandler(
     IGameRepository gameRepository,
+    ICurrentUser currentUser,
+    IUserRepository userRepository,
     IRealtimePublisher realtimePublisher,
     IDateTimeProvider clock,
     ILogger<ResolveRobberCommandHandler> logger) : ICommandHandler<ResolveRobberCommand, ResourceCardType>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
+    private readonly ICurrentUser _currentUser = currentUser;
+    private readonly IUserRepository _userRepository = userRepository;
     private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
     private readonly IDateTimeProvider _clock = clock;
     private readonly ILogger<ResolveRobberCommandHandler> _logger = logger;
@@ -29,7 +34,7 @@ public sealed class ResolveRobberCommandHandler(
         var game = await _gameRepository.GetAsync(command.GameId, ct);
         if (game is null) return Result<ResourceCardType>.Failure(DomainError.NotFound);
 
-        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        var actor = GamePlayerResolution.ResolveActor(game, await _currentUser.UserId());
         if (actor.IsFailure) return Result<ResourceCardType>.Failure(actor.Error);
 
         var result = game.ResolveRobber(actor.Value, command.NewRobberHexCoord, command.VictimId);
@@ -44,16 +49,13 @@ public sealed class ResolveRobberCommandHandler(
 
             try
             {
-                var publishTasks = userViews.Select(kvp =>
-                    _realtimePublisher.UpdateGameAsync(
-                        game.Id,
-                        kvp.Key,
-                        now,
-                        RealtimeEvents.GameStateUpdated,
-                        kvp.Value,
-                        ct));
-
-                await Task.WhenAll(publishTasks);
+                await _realtimePublisher.PublishGameStateToAllPlayersAsync(
+                    _userRepository,
+                    game.Id,
+                    userViews,
+                    now,
+                    RealtimeEvents.GameStateUpdated,
+                    ct);
             }
             catch (Exception ex)
             {

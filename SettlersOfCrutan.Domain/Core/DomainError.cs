@@ -85,4 +85,6 @@ public class DomainError(string code, string message) : Error(code, message)
     internal static Error InvalidColor => new("InvalidColor", "Color chosen is invalid.");
     public static Error ColorMustSetBeforeReady => new("ColorMustSetBeforeReady", "Player must set a color before marking ready.");
     public static Error NameMustSetBeforeReady => new("NameMustSetBeforeReady", "Player must set a name before marking ready.");
+
+    public static Error CannotEndTurnWithoutPlacingInitialSettlementAndRoad => new("CannotEndTurnWithoutPlacingInitialSettlementAndRoad", "Player must place initial road and settlement before ending turn.");
 }

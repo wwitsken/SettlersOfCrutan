@@ -25,7 +25,7 @@ public class BuildSettlementSpecTests
             phase,
             currentPlayerId ?? pid,
             pid,
-            player ?? Player.Create("p1"),
+            player ?? Player.Create(TestIds.User(1)),
             cost ?? [],
             board ?? new Board(),
             vertex ?? ValidVertex);
@@ -64,7 +64,7 @@ public class BuildSettlementSpecTests
     [Fact]
     public void PlayerMustAffordSettlement_HasResources_Succeeds()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         player.AddResource(ResourceCardType.Brick, 1);
         player.AddResource(ResourceCardType.Lumber, 1);
         player.AddResource(ResourceCardType.Wool, 1);
@@ -82,7 +82,7 @@ public class BuildSettlementSpecTests
     [Fact]
     public void PlayerMustAffordSettlement_NoResources_Fails()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         var cost = new List<ResourceCardAmount> { new(ResourceCardType.Brick, 1) };
 
         var result = new PlayerMustAffordSettlement().IsSatisfiedBy(MakeContext(player: player, cost: cost));
@@ -99,7 +99,7 @@ public class BuildSettlementSpecTests
     [Fact]
     public void PlayerMustHaveSettlementPiece_NoPieces_Fails()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         for (int i = 0; i < 5; i++) player.ConsumePiece(BuildableType.Settlement);
 
         var result = new PlayerMustHaveSettlementPiece().IsSatisfiedBy(MakeContext(player: player));

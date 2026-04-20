@@ -1,18 +1,19 @@
 ﻿using SettlersOfCrutan.Application.Abstractions;
-using SettlersOfCrutan.Application.Lobbies.DTOs;
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Lobbies;
-using SettlersOfCrutan.Domain.Lobbies.DomainEvents;
 
 namespace SettlersOfCrutan.Application.Lobbies.Commands;
-public record CreateLobbyCommand(PlayerId PlayerId) : ICommand<Guid>;
-public sealed class CreateLobbyCommandHandler(ILobbyRepository lobbyRepository) : ICommandHandler<CreateLobbyCommand, Guid>
+
+public record CreateLobbyCommand : ICommand<Guid>;
+
+public sealed class CreateLobbyCommandHandler(ILobbyRepository lobbyRepository, ICurrentUser currentUser) : ICommandHandler<CreateLobbyCommand, Guid>
 {
     private readonly ILobbyRepository _lobbyRepository = lobbyRepository;
+    private readonly ICurrentUser _currentUser = currentUser;
+
     public async Task<Result<Guid>> Handle(CreateLobbyCommand command, CancellationToken ct = default)
     {
-        var newLobby = Lobby.Create(command.PlayerId);
+        var newLobby = Lobby.Create(await _currentUser.UserId());
 
         await _lobbyRepository.SaveAsync(newLobby, ct);
 

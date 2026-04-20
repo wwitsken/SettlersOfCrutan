@@ -211,9 +211,10 @@ function mapBoard(dto: PublicGameDto["board"] | undefined): Board {
 function mapPlayers(list: PublicGameDto["players"]): Player[] {
   return (list ?? []).map((p) => ({
     id: p.id,
+    userId: p.userId ?? "",
     playOrder: num(p.playOrder),
     isPlaying: !!p.isPlaying,
-    displayName: p.displayName ?? "",
+    displayName: "",
     playerColor: normalizePlayerColor(p.playerColor),
     resourceCardCount: num(p.resourceCardCount),
     developmentCardCount: num(p.developmentCardCount),

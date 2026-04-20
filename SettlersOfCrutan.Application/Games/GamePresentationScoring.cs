@@ -30,8 +30,8 @@ public static class GamePresentationScoring
         var dict = game.Players.ToDictionary(p => p.Id, _ => 0);
         foreach (var pc in game.Board.PopulationCenters)
         {
-            if (dict.ContainsKey(pc.PlayerOwner))
-                dict[pc.PlayerOwner] += (int)pc.Level;
+            if (dict.ContainsKey(pc.OwnerId))
+                dict[pc.OwnerId] += (int)pc.Level;
         }
         return dict;
     }

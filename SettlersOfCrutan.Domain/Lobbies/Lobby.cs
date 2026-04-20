@@ -1,6 +1,7 @@
 ﻿using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Lobbies.DomainEvents;
+using SettlersOfCrutan.Domain.Users;
 using System.Text.Json.Serialization;
 
 namespace SettlersOfCrutan.Domain.Lobbies;
@@ -16,7 +17,7 @@ public class Lobby : AggregateRoot<LobbyId>
 
     private readonly List<LobbyMember> _members = [];
     public IReadOnlyList<LobbyMember> Members => [.. _members];
-    public bool IsHost(PlayerId pid) => _members.Any(m => m.Id == pid && m.IsHost);
+    public bool IsHost(UserId userId) => _members.Any(m => m.UserId == userId && m.IsHost);
 
     [JsonConstructor]
     private Lobby(LobbyId id, IReadOnlyList<LobbyMember> members, bool isOpen, DateTimeOffset dateCreated, int capacity)
@@ -28,7 +29,7 @@ public class Lobby : AggregateRoot<LobbyId>
         Capacity = capacity;
     }
 
-    public static Lobby Create(string hostUserId)
+    public static Lobby Create(UserId hostUserId)
     {
         var lobby = new Lobby(
             new LobbyId { Value = Guid.NewGuid() },
@@ -44,7 +45,7 @@ public class Lobby : AggregateRoot<LobbyId>
         return lobby;
     }
 
-    public Result<Nothing> AddMember(string userId)
+    public Result<Nothing> AddMember(UserId userId)
     {
         if (!IsOpen) return Result<Nothing>.Failure(new("LobbyClosed", "Lobby is closed."));
         if (_members.Any(m => m.UserId == userId)) return Result<Nothing>.Failure(new("AlreadyJoinedLobby", "Player is already in the lobby."));
@@ -56,7 +57,7 @@ public class Lobby : AggregateRoot<LobbyId>
         return Result.Success();
     }
 
-    public Result<Nothing> RemoveMember(string userId)
+    public Result<Nothing> RemoveMember(UserId userId)
     {
         var idx = _members.FindIndex(m => m.UserId == userId);
         if (idx < 0)
@@ -81,7 +82,7 @@ public class Lobby : AggregateRoot<LobbyId>
         return Result.Success();
     }
 
-    public Result<Nothing> SetReady(string userId, bool ready)
+    public Result<Nothing> SetReady(UserId userId, bool ready)
     {
         var idx = _members.FindIndex(m => m.UserId == userId);
         if (idx < 0)
@@ -95,7 +96,7 @@ public class Lobby : AggregateRoot<LobbyId>
         return Result.Success();
     }
 
-    public Result<Nothing> CanStartGame(string userId)
+    public Result<Nothing> CanStartGame(UserId userId)
     {
         var idx = _members.FindIndex(m => m.UserId == userId);
         if (idx < 0)

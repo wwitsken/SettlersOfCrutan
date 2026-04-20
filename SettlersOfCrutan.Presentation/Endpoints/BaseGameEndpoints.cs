@@ -6,8 +6,6 @@ using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Application.Games.Queries;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
-using SettlersOfCrutan.Presentation.Auth;
-using SettlersOfCrutan.Presentation.Dtos;
 using SettlersOfCrutan.Presentation.Extensions;
 
 namespace SettlersOfCrutan.Presentation.Endpoints;
@@ -20,14 +18,11 @@ public static class BaseGameEndpoints
 
         group.MapPost("/{id:guid}/join", async Task<Results<Ok<Guid>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
-            [FromBody] JoinGameRequest request,
-            IUserProvider userProvider,
             ICommandHandler<JoinGameCommand, GameId> handler,
             CancellationToken ct) =>
         {
-            PlayerId playerId = PlayerId.Create(userProvider.GetUserId());
             GameId gameId = new() { Value = id };
-            var cmd = new JoinGameCommand(gameId, playerId);
+            var cmd = new JoinGameCommand(gameId);
             var result = await handler.Handle(cmd, ct);
             return result.UnwrapId<GameId, Guid>().ToHttpResult();
         }).RequireAuthorization();
@@ -35,14 +30,13 @@ public static class BaseGameEndpoints
         group.MapGet("/{id:guid}", async Task<Results<Ok<GameDto>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid id,
             [FromServices] IQueryHandler<GetGameForPlayer, GameDto> handler,
-            IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            var query = new GetGameForPlayer(new GameId { Value = id }, userProvider.GetUserId());
+            var query = new GetGameForPlayer(new GameId { Value = id });
             Result<GameDto> result = await handler.Handle(query, ct);
             return result.ToHttpResult();
         }).RequireAuthorization();
 
         return app;
     }
-};
+}

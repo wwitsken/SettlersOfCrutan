@@ -10,17 +10,20 @@ using RollSpecs = SettlersOfCrutan.Domain.Specifications.RollAndResolveProductio
 namespace SettlersOfCrutan.Domain.Games;
 public partial class Game
 {
-    private static readonly ISpecification<EndTurnSpecs.EndTurnContext>[] EndTurnSpecifications =
+    private static readonly ISpecification<EndTurnSpecs.EndTurnContext>[] _endTurnSpecifications =
     [
         new EndTurnSpecs.GameMustBeInSetupOrTradeBuild(),
-        new EndTurnSpecs.MustBeCurrentPlayerTurn()
+        new EndTurnSpecs.MustBeCurrentPlayerTurn(),
+        new EndTurnSpecs.DuringSetupPhasePlayerMustHavePlacedInitialSettlementAndRoad()
     ];
 
     public Result<PlayerId> EndTurn(PlayerId playerId, IDateTimeProvider clock, TimeSpan? turnDuration = null)
     {
-        var context = new EndTurnSpecs.EndTurnContext(GamePhase, CurrentPlayerId(), playerId);
+        var context = new EndTurnSpecs.EndTurnContext(GamePhase, Round, PlayerDirection,
+            [.. Board.Roads.Where(r => r.OwnerId == playerId)],
+            [.. Board.PopulationCenters.Where(r => r.OwnerId == playerId)], CurrentPlayerId(), playerId);
 
-        foreach (var spec in EndTurnSpecifications)
+        foreach (var spec in _endTurnSpecifications)
         {
             var result = spec.IsSatisfiedBy(context);
             if (result.IsFailure)
@@ -140,8 +143,8 @@ public partial class Game
                 };
                 if (amountToGive <= 0) continue;
 
-                distResources.TryAdd(pop.PlayerOwner, []);
-                distResources[pop.PlayerOwner].Add(new ResourceCardAmount(hex.Resource, amountToGive));
+                distResources.TryAdd(pop.OwnerId, []);
+                distResources[pop.OwnerId].Add(new ResourceCardAmount(hex.Resource, amountToGive));
             }
         }
 

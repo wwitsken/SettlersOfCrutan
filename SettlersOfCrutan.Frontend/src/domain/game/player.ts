@@ -2,6 +2,7 @@ import type { PlayerColor } from "./gameTypes";
 
 export type Player = {
   id: string;
+  userId: string;
   playOrder: number;
   isPlaying: boolean;
   displayName: string;

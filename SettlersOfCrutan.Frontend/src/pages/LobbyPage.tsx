@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   useLoaderData,
   useNavigate,
@@ -12,6 +12,7 @@ import { getAccessTokenForOpenApi } from "../authConfig";
 import { useSignalRContext } from "../context/SignalRContext";
 import { lobbyDtoToDomain } from "../domain/lobby/mapLobbyDto";
 import { lobbyFullStateEvents } from "../api/realtimeEvents";
+import { fetchUserProfiles, type UserProfile } from "../api/userProfiles";
 import type { components } from "../api/types";
 import ParchmentCard from "../components/ui/ParchmentCard";
 import CatanButton from "../components/ui/CatanButton";
@@ -21,22 +22,47 @@ import CatanNameEdit from "../components/ui/CatanNameEdit";
 import ReadyToggle from "../components/ui/ReadyToggle";
 import CodeChip from "../components/ui/CodeChip";
 import ChatStub from "../components/ui/ChatStub";
+import { useUserProfiles } from "../hooks/useUserName";
 
-// ── Loader (unchanged) ──────────────────────────────────────────────────────
+// ── Loader ──────────────────────────────────────────────────────
 
-export async function LobbyLoader(args: LoaderFunctionArgs) {
-  if (!args.params.lobbyId) return { status: 404 };
-  const { data, response } = await api.GET("/api/lobby/{lobbyId}", {
-    params: { path: { lobbyId: args.params.lobbyId } },
-    accessToken: (await getAccessTokenForOpenApi()) ?? "",
-  });
-  return { data, loadedStatus: response.status };
+type LobbyLoaderResult = {
+  loadedStatus: number;
+  lobbyData: components["schemas"]["LobbyDto"] | null;
+  users: UserProfile[];
+};
+
+export async function LobbyLoader(
+  args: LoaderFunctionArgs,
+): Promise<LobbyLoaderResult> {
+  if (!args.params.lobbyId)
+    return { loadedStatus: 404, lobbyData: null, users: [] };
+
+  const { data: lobbyData, response: lobbyResponse } = await api.GET(
+    "/api/lobby/{lobbyId}",
+    {
+      params: { path: { lobbyId: args.params.lobbyId } },
+      accessToken: (await getAccessTokenForOpenApi()) ?? "",
+    },
+  );
+
+  if (lobbyResponse.status !== 200 || !lobbyData) {
+    return { loadedStatus: lobbyResponse.status, lobbyData: null, users: [] };
+  }
+
+  const userIds = (lobbyData.lobbyMembers ?? [])
+    .map((m) => m.userId)
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+  const users = await fetchUserProfiles(userIds);
+
+  return { loadedStatus: 200, lobbyData, users };
 }
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
 interface PlayerSlotProps {
   displayName?: string;
+  preferredColor?: string;
   isMe: boolean;
   isHost: boolean;
   isReady: boolean;
@@ -50,6 +76,7 @@ interface PlayerSlotProps {
 
 function PlayerSlotRow({
   displayName,
+  preferredColor,
   isMe,
   isHost,
   isReady,
@@ -61,7 +88,7 @@ function PlayerSlotRow({
   onReadyToggle,
 }: PlayerSlotProps) {
   const shownName = isMe ? myName : (displayName ?? "Player");
-  const shownColor = isMe ? myColor : "none";
+  const shownColor = isMe ? myColor : (preferredColor ?? "none");
 
   return (
     <div className="flex items-center gap-3 rounded-xl border-2 border-(--ink) bg-(--parchment-2) px-3 py-2.5 shadow-[2px_2px_0_var(--ink)] flex-wrap">
@@ -155,7 +182,11 @@ function LobbyPage() {
   } = useSignalRContext();
   const { lobbyId } = useParams() ?? null;
   const navigate = useNavigate();
-  const { data, loadedStatus } = useLoaderData<typeof LobbyLoader>();
+  const {
+    lobbyData,
+    loadedStatus,
+    users: initialUsers,
+  } = useLoaderData<typeof LobbyLoader>();
 
   const status = useLobbyStore((s) => s.status);
   const error = useLobbyStore((s) => s.error);
@@ -163,16 +194,26 @@ function LobbyPage() {
   const setLobby = useLobbyStore((s) => s.setLobby);
   const clearLobby = useLobbyStore((s) => s.clear);
 
+  const { users, fetchProfiles } = useUserProfiles(initialUsers);
+  const [latestLobbyDto, setLatestLobbyDto] = useState<
+    components["schemas"]["LobbyDto"] | null
+  >(lobbyData ?? null);
+
   const { name, color, setName, setColor } = useIdentity();
 
+  // Re-map lobby to domain whenever raw DTO or fetched profiles change.
   useEffect(() => {
-    if (loadedStatus === 200 && data !== undefined) {
-      const mapped = lobbyDtoToDomain(
-        data as components["schemas"]["LobbyDto"],
-      );
-      if (mapped) setLobby(mapped);
-    }
-  }, [loadedStatus, data, setLobby]);
+    if (!latestLobbyDto) return;
+    const mapped = lobbyDtoToDomain(latestLobbyDto, users);
+    if (mapped) setLobby(mapped);
+  }, [latestLobbyDto, users, setLobby]);
+
+  // Initial seed came from the route loader; if the user lands here with a
+  // non-200 loader status, there is nothing to project.
+  useEffect(() => {
+    if (loadedStatus !== 200 || !lobbyData) return;
+    setLatestLobbyDto(lobbyData);
+  }, [loadedStatus, lobbyData]);
 
   useEffect(() => {
     registerHandlers({
@@ -192,10 +233,12 @@ function LobbyPage() {
           return;
         }
         try {
-          const projected = lobbyDtoToDomain(
-            (payload ?? {}) as components["schemas"]["LobbyDto"],
-          );
-          if (projected) setLobby(projected);
+          const dto = (payload ?? {}) as components["schemas"]["LobbyDto"];
+          setLatestLobbyDto(dto);
+          const userIds = (dto.lobbyMembers ?? [])
+            .map((m) => m.userId)
+            .filter(Boolean) as string[];
+          void fetchProfiles(userIds);
         } catch (e) {
           console.error("Failed to project LobbyReceive payload:", e);
         }
@@ -217,7 +260,7 @@ function LobbyPage() {
         console.error("An error occurred: ", e);
       }
     })();
-  }, [registerHandlers, start, setLobby, clearLobby, navigate]);
+  }, [registerHandlers, start, setLobby, clearLobby, navigate, fetchProfiles]);
 
   const me = currentLobby?.lobbyMembers.find((m) => m.isMe);
   const isInLobby = !!me;
@@ -338,6 +381,7 @@ function LobbyPage() {
               <PlayerSlotRow
                 key={p.id}
                 displayName={p.displayName}
+                preferredColor={p.preferredColor}
                 isMe={p.isMe}
                 isHost={p.isHost}
                 isReady={p.isReady}

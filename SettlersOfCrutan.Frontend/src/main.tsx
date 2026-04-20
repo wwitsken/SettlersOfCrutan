@@ -7,7 +7,7 @@ import { createBrowserRouter, RouterProvider } from "react-router";
 import AppLayout from "./layouts/AppLayout.tsx";
 import ForbiddenPage from "./pages/ForbiddenPage.tsx";
 import LobbyPage, { LobbyLoader } from "./pages/LobbyPage.tsx";
-import GamePage from "./pages/GamePage.tsx";
+import GamePage, { GameLoader } from "./pages/GamePage.tsx";
 
 import { MsalProvider } from "@azure/msal-react";
 
@@ -23,7 +23,11 @@ const router = createBrowserRouter([
     children: [
       { index: true, Component: HomePage },
       { path: "forbidden", Component: ForbiddenPage },
-      { path: "game/:gameId", Component: GamePage },
+      {
+        path: "game/:gameId",
+        loader: GameLoader,
+        Component: GamePage,
+      },
       {
         path: "lobby/:lobbyId",
         loader: LobbyLoader,

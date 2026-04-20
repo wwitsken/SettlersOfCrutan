@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Infrastructure.Auth;
 using SettlersOfCrutan.Infrastructure.Clock;
 using SettlersOfCrutan.Infrastructure.Outbox;
 using SettlersOfCrutan.Infrastructure.Redis;
@@ -26,12 +28,16 @@ public static class DependencyInjection
         services.AddScoped(typeof(RedisRepository<,>));
         services.AddScoped<IGameRepository, RedisGameRepository>();
         services.AddScoped<ILobbyRepository, RedisLobbyRepository>();
+        services.AddScoped<IUserRepository, RedisUserRepository>();
 
         // SignalR
         services.AddScoped<IRealtimePublisher, SignalRRealtimePublisher>();
 
         // Clock
         services.AddSingleton<IDateTimeProvider, SystemClock>();
+
+        services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
 
         return services;
     }

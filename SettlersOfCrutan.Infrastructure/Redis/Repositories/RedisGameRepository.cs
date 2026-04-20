@@ -7,6 +7,8 @@ public class RedisGameRepository(RedisRepository<Game, GameId> inner) : IGameRep
     private readonly RedisRepository<Game, GameId> _inner = inner;
 
     public Task<Game?> GetAsync(GameId id, CancellationToken ct = default) => _inner.GetAsync(id, ct);
+    public Task<IReadOnlyList<Game>> GetManyAsync(IEnumerable<GameId> ids, CancellationToken ct = default) => _inner.GetManyAsync(ids, ct);
     public Task<bool> SaveAsync(Game aggregate, CancellationToken ct = default) => _inner.SaveAsync(aggregate, ct);
     public Task<bool> DeleteAsync(GameId id, CancellationToken ct = default) => _inner.DeleteAsync(id, ct);
+
 }

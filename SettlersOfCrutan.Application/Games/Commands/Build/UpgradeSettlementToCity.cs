@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
 using SettlersOfCrutan.Application.Games;
@@ -11,16 +12,20 @@ using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 
 namespace SettlersOfCrutan.Application.Games.Commands.Build;
 
-public record UpgradeSettlementToCityCommand(GameId GameId, PlayerId PlayerId, Vertex Vertex) : ICommand;
+public record UpgradeSettlementToCityCommand(GameId GameId, Vertex Vertex) : ICommand;
 
 public sealed class UpgradeSettlementToCityCommandHandler(
     IGameRepository gameRepository,
+    ICurrentUser currentUser,
+    IUserRepository userRepository,
     IRealtimePublisher realtimePublisher,
     IDateTimeProvider clock,
     ILogger<UpgradeSettlementToCityCommandHandler> logger,
     StandardPriceCalculator priceCalculator) : ICommandHandler<UpgradeSettlementToCityCommand>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
+    private readonly ICurrentUser _currentUser = currentUser;
+    private readonly IUserRepository _userRepository = userRepository;
     private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
     private readonly IDateTimeProvider _clock = clock;
     private readonly ILogger<UpgradeSettlementToCityCommandHandler> _logger = logger;
@@ -31,7 +36,7 @@ public sealed class UpgradeSettlementToCityCommandHandler(
         var game = await _gameRepository.GetAsync(command.GameId, ct);
         if (game is null) return Result<Nothing>.Failure(DomainError.NotFound);
 
-        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        var actor = GamePlayerResolution.ResolveActor(game, await _currentUser.UserId());
         if (actor.IsFailure) return Result<Nothing>.Failure(actor.Error);
         var result = game.BuildCity(_priceCalculator, actor.Value, command.Vertex);
         if (result.IsFailure) return Result<Nothing>.Failure(result.Error);
@@ -45,16 +50,13 @@ public sealed class UpgradeSettlementToCityCommandHandler(
 
             try
             {
-                var publishTasks = userViews.Select(kvp =>
-                    _realtimePublisher.UpdateGameAsync(
-                        game.Id,
-                        kvp.Key,
-                        now,
-                        RealtimeEvents.GameStateUpdated,
-                        kvp.Value,
-                        ct));
-
-                await Task.WhenAll(publishTasks);
+                await _realtimePublisher.PublishGameStateToAllPlayersAsync(
+                    _userRepository,
+                    game.Id,
+                    userViews,
+                    now,
+                    RealtimeEvents.GameStateUpdated,
+                    ct);
             }
             catch (Exception ex)
             {

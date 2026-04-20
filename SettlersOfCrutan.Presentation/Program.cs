@@ -109,14 +109,15 @@ if (app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGroup("api/")
+UserProfileEndpoints.MapUserProfileEndpoints(app.MapGroup("api/")
     .MapBaseGameEndpoints()
     .MapGamePlayEndpoints()
     .MapGameBuildEndpoints()
     .MapGameTradeEndpoints()
     .MapGameDevelopmentCardEndpoints()
     .MapGameTurnFlowEndpoints()
-    .MapLobbyEndpoints();
+    .MapLobbyEndpoints()
+);
 
 app.MapGet("/api/health", Results<Ok<string>, BadRequest> () => TypedResults.Ok($"OK at {DateTime.Now:t}"));
 app.MapGet("/api/test", Results<Ok<string>, BadRequest> () => TypedResults.Ok("Test endpoint is working")).RequireAuthorization();

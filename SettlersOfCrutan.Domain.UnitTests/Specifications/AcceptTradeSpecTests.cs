@@ -39,7 +39,7 @@ public class AcceptTradeSpecTests
     [Fact]
     public void TradeOfferMustExistAndMatch_OfferWithMatchingId_Succeeds()
     {
-        var p = Player.Create("p1");
+        var p = Player.Create(TestIds.User(1));
         p.AddResource(ResourceCardType.Brick, 1);
         var create = TradeOffer.Create(
             p,
@@ -67,7 +67,7 @@ public class AcceptTradeSpecTests
     public void BothPlayersMustExist_BothPresent_Succeeds()
     {
         var result = new BothPlayersMustExist().IsSatisfiedBy(
-            MakeContext(proposer: Player.Create("p1"), acceptor: Player.Create("p2")));
+            MakeContext(proposer: Player.Create(TestIds.User(1)), acceptor: Player.Create(TestIds.User(2))));
         Assert.True(result.IsSuccess);
     }
 
@@ -75,7 +75,7 @@ public class AcceptTradeSpecTests
     public void BothPlayersMustExist_ProposerNull_Fails()
     {
         var result = new BothPlayersMustExist().IsSatisfiedBy(
-            MakeContext(proposer: null, acceptor: Player.Create("p2")));
+            MakeContext(proposer: null, acceptor: Player.Create(TestIds.User(2))));
         Assert.True(result.IsFailure);
         Assert.Equal("NotFound", result.Error.Code);
     }

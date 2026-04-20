@@ -1,9 +1,11 @@
 using SettlersOfCrutan.Domain.Core;
+using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
 using SettlersOfCrutan.Domain.Games.Generation;
 using SettlersOfCrutan.Domain.Games.Resources;
 using SettlersOfCrutan.Domain.Lobbies;
+using SettlersOfCrutan.Domain.Users;
 using System.Text.Json.Serialization;
 
 namespace SettlersOfCrutan.Domain.Games;
@@ -38,6 +40,11 @@ public partial class Game : AggregateRoot<GameId>
     public bool AllPlayersJoined() => Players.All(p => p.JoinedAt is not null);
     public bool AllPlayersReady() => Players.All(p => p.Ready);
     public PlayerId CurrentPlayerId() => Players[PlayerIndex].Id;
+    public Result<PlayerId> ResolvePlayerFromUserId(UserId userId)
+    {
+        var res = Players.FirstOrDefault(p => p.UserId == userId);
+        return res is not null ? Result<PlayerId>.Success(res.Id) : Result<PlayerId>.Failure(DomainError.UserNotInGame(Id));
+    }
 
     [JsonConstructor]
     private Game(
@@ -71,7 +78,7 @@ public partial class Game : AggregateRoot<GameId>
         TurnExpiresAt = turnExpiresAt;
     }
 
-    public static Result<Game> CreateGame(string gameName, LobbyId spawnerLobbyId, string[] userIds, IBoardGenerator boardGenerator)
+    public static Result<Game> CreateGame(string gameName, LobbyId spawnerLobbyId, IReadOnlyList<UserId> userIds, IBoardGenerator boardGenerator)
     {
         Game game = new(
             GameType.BaseGame,

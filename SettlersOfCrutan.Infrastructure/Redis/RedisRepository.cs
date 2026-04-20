@@ -31,6 +31,25 @@ public class RedisRepository<TAgg, TId>(
         return JsonSerializer.Deserialize<TAgg>(json.ToString(), JsonOptions.Default);
     }
 
+    public async Task<IReadOnlyList<TAgg>> GetManyAsync(IEnumerable<TId> ids, CancellationToken ct = default)
+    {
+        var idList = ids.ToList();
+        if (idList.Count == 0) return [];
+
+        var keys = idList
+            .Select(id => (RedisKey)RedisKeys.Aggregate(_opts.KeyPrefix, _aggName, id))
+            .ToArray();
+
+        var values = await _db.StringGetAsync(keys);
+
+        return values
+            .Where(v => !v.IsNullOrEmpty)
+            .Select(v => JsonSerializer.Deserialize<TAgg>(v.ToString(), JsonOptions.Default))
+            .Where(x => x is not null)
+            .Select(x => x!)
+            .ToList();
+    }
+
     public async Task<bool> SaveAsync(TAgg aggregate, CancellationToken ct = default)
     {
         var expected = aggregate.Version.ToString();

@@ -6,24 +6,28 @@ using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Lobbies;
-
 namespace SettlersOfCrutan.Application.Lobbies.Commands;
-public record ChangeReadyStatusCommand(Guid LobbyId, PlayerId PlayerId, bool IsReady) : ICommand;
+
+public record ChangeReadyStatusCommand(LobbyId LobbyId, bool IsReady) : ICommand;
 
 public sealed class ChangeReadyStatusCommandHandler(ILobbyRepository lobbyRepository,
+                                                    ICurrentUser currentUser,
+                                                    IUserRepository userRepository,
                                                     IRealtimePublisher realtimePublisher,
                                                     IDateTimeProvider clock,
                                                     ILogger<ChangeReadyStatusCommandHandler> logger) : ICommandHandler<ChangeReadyStatusCommand>
 {
     private readonly ILobbyRepository _lobbyRepository = lobbyRepository;
+    private readonly ICurrentUser _currentUser = currentUser;
+    private readonly IUserRepository _userRepository = userRepository;
     private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
     private readonly IDateTimeProvider _clock = clock;
     private readonly ILogger<ChangeReadyStatusCommandHandler> _logger = logger;
     public async Task<Result<Nothing>> Handle(ChangeReadyStatusCommand command, CancellationToken ct = default)
     {
-        var lobby = await _lobbyRepository.GetAsync(new LobbyId() { Value = command.LobbyId }, ct);
+        var lobby = await _lobbyRepository.GetAsync(command.LobbyId, ct);
         if (lobby is null) return Result<Nothing>.Failure(DomainError.NotFound);
-        var res = lobby.SetReady(command.PlayerId, command.IsReady);
+        var res = lobby.SetReady(await _currentUser.UserId(), command.IsReady);
         if (res.IsFailure) return res;
         await _lobbyRepository.SaveAsync(lobby, ct);
 
@@ -32,16 +36,13 @@ public sealed class ChangeReadyStatusCommandHandler(ILobbyRepository lobbyReposi
 
         try
         {
-            var publishTasks = userViews.Select(kvp =>
-                _realtimePublisher.UpdateLobbyAsync(
-                    lobby.Id,
-                    kvp.Key,                 // user id / connection routing key
-                    now,
-                    RealtimeEvents.UserReadyStatusChanged,
-                    kvp.Value,
-                    ct));
-
-            await Task.WhenAll(publishTasks);
+            await _realtimePublisher.PublishLobbyStateToAllMembersAsync(
+                _userRepository,
+                lobby.Id,
+                userViews,
+                now,
+                RealtimeEvents.UserReadyStatusChanged,
+                ct);
         }
         catch (Exception ex)
         {

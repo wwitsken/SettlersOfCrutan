@@ -4,6 +4,7 @@ using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.Resources;
+using SettlersOfCrutan.Domain.Users;
 
 namespace SettlersOfCrutan.Application.Games.DTOs;
 
@@ -45,9 +46,9 @@ public static class GameMappingExtensions
             CurrentTradeOffer = game.CurrentTradeOffer?.ToDto(),
             Players = [.. game.Players.Select((p, idx) => new PlayerDto {
                 Id = p.Id.Value,
+                UserId = p.UserId.Value,
                 PlayOrder = idx,
                 IsPlaying = game.CurrentPlayerId() == p.Id,
-                DisplayName = p.DisplayName,
                 PlayerColor = p.Color,
                 ResourceCardCount = p.TotalResources,
                 DevelopmentCardCount = p.DevCardCount,
@@ -63,7 +64,7 @@ public static class GameMappingExtensions
         };
     }
 
-    public static PrivateGameDto ToPrivateDto(this Game game, string userId)
+    public static PrivateGameDto ToPrivateDto(this Game game, UserId userId)
     {
         ArgumentNullException.ThrowIfNull(game);
         ArgumentNullException.ThrowIfNull(userId);
@@ -122,7 +123,7 @@ public static class GameMappingExtensions
             {
                 Coordinates = ToHexCoordinateDtos(pc.VertexCoordinate),
                 Type = pc.Level.ToString(),
-                PlayerOwnerId = pc.PlayerOwner.Value
+                PlayerOwnerId = pc.OwnerId.Value
             })],
             Roads = [.. board.Roads.Select(r => new AppRoadDto
             {

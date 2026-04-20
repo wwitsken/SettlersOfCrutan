@@ -1,5 +1,6 @@
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games.Resources;
+using SettlersOfCrutan.Domain.Users;
 using System.Text.Json.Serialization;
 
 namespace SettlersOfCrutan.Domain.Games;
@@ -23,8 +24,7 @@ public record PlayerId : BaseId<string>
 public class Player : Entity<PlayerId>
 {
     public override PlayerId Id { get; init; }
-    public string UserId { get; private set; }
-    public string DisplayName { get; private set; } = string.Empty;
+    public UserId UserId { get; private set; }
     public PlayerColor Color { get; private set; } = PlayerColor.None;
 
     // Encapsulated managers (internal for aggregate collaboration)
@@ -52,10 +52,12 @@ public class Player : Entity<PlayerId>
     public IReadOnlyDictionary<ResourceCardType, int> GetResources() => ResourceHand.Cards;
     public IReadOnlyDictionary<DevelopmentCardType, int> GetDevelopmentCards() => DevCardHand.Cards;
 
-    public static Player Create(string userId)
+    [JsonInclude]
+    public string DisplayName { get; private set; } = "";
+
+    public static Player Create(UserId userId)
         => new(new() { Value = Guid.NewGuid().ToString() },
                userId,
-               "",
                PlayerColor.None,
                new ResourceHand(),
                new DevCardHand(),
@@ -65,8 +67,7 @@ public class Player : Entity<PlayerId>
 
     [JsonConstructor]
     private Player(PlayerId id,
-                   string userId,
-                   string displayName,
+                   UserId userId,
                    PlayerColor color,
                    ResourceHand resourceHand,
                    DevCardHand devCardHand,
@@ -74,11 +75,11 @@ public class Player : Entity<PlayerId>
                    DateTimeOffset? joinedAt,
                    bool ready,
                    int knightsPlayed = 0,
-                   Dictionary<DevelopmentCardType, int>? playedNonKnightDevelopmentCards = null)
+                   Dictionary<DevelopmentCardType, int>? playedNonKnightDevelopmentCards = null,
+                   string displayName = "")
     {
         Id = id;
         UserId = userId;
-        DisplayName = displayName;
         Color = color;
         ResourceHand = resourceHand;
         DevCardHand = devCardHand;
@@ -86,6 +87,7 @@ public class Player : Entity<PlayerId>
         JoinedAt = joinedAt;
         _ready = ready;
         KnightsPlayed = knightsPlayed;
+        DisplayName = displayName ?? "";
         if (playedNonKnightDevelopmentCards is { Count: > 0 })
             PlayedNonKnightDevelopmentCards = new Dictionary<DevelopmentCardType, int>(playedNonKnightDevelopmentCards);
     }
@@ -143,8 +145,8 @@ public class Player : Entity<PlayerId>
     private bool _ready;
 
     public bool Ready => _ready;
-    public void SetName(string name) => DisplayName = name?.Trim() ?? string.Empty;
     public void SetColor(PlayerColor color) => Color = color;
     public void SetReady(bool ready) => _ready = ready;
+    public void SetName(string name) => DisplayName = name ?? "";
 
 }

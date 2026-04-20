@@ -6,24 +6,33 @@ using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Lobbies;
+using SettlersOfCrutan.Domain.Users;
 
 namespace SettlersOfCrutan.Application.Lobbies.Commands;
 
-public record LeaveLobbyCommand(Guid LobbyId, PlayerId PlayerId) : ICommand;
-public sealed class LeaveLobbyCommandHandler(ILobbyRepository lobbyRepository, IRealtimePublisher realtimePublisher, ILogger<ChangeReadyStatusCommandHandler> logger, IDateTimeProvider clock) : ICommandHandler<LeaveLobbyCommand>
+public record LeaveLobbyCommand(LobbyId LobbyId) : ICommand;
+public sealed class LeaveLobbyCommandHandler(
+    ILobbyRepository lobbyRepository,
+    ICurrentUser currentUser,
+    IUserRepository userRepository,
+    IRealtimePublisher realtimePublisher,
+    ILogger<LeaveLobbyCommandHandler> logger,
+    IDateTimeProvider clock) : ICommandHandler<LeaveLobbyCommand>
 {
     private readonly ILobbyRepository _lobbyRepository = lobbyRepository;
+    private readonly ICurrentUser _currentUser = currentUser;
+    private readonly IUserRepository _userRepository = userRepository;
     private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
     private readonly IDateTimeProvider _clock = clock;
-    private readonly ILogger<ChangeReadyStatusCommandHandler> _logger = logger;
+    private readonly ILogger<LeaveLobbyCommandHandler> _logger = logger;
 
     public async Task<Result<Nothing>> Handle(LeaveLobbyCommand command, CancellationToken ct = default)
     {
-        var lobby = await _lobbyRepository.GetAsync(new LobbyId() { Value = command.LobbyId }, ct);
+        var lobby = await _lobbyRepository.GetAsync(command.LobbyId, ct);
 
         if (lobby is null) return Result<Nothing>.Failure(DomainError.NotFound);
 
-        var res = lobby.RemoveMember(command.PlayerId);
+        var res = lobby.RemoveMember(await _currentUser.UserId());
 
         if (res.IsFailure) return res;
 
@@ -34,16 +43,13 @@ public sealed class LeaveLobbyCommandHandler(ILobbyRepository lobbyRepository, I
 
         try
         {
-            var publishTasks = userViews.Select(kvp =>
-                _realtimePublisher.UpdateLobbyAsync(
-                    lobby.Id,
-                    kvp.Key,                 // user id / connection routing key
-                    now,
-                    RealtimeEvents.UserLeftLobby,
-                    kvp.Value,
-                    ct));
-
-            await Task.WhenAll(publishTasks);
+            await _realtimePublisher.PublishLobbyStateToAllMembersAsync(
+                _userRepository,
+                lobby.Id,
+                userViews,
+                now,
+                RealtimeEvents.UserLeftLobby,
+                ct);
         }
         catch (Exception ex)
         {

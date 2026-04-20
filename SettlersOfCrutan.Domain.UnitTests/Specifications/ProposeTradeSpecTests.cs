@@ -66,7 +66,7 @@ public class ProposeTradeSpecTests
     [Fact]
     public void NoActiveTradeOffer_ActiveOffer_Fails()
     {
-        var p = Player.Create("p1");
+        var p = Player.Create(TestIds.User(1));
         p.AddResource(ResourceCardType.Brick, 1);
         var create = TradeOffer.Create(
             p,
@@ -83,7 +83,7 @@ public class ProposeTradeSpecTests
     [Fact]
     public void ProposerMustExist_HasProposer_Succeeds()
     {
-        var result = new ProposerMustExist().IsSatisfiedBy(MakeContext(proposer: Player.Create("p1")));
+        var result = new ProposerMustExist().IsSatisfiedBy(MakeContext(proposer: Player.Create(TestIds.User(1))));
         Assert.True(result.IsSuccess);
     }
 
@@ -98,7 +98,7 @@ public class ProposeTradeSpecTests
     [Fact]
     public void ProposerMustHaveResources_PlayerHasOffered_Succeeds()
     {
-        var proposer = Player.Create("p1");
+        var proposer = Player.Create(TestIds.User(1));
         proposer.AddResource(ResourceCardType.Brick, 1);
         var offered = new List<ResourceCardAmount> { new(ResourceCardType.Brick, 1) };
         var result = new ProposerMustHaveResources().IsSatisfiedBy(MakeContext(proposer: proposer, offered: offered));
@@ -108,7 +108,7 @@ public class ProposeTradeSpecTests
     [Fact]
     public void ProposerMustHaveResources_EmptyPlayer_Fails()
     {
-        var proposer = Player.Create("p1");
+        var proposer = Player.Create(TestIds.User(1));
         var offered = new List<ResourceCardAmount> { new(ResourceCardType.Brick, 1) };
         var result = new ProposerMustHaveResources().IsSatisfiedBy(MakeContext(proposer: proposer, offered: offered));
         Assert.True(result.IsFailure);

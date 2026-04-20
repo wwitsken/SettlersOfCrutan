@@ -37,4 +37,9 @@ public static class Result
     public static Result<Nothing> Failure(Error error) => Result<Nothing>.Failure(error);
     public static Result<T> Success<T>(T value) => Result<T>.Success(value);
     public static Result<T> Failure<T>(Error error) => Result<T>.Failure(error);
+
+    internal static Result<Nothing> Failure(object cannotEndTurnWithoutPlacingInitialSettlementAndRoad)
+    {
+        throw new NotImplementedException();
+    }
 }

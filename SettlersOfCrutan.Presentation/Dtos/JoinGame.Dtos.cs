@@ -1,3 +1,3 @@
 ﻿namespace SettlersOfCrutan.Presentation.Dtos;
 
-public record JoinGameRequest(string PlayerId);
+public record JoinGameRequest;

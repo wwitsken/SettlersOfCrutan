@@ -1,5 +1,6 @@
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
+using SettlersOfCrutan.Domain.Users;
 using SettlersOfCrutan.Domain.Specifications;
 using JoinSpecs = SettlersOfCrutan.Domain.Specifications.JoinPlayer;
 using LeaveSpecs = SettlersOfCrutan.Domain.Specifications.LeavePlayer;
@@ -25,7 +26,7 @@ public partial class Game
         new JoinSpecs.PlayerWithUserIdMustExist()
     ];
 
-    public Result<PlayerId> JoinPlayer(string userId, DateTimeOffset when)
+    public Result<PlayerId> JoinPlayer(UserId userId, DateTimeOffset when)
     {
         var p = _players.SingleOrDefault(x => x.UserId == userId);
         var context = new JoinSpecs.JoinPlayerContext(Id, p);

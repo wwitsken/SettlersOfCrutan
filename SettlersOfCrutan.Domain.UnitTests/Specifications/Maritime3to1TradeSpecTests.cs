@@ -22,7 +22,7 @@ public class Maritime3to1TradeSpecTests
             phase,
             currentPlayerId ?? pid,
             pid,
-            actingPlayer ?? Player.Create("p1"),
+            actingPlayer ?? Player.Create(TestIds.User(1)),
             discard,
             request,
             bank ?? ResourceHand.StandardBankResources(),
@@ -64,7 +64,7 @@ public class Maritime3to1TradeSpecTests
     [Fact]
     public void PlayerMustHaveDiscardResources_HasThreeOrMore_Succeeds()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         player.AddResource(ResourceCardType.Brick, 3);
         var result = new PlayerMustHaveDiscardResources().IsSatisfiedBy(
             MakeContext(actingPlayer: player, discard: ResourceCardType.Brick));
@@ -74,7 +74,7 @@ public class Maritime3to1TradeSpecTests
     [Fact]
     public void PlayerMustHaveDiscardResources_HasNone_Fails()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         var result = new PlayerMustHaveDiscardResources().IsSatisfiedBy(
             MakeContext(actingPlayer: player, discard: ResourceCardType.Brick));
         Assert.True(result.IsFailure);

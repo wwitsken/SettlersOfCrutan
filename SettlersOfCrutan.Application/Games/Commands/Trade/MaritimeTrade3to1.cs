@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
 using SettlersOfCrutan.Application.Games;
@@ -10,15 +11,19 @@ using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Application.Games.Commands.Trade;
 
-public record MaritimeTrade3to1Command(GameId GameId, PlayerId PlayerId, ResourceCardType DiscardResource, ResourceCardType RequestResource) : ICommand;
+public record MaritimeTrade3to1Command(GameId GameId, ResourceCardType DiscardResource, ResourceCardType RequestResource) : ICommand;
 
 public sealed class MaritimeTrade3to1CommandHandler(
     IGameRepository gameRepository,
+    ICurrentUser currentUser,
+    IUserRepository userRepository,
     IRealtimePublisher realtimePublisher,
     IDateTimeProvider clock,
     ILogger<MaritimeTrade3to1CommandHandler> logger) : ICommandHandler<MaritimeTrade3to1Command>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
+    private readonly ICurrentUser _currentUser = currentUser;
+    private readonly IUserRepository _userRepository = userRepository;
     private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
     private readonly IDateTimeProvider _clock = clock;
     private readonly ILogger<MaritimeTrade3to1CommandHandler> _logger = logger;
@@ -28,7 +33,7 @@ public sealed class MaritimeTrade3to1CommandHandler(
         var game = await _gameRepository.GetAsync(command.GameId, ct);
         if (game is null) return Result<Nothing>.Failure(DomainError.NotFound);
 
-        var actor = GamePlayerResolution.ResolveActor(game, command.PlayerId);
+        var actor = GamePlayerResolution.ResolveActor(game, await _currentUser.UserId());
         if (actor.IsFailure) return Result<Nothing>.Failure(actor.Error);
 
         var result = game.Maritime3to1Trade(actor.Value, command.DiscardResource, command.RequestResource);
@@ -43,16 +48,13 @@ public sealed class MaritimeTrade3to1CommandHandler(
 
             try
             {
-                var publishTasks = userViews.Select(kvp =>
-                    _realtimePublisher.UpdateGameAsync(
-                        game.Id,
-                        kvp.Key,
-                        now,
-                        RealtimeEvents.GameStateUpdated,
-                        kvp.Value,
-                        ct));
-
-                await Task.WhenAll(publishTasks);
+                await _realtimePublisher.PublishGameStateToAllPlayersAsync(
+                    _userRepository,
+                    game.Id,
+                    userViews,
+                    now,
+                    RealtimeEvents.GameStateUpdated,
+                    ct);
             }
             catch (Exception ex)
             {

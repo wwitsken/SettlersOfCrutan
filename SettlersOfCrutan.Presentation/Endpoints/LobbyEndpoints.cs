@@ -7,7 +7,6 @@ using SettlersOfCrutan.Application.Lobbies.Queries;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Lobbies;
-using SettlersOfCrutan.Presentation.Auth;
 using SettlersOfCrutan.Presentation.Dtos;
 using SettlersOfCrutan.Presentation.Extensions;
 
@@ -21,10 +20,9 @@ public static class LobbyEndpoints
 
         group.MapPost("/create", async Task<Results<Ok<Guid>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             ICommandHandler<CreateLobbyCommand, Guid> handler,
-            IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            Result<Guid> result = await handler.Handle(new CreateLobbyCommand(PlayerId.Create(userProvider.GetUserId())), ct);
+            Result<Guid> result = await handler.Handle(new CreateLobbyCommand(), ct);
 
             return result.ToHttpResult();
         });
@@ -32,10 +30,9 @@ public static class LobbyEndpoints
         group.MapGet("/{lobbyId:guid}", async Task<Results<Ok<LobbyDto>, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid lobbyId,
             IQueryHandler<GetLobbyQuery, LobbyDto> handler,
-            IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            var query = new GetLobbyQuery(lobbyId, userProvider.GetUserId());
+            var query = new GetLobbyQuery(new LobbyId { Value = lobbyId });
             var result = await handler.Handle(query, ct);
             return result.ToHttpResult();
         });
@@ -43,10 +40,9 @@ public static class LobbyEndpoints
         group.MapPost("/{lobbyId:guid}/join", async Task<Results<NoContent, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid lobbyId,
             ICommandHandler<JoinLobbyCommand> handler,
-            IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            var cmd = new JoinLobbyCommand(lobbyId, PlayerId.Create(userProvider.GetUserId()));
+            var cmd = new JoinLobbyCommand(new LobbyId { Value = lobbyId });
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
@@ -54,10 +50,9 @@ public static class LobbyEndpoints
         group.MapPost("/{lobbyId:guid}/leave", async Task<Results<NoContent, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid lobbyId,
             ICommandHandler<LeaveLobbyCommand> handler,
-            IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            var cmd = new LeaveLobbyCommand(lobbyId, PlayerId.Create(userProvider.GetUserId()));
+            var cmd = new LeaveLobbyCommand(new LobbyId { Value = lobbyId });
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
@@ -65,10 +60,9 @@ public static class LobbyEndpoints
         group.MapPost("/{lobbyId:guid}/ready", async Task<Results<NoContent, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid lobbyId,
             ICommandHandler<ChangeReadyStatusCommand> handler,
-            IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            var cmd = new ChangeReadyStatusCommand(lobbyId, PlayerId.Create(userProvider.GetUserId()), true);
+            var cmd = new ChangeReadyStatusCommand(new LobbyId { Value = lobbyId }, true);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
@@ -76,10 +70,9 @@ public static class LobbyEndpoints
         group.MapPost("/{lobbyId:guid}/unready", async Task<Results<NoContent, NotFound, ValidationProblem, BadRequest<ProblemDetails>>> (
             Guid lobbyId,
             ICommandHandler<ChangeReadyStatusCommand> handler,
-            IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            var cmd = new ChangeReadyStatusCommand(lobbyId, PlayerId.Create(userProvider.GetUserId()), false);
+            var cmd = new ChangeReadyStatusCommand(new LobbyId { Value = lobbyId }, false);
             var result = await handler.Handle(cmd, ct);
             return result.ToHttpResult();
         });
@@ -88,10 +81,9 @@ public static class LobbyEndpoints
             Guid lobbyId,
             [FromBody] StartGameFromLobbyRequest req,
             ICommandHandler<StartGameFromLobbyCommand, GameId> handler,
-            IUserProvider userProvider,
             CancellationToken ct) =>
         {
-            var cmd = new StartGameFromLobbyCommand(userProvider.GetUserId(), lobbyId, req.GameType, req.GameName);
+            var cmd = new StartGameFromLobbyCommand(new LobbyId { Value = lobbyId }, req.GameType, req.GameName);
             Result<GameId> result = await handler.Handle(cmd, ct);
             return result.UnwrapId<GameId, Guid>().ToHttpResult();
         }).RequireAuthorization();

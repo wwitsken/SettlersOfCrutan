@@ -26,7 +26,7 @@ public class BuildRoadSpecTests
             phase,
             currentPlayerId ?? pid,
             pid,
-            player ?? Player.Create("p1"),
+            player ?? Player.Create(TestIds.User(1)),
             cost ?? [new ResourceCardAmount(ResourceCardType.Brick, 1), new ResourceCardAmount(ResourceCardType.Lumber, 1)],
             board ?? new Board(),
             edge ?? SeedEdge);
@@ -67,7 +67,7 @@ public class BuildRoadSpecTests
     [Fact]
     public void PlayerMustAffordRoad_HasResources_Succeeds()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         player.AddResource(ResourceCardType.Brick, 1);
         player.AddResource(ResourceCardType.Lumber, 1);
         var cost = new List<ResourceCardAmount> { new(ResourceCardType.Brick, 1), new(ResourceCardType.Lumber, 1) };
@@ -79,7 +79,7 @@ public class BuildRoadSpecTests
     [Fact]
     public void PlayerMustAffordRoad_NoResources_Fails()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         var cost = new List<ResourceCardAmount> { new(ResourceCardType.Brick, 1), new(ResourceCardType.Lumber, 1) };
 
         var result = new PlayerMustAffordRoad().IsSatisfiedBy(MakeContext(player: player, cost: cost));
@@ -97,7 +97,7 @@ public class BuildRoadSpecTests
     [Fact]
     public void PlayerMustHaveRoadPiece_NoPieces_Fails()
     {
-        var player = Player.Create("p1");
+        var player = Player.Create(TestIds.User(1));
         for (int i = 0; i < 15; i++) player.ConsumePiece(BuildableType.Road);
 
         var result = new PlayerMustHaveRoadPiece().IsSatisfiedBy(MakeContext(player: player));

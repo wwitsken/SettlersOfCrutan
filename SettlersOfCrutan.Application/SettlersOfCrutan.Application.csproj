@@ -16,4 +16,8 @@
     <ProjectReference Include="..\SettlersOfCrutan.Domain\SettlersOfCrutan.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Users\DTOs\" />
+  </ItemGroup>
+
 </Project>

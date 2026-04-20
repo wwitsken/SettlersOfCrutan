@@ -4,31 +4,27 @@ using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.Generation;
 using SettlersOfCrutan.Domain.Games.Resources;
 using SettlersOfCrutan.Domain.Lobbies;
+using SettlersOfCrutan.Domain.Users;
 
 namespace SettlersOfCrutan.Domain.UnitTests;
 
 public class GameBuildableQueriesTests
 {
-    private static PlayerId NewPlayer(string id) => new() { Value = id };
-
-    private static Game NewGameWithBoard(Board board, params string[] userIds)
-    {
-        var lobbyId = new LobbyId { Value = Guid.NewGuid() };
-        var created = Game.CreateGame("test", lobbyId, userIds, new RandomBoardGenerator());
-        Assert.True(created.IsSuccess);
-
-        var game = created.Value;
-        game.Board = board;
-        return game;
-    }
+    private static UserId User(int seed) =>
+        UserId.Create(Guid.Parse($"{seed & 0xFFFFFFFF:X8}-0000-0000-0000-000000000000"));
 
     [Fact]
     public void GetBuildableRoads_ReturnsOnlyEdgesConnectedToPlayersNetwork()
     {
         var origin = new HexCoord(0, 0, 0);
         var board = Board.Create([new Hex(origin) { Resource = ResourceCardType.Desert }], []);
-        var p1 = NewPlayer("p1");
-        var p2 = NewPlayer("p2");
+
+        var lobbyId = new LobbyId { Value = Guid.NewGuid() };
+        var created = Game.CreateGame("test", lobbyId, [User(1), User(2)], new RandomBoardGenerator());
+        Assert.True(created.IsSuccess);
+        var game = created.Value;
+        var p1 = game.Players[0].Id;
+        var p2 = game.Players[1].Id;
 
         var hex = new HexCoord(0, 0, 0);
         var v0 = VertexFactory.FromHexCorner(hex, HexCornerDirection.NE);
@@ -37,7 +33,7 @@ public class GameBuildableQueriesTests
         var placed = board.PlaceInitialSettlementAndRoad(p1, v0, seedEdge);
         Assert.True(placed.IsSuccess);
 
-        var game = NewGameWithBoard(board, p1.Value, p2.Value);
+        game.Board = board;
         game.GamePhase = GamePhase.TradeBuild;
 
         var buildable = game.GetBuildableRoads(p1);
@@ -52,7 +48,12 @@ public class GameBuildableQueriesTests
     public void GetBuildableSettlements_ExcludesOccupiedAndAdjacentVertices()
     {
         var board = new Board();
-        var p1 = NewPlayer("p1");
+
+        var lobbyId = new LobbyId { Value = Guid.NewGuid() };
+        var created = Game.CreateGame("test", lobbyId, [User(1)], new RandomBoardGenerator());
+        Assert.True(created.IsSuccess);
+        var game = created.Value;
+        var p1 = game.Players[0].Id;
 
         var hex = new HexCoord(0, 0, 0);
         var v0 = VertexFactory.FromHexCorner(hex, HexCornerDirection.NE);
@@ -61,7 +62,7 @@ public class GameBuildableQueriesTests
         var placed = board.PlaceInitialSettlementAndRoad(p1, v0, seedEdge);
         Assert.True(placed.IsSuccess);
 
-        var game = NewGameWithBoard(board, p1.Value);
+        game.Board = board;
 
         var buildable = game.GetBuildableSettlements(p1);
 

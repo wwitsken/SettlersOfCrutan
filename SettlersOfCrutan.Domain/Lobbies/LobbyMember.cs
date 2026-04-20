@@ -1,5 +1,6 @@
 ﻿using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
+using SettlersOfCrutan.Domain.Users;
 using System.Text.Json.Serialization;
 
 namespace SettlersOfCrutan.Domain.Lobbies;
@@ -8,29 +9,24 @@ public record LobbyMemberId() : BaseId<Guid>;
 public class LobbyMember : Entity<LobbyMemberId>
 {
     [JsonConstructor]
-    public LobbyMember(LobbyMemberId id, string? userId, bool isHost, bool isReady, string? displayName, DateTimeOffset? joined)
+    public LobbyMember(LobbyMemberId id, UserId userId, bool isHost, bool isReady, DateTimeOffset? joined)
     {
         Id = id;
         UserId = userId;
         IsHost = isHost;
         IsReady = isReady;
-        DisplayName = displayName;
         Joined = joined;
     }
 
     public override LobbyMemberId Id { get; init; }
-    public string? UserId { get; private set; }
+    public UserId UserId { get; private set; }
     public bool IsHost { get; private set; }
     public bool IsReady { get; private set; }
-    public string? DisplayName { get; private set; }
     public DateTimeOffset? Joined { get; private set; }
     public void SetReady(bool ready) => IsReady = ready;
-    public void SetDisplayName(string displayName) => DisplayName = displayName;
     public void SetHost(bool isHost) => IsHost = isHost;
-    public static LobbyMember CreateHost(string userId, DateTimeOffset joined, string? displayName = default) =>
-        new(new() { Value = Guid.NewGuid() }, userId, true, false, displayName, joined);
-    public static LobbyMember CreateRegular() =>
-        new(new() { Value = Guid.NewGuid() }, default, false, false, default, default);
-    public static LobbyMember CreateRegular(string userId, DateTimeOffset joined, string? displayName = default) =>
-        new(new() { Value = Guid.NewGuid() }, userId, false, false, displayName, joined);
+    public static LobbyMember CreateHost(UserId userId, DateTimeOffset joined) =>
+        new(new() { Value = Guid.NewGuid() }, userId, true, false, joined);
+    public static LobbyMember CreateRegular(UserId userId, DateTimeOffset joined) =>
+        new(new() { Value = Guid.NewGuid() }, userId, false, false, joined);
 }

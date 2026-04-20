@@ -79,7 +79,7 @@ export default function AppLayout() {
               <UnauthenticatedTemplate>
                 <button
                   type="button"
-                  className="rounded-xl border-2 border-(--ink) bg-(--catan-accent) px-3 py-1.5 text-sm font-medium text-[#fff7e3] shadow-[2px_2px_0_var(--ink)] transition-transform hover:-translate-x-px hover:-translate-y-px"
+                  className="cursor-pointer rounded-xl border-2 border-(--ink) bg-(--catan-accent) px-3 py-1.5 text-sm font-medium text-[#fff7e3] shadow-[2px_2px_0_var(--ink)] transition-transform hover:-translate-x-px hover:-translate-y-px"
                   style={{ fontFamily: "var(--font-hand)", fontSize: "1.1rem" }}
                   onClick={async () => await instance.loginRedirect()}
                 >

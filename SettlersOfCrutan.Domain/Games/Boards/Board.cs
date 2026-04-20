@@ -76,7 +76,7 @@ public class Board : Entity<BoardId>
     {
         if (!PopulationCenters.Any(p => p.VertexCoordinate == coord))
             return Result.Failure<Nothing>(new DomainError("CityUpgrade", "No settlement to upgrade"));
-        var settlement = PopulationCenters.FirstOrDefault(s => s.PlayerOwner == owner && s.VertexCoordinate == coord && s.Level == PopulationCenterLevel.Settlement);
+        var settlement = PopulationCenters.FirstOrDefault(s => s.OwnerId == owner && s.VertexCoordinate == coord && s.Level == PopulationCenterLevel.Settlement);
         if (settlement is null) return Result.Failure<Nothing>(new DomainError("CityUpgrade", "Settlement not owned by player"));
         return Result.Success();
     }
@@ -107,7 +107,7 @@ public class Board : Entity<BoardId>
 
     public PopulationCenter PlaceSettlementNoFail(PlayerId owner, Vertex coord)
     {
-        var entity = new PopulationCenter(coord) { PlayerOwner = owner };
+        var entity = new PopulationCenter(coord) { OwnerId = owner };
         _populationCenters.Add(entity);
         return entity;
     }
@@ -115,7 +115,7 @@ public class Board : Entity<BoardId>
     public PopulationCenter UpgradeToCityNoFail(PlayerId owner, Vertex coord)
     {
         var settlement = _populationCenters.First(s =>
-            s.PlayerOwner == owner
+            s.OwnerId == owner
             && s.VertexCoordinate == coord
             && s.Level == PopulationCenterLevel.Settlement);
         settlement.Level = PopulationCenterLevel.City;
@@ -126,7 +126,7 @@ public class Board : Entity<BoardId>
     {
         var road = new Road(edge.Normalize()) { OwnerId = owner };
         _roads.Add(road);
-        var settlement = new PopulationCenter(vertex) { PlayerOwner = owner };
+        var settlement = new PopulationCenter(vertex) { OwnerId = owner };
         _populationCenters.Add(settlement);
         return (settlement, road);
     }
@@ -145,7 +145,7 @@ public class Board : Entity<BoardId>
         if (!HasAdjacentRoadOwnedBy(owner, coord))
             return Result<PopulationCenter>.Failure(new DomainError("SettlementPlacement", "No adjacent road for owner"));
 
-        var entity = new PopulationCenter(coord) { PlayerOwner = owner };
+        var entity = new PopulationCenter(coord) { OwnerId = owner };
         _populationCenters.Add(entity);
         return Result<PopulationCenter>.Success(entity);
     }
@@ -171,7 +171,7 @@ public class Board : Entity<BoardId>
         var road = new Road(normEdge) { OwnerId = owner };
         _roads.Add(road);
 
-        var populationCenter = new PopulationCenter(vertex) { PlayerOwner = owner };
+        var populationCenter = new PopulationCenter(vertex) { OwnerId = owner };
         _populationCenters.Add(populationCenter);
 
         return Result<(PopulationCenter, Road)>.Success((populationCenter, road));
@@ -183,7 +183,7 @@ public class Board : Entity<BoardId>
             return Result<PopulationCenter>.Failure(new DomainError("CityUpgrade", "No settlement to upgrade"));
 
         var settlement = PopulationCenters.FirstOrDefault(s =>
-            s.PlayerOwner == owner
+            s.OwnerId == owner
             && s.VertexCoordinate == coord
             && s.Level == PopulationCenterLevel.Settlement);
         if (settlement is null)
@@ -226,13 +226,13 @@ public class Board : Entity<BoardId>
     }
 
     public bool IsPlayerExposedToHex(HexCoord hexCoord, PlayerId playerId) =>
-        PopulationCenters.Any(pc => pc.VertexCoordinate.HexCoords().Contains(hexCoord) && pc.PlayerOwner == playerId);
+        PopulationCenters.Any(pc => pc.VertexCoordinate.HexCoords().Contains(hexCoord) && pc.OwnerId == playerId);
 
     /// <summary>Opponents (not <paramref name="robbingPlayerId"/>) with a settlement or city touching <paramref name="hexCoord"/>.</summary>
     public IReadOnlyList<PlayerId> GetOpponentIdsOnHex(HexCoord hexCoord, PlayerId robbingPlayerId) =>
         [.. PopulationCenters
-            .Where(pc => pc.VertexCoordinate.HexCoords().Contains(hexCoord) && pc.PlayerOwner != robbingPlayerId)
-            .Select(pc => pc.PlayerOwner)
+            .Where(pc => pc.VertexCoordinate.HexCoords().Contains(hexCoord) && pc.OwnerId != robbingPlayerId)
+            .Select(pc => pc.OwnerId)
             .Distinct()];
 
     public bool IsVertexOccupied(Vertex coord) =>
@@ -256,7 +256,7 @@ public class Board : Entity<BoardId>
                 EdgeFactory.ConnectsToEdge(h.Normalize(), normTarget));
 
         bool connectedToPopulationCenter = PopulationCenters.Any(pc =>
-            pc.PlayerOwner.Equals(owner)
+            pc.OwnerId.Equals(owner)
             && SettlementTouchesEdge(pc.VertexCoordinate, normTarget));
 
         return connectedToRoad || connectedToPopulationCenter;
