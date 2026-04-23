@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useGamesStore } from "../../stores/gameStore";
+import { useGameStore } from "../../stores/game";
 import { game as exampleGame } from "../../domain/game/gameExample";
 import { resolveBoardView } from "../../domain/game/boardView";
 import { getCurrentPlayer } from "../../domain/game/selectors";
@@ -13,15 +13,18 @@ function serializeForDebug(value: unknown): string {
 }
 
 /**
- * In-flow panel under the board: current `useGamesStore` game slice.
+ * In-flow panel under the board: current `useGameStore` game slice.
  * Mount only when `import.meta.env.DEV` (see GamePage).
  */
 export function GameStoreDebugView() {
-  const status = useGamesStore((s) => s.status);
-  const error = useGamesStore((s) => s.error);
-  const currentGameId = useGamesStore((s) => s.currentGameId);
-  const game = useGamesStore((s) => s.game);
-  const privateGame = useGamesStore((s) => s.privateGame);
+  const status = useGameStore((s) => s.status);
+  const error = useGameStore((s) => s.error);
+  const currentGameId = useGameStore((s) => s.currentGameId);
+  const game = useGameStore((s) => s.game);
+  const privateGame = useGameStore((s) => s.privateGame);
+  const chatLength = useGameStore((s) => s.chat.length);
+  const toastsLength = useGameStore((s) => s.toasts.length);
+  const gameOver = useGameStore((s) => s.gameOver);
 
   const boardView = resolveBoardView(status, game);
   const me = game ? getCurrentPlayer(game, privateGame) : undefined;
@@ -33,10 +36,24 @@ export function GameStoreDebugView() {
       currentGameId,
       boardView,
       currentPlayerFromPrivateSlice: me?.displayName ?? me?.id ?? null,
+      chat: { length: chatLength },
+      toasts: { length: toastsLength },
+      gameOver,
       game,
       privateGame,
     }),
-    [status, error, currentGameId, boardView, me, game, privateGame],
+    [
+      status,
+      error,
+      currentGameId,
+      boardView,
+      me,
+      chatLength,
+      toastsLength,
+      gameOver,
+      game,
+      privateGame,
+    ],
   );
 
   const json = useMemo(() => serializeForDebug(payload), [payload]);
@@ -52,7 +69,7 @@ export function GameStoreDebugView() {
     <div className="rounded-xl border border-dashed border-slate-400/80 bg-slate-100/90 px-3 py-2 text-left shadow-inner dark:border-slate-600 dark:bg-slate-900/80">
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-300/80 pb-1 dark:border-slate-600">
         <span className="text-xs font-semibold tracking-wide text-slate-700 dark:text-slate-200">
-          Zustand · useGamesStore
+          Zustand · useGameStore
         </span>
         <span className="text-[10px] text-slate-500 dark:text-slate-400">
           Board: {boardSourceLabel}

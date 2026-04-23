@@ -1,9 +1,8 @@
 import { useCallback, useMemo } from "react";
 import { useSignalRContext } from "../context/SignalRContext";
-import { useGameChatStore } from "../stores/gameChatStore";
-import { useGamesStore } from "../stores/gameStore";
+import { useGameStore } from "../stores/game";
+import { useUserProfilesStore } from "../stores/userProfiles";
 import type { ChatMessage } from "../domain/game/gameTypes";
-import type { Player } from "../domain/game/player";
 
 /**
  * Returns the chat message list for the current game, projected into the
@@ -11,35 +10,26 @@ import type { Player } from "../domain/game/player";
  * resolved from the loaded game roster), plus a `sendMessage` helper that
  * invokes the `SendGameMessage` hub method over SignalR.
  *
- * Messages are populated by {@link useGameSignalR}.
- *
- * `playersOverride` lets callers pass roster entries whose `displayName` has
- * already been enriched from the user-profile lookup (`GamePage.enrichedGame`).
- * The raw store roster carries empty display names, so without the override
- * every sender renders as "Unknown".
+ * Messages are populated by `useGameSignalR`; sender display names are
+ * enriched from the shared {@link useUserProfilesStore}, so callers no longer
+ * need to pass roster overrides.
  */
-export function useGameChat(
-  gameId: string | null | undefined,
-  playersOverride?: readonly Player[],
-) {
-  const { invoke, isConnected } = useSignalRContext();
-  const entries = useGameChatStore((s) => s.messages);
-  const storePlayers = useGamesStore((s) => s.game?.players);
-  const players = playersOverride ?? storePlayers;
+export function useGameChat(gameId: string | null | undefined) {
+  const { invoke } = useSignalRContext();
+  const entries = useGameStore((s) => s.chat);
+  const players = useGameStore((s) => s.game?.players);
+  const byId = useUserProfilesStore((s) => s.byId);
 
   const messages = useMemo<ChatMessage[]>(() => {
-    const byUserId = new Map(
-      (players ?? []).map((p) => [
-        p.userId,
-        { displayName: p.displayName, color: p.playerColor },
-      ]),
-    );
+    const playersByUser = new Map((players ?? []).map((p) => [p.userId, p]));
     return entries.map((e) => {
-      const who = byUserId.get(e.senderUserId);
+      const player = playersByUser.get(e.senderUserId);
+      const displayName =
+        byId[e.senderUserId]?.displayName || player?.displayName || "";
       return {
         id: e.id,
-        player: who?.displayName || "Unknown",
-        color: who?.color ?? "none",
+        player: displayName || "Unknown",
+        color: player?.playerColor ?? "none",
         text: e.message,
         time: new Date(e.timestamp).toLocaleTimeString([], {
           hour: "2-digit",
@@ -47,7 +37,7 @@ export function useGameChat(
         }),
       } satisfies ChatMessage;
     });
-  }, [entries, players]);
+  }, [entries, players, byId]);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -62,5 +52,5 @@ export function useGameChat(
     [invoke, gameId],
   );
 
-  return { messages, sendMessage, isConnected };
+  return { messages, sendMessage };
 }

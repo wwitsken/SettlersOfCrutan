@@ -98,7 +98,7 @@ export function GameActionBar({
           <span>{actionError}</span>{" "}
           <button
             type="button"
-            className="underline"
+            className="underline cursor-pointer"
             onClick={onClearActionError}
             style={{ color: "var(--catan-accent)" }}
           >

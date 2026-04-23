@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 import { useSignalRContext } from "../context/SignalRContext";
-import { applyGamePayloadFromApi } from "../stores/applyGamePayload";
-import { useGameChatStore } from "../stores/gameChatStore";
-import { useGameOverStore } from "../stores/gameOverStore";
+import { applyGamePayloadFromApi } from "../stores/game/applyPayload";
+import { useGameStore } from "../stores/game";
 import {
   RealtimeEvents,
   type GameChatMessagePayload,
@@ -16,8 +15,10 @@ type GameReceiveArgs = [string, string | Date, string, unknown];
  *  - Full game snapshots arrive as {@link RealtimeEvents.GameStateUpdated}
  *    with a per-user GameDto payload.
  *  - Chat messages arrive as {@link RealtimeEvents.GameMessage} with a
- *    {@link GameChatMessagePayload} payload and are routed into
- *    {@link useGameChatStore}.
+ *    {@link GameChatMessagePayload} payload and are appended to
+ *    `useGameStore.chat`.
+ *  - End-game overlay payloads arrive as {@link RealtimeEvents.GameEnded}
+ *    and are stored in `useGameStore.gameOver`.
  */
 export function useGameSignalR(gameId?: string | null) {
   const { isConnected, isConnecting, error, start, registerHandlers } =
@@ -59,7 +60,7 @@ export function useGameSignalR(gameId?: string | null) {
               : typeof timestamp === "string"
                 ? Date.parse(timestamp)
                 : Date.now();
-          useGameChatStore.getState().append({
+          useGameStore.getState().appendChat({
             senderUserId: chat.senderUserId,
             message: chat.message,
             timestamp: Number.isFinite(ts) ? ts : Date.now(),
@@ -79,7 +80,7 @@ export function useGameSignalR(gameId?: string | null) {
             }
             return;
           }
-          useGameOverStore.getState().set(ended);
+          useGameStore.getState().setGameOver(ended);
           return;
         }
 

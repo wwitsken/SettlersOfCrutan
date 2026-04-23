@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useGameToastStore, type GameToast } from "../../stores/gameToastStore";
+import { useGameStore, type GameToast } from "../../stores/game";
 
 const AUTO_DISMISS_MS = 5200;
 
@@ -37,8 +37,8 @@ function ToastLine({
  * Centered stack over the board region; click a toast to dismiss early.
  */
 export function GameBoardToasts() {
-  const toasts = useGameToastStore((s) => s.toasts);
-  const dismiss = useGameToastStore((s) => s.dismiss);
+  const toasts = useGameStore((s) => s.toasts);
+  const dismiss = useGameStore((s) => s.dismissToast);
 
   return (
     <div

@@ -1,26 +1,26 @@
-import { useState, useCallback } from "react";
-import {
-  fetchUserProfiles,
-  type UserProfile,
-} from "../api/userProfiles";
+import { useMemo, useRef } from "react";
+import { useUserProfilesStore } from "../stores/userProfiles";
+import type { UserProfile } from "../api/userProfiles";
 
 /**
- * Holds a set of resolved user profiles and exposes an imperative refresher.
- * Pass a pre-fetched list (typically from a route loader) as `initial` to
- * avoid flashing empty display names on first render.
+ * Thin adapter over {@link useUserProfilesStore} kept to preserve the existing
+ * `{ users, fetchProfiles }` call-site contract (see `LobbyPage`). `initial`
+ * is merged into the shared store exactly once on mount so route-loader
+ * payloads seed the cross-page cache.
+ *
+ * New code should prefer reading `useUserProfilesStore` directly.
  */
 export function useUserProfiles(initial: readonly UserProfile[] = []) {
-  const [users, setUsers] = useState<UserProfile[]>(() => [...initial]);
+  const byId = useUserProfilesStore((s) => s.byId);
+  const upsertProfiles = useUserProfilesStore((s) => s.upsertProfiles);
+  const ensureProfilesFor = useUserProfilesStore((s) => s.ensureProfilesFor);
 
-  const fetchProfiles = useCallback(async (userIds: readonly string[]) => {
-    const fetched = await fetchUserProfiles(userIds);
-    if (fetched.length === 0) return;
-    setUsers((prev) => {
-      const byId = new Map(prev.map((u) => [u.userId, u]));
-      for (const u of fetched) byId.set(u.userId, u);
-      return Array.from(byId.values());
-    });
-  }, []);
+  const seededRef = useRef(false);
+  if (!seededRef.current && initial.length > 0) {
+    seededRef.current = true;
+    upsertProfiles(initial);
+  }
 
-  return { users, fetchProfiles };
+  const users = useMemo(() => Object.values(byId), [byId]);
+  return { users, fetchProfiles: ensureProfilesFor };
 }

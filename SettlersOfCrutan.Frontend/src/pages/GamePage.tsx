@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useLoaderData,
   useParams,
@@ -6,13 +6,15 @@ import {
 } from "react-router";
 import { CatanBoardScene } from "../components/board/CatanBoardScene";
 import { GameStoreDebugView } from "../components/dev/GameStoreDebugView";
-import { useGameSignalR } from "../hooks/useGameSignalR";
-import { useGamesStore } from "../stores/gameStore";
+import { useGameLifecycle } from "../hooks/useGameLifecycle";
+import { useEnrichedGame } from "../hooks/useEnrichedGame";
+import { useMeAndTurn } from "../hooks/useMeAndTurn";
+import { useGameStore } from "../stores/game";
+import { useUserProfilesStore } from "../stores/userProfiles";
 import { api } from "../api/client";
 import { getAccessTokenForOpenApi } from "../authConfig";
 import { resolveBoardView } from "../domain/game/boardView";
 import { game as exampleGame } from "../domain/game/gameExample";
-import { applyGamePayloadFromApi } from "../stores/applyGamePayload";
 import { GameActionBar } from "../components/game/GameActionBar";
 import { IncomingTradeBar } from "../components/game/IncomingTradeBar";
 import { ResourceMaritimePopover } from "../components/game/ResourceMaritimePopover";
@@ -22,7 +24,7 @@ import { RobberVictimPicker } from "../components/game/RobberVictimPicker";
 import { DevCardResourceDialog } from "../components/game/DevCardResourceDialog";
 import { useGamePageInteraction } from "../hooks/useGamePageInteraction";
 import { deriveBoardInteraction } from "../domain/game/boardInteraction";
-import { getCurrentPlayer, playersForLayout } from "../domain/game/selectors";
+import { playersForLayout } from "../domain/game/selectors";
 import { getPlayerIdsExposedToHex } from "../domain/game/robberExposure";
 import { toHexCoordDto, vertexDtoToHexes } from "../domain/game/hexCoords";
 import {
@@ -51,12 +53,8 @@ import {
 import { GameBoardToasts } from "../components/game/GameBoardToasts";
 import CatanLayout from "../components/layout/CatanLayout";
 import CatanButton from "../components/ui/CatanButton";
-import { useGameToastStore } from "../stores/gameToastStore";
-import { useGameChatStore } from "../stores/gameChatStore";
-import { useGameOverStore } from "../stores/gameOverStore";
 import GameOverOverlay from "../components/game/GameOverOverlay";
 import { useGameChat } from "../hooks/useGameChat";
-import { useUserProfiles } from "../hooks/useUserName";
 import { fetchUserProfiles, type UserProfile } from "../api/userProfiles";
 
 type EdgeCoordDto = components["schemas"]["EdgeCoordDto"];
@@ -94,6 +92,9 @@ export async function GameLoader(
     .map((p) => p.userId)
     .filter((id): id is string => typeof id === "string" && id.length > 0);
   const users = await fetchUserProfiles(userIds);
+  // Seed the cross-page profile cache so the page's first paint has display
+  // names without waiting for `useEnrichedGame`'s roster-change effect.
+  if (users.length) useUserProfilesStore.getState().upsertProfiles(users);
 
   return { loadedStatus: 200, gameData, users };
 }
@@ -102,17 +103,12 @@ export async function GameLoader(
 
 function GamePage() {
   const { gameId } = useParams();
-  const {
-    loadedStatus,
-    gameData,
-    users: initialUsers,
-  } = useLoaderData<typeof GameLoader>();
-  const game = useGamesStore((s) => s.game);
-  const privateGame = useGamesStore((s) => s.privateGame);
-  const setLoading = useGamesStore((s) => s.setLoading);
-  const setError = useGamesStore((s) => s.setError);
-  const status = useGamesStore((s) => s.status);
-  const loadError = useGamesStore((s) => s.error);
+  const loader = useLoaderData<typeof GameLoader>();
+  const game = useGameStore((s) => s.game);
+  const privateGame = useGameStore((s) => s.privateGame);
+  const status = useGameStore((s) => s.status);
+  const loadError = useGameStore((s) => s.error);
+  const gameOverPayload = useGameStore((s) => s.gameOver);
 
   const {
     pendingInitialVertex,
@@ -146,69 +142,16 @@ function GamePage() {
   const [robberBusy, setRobberBusy] = useState(false);
   const [robberErr, setRobberErr] = useState<string | null>(null);
 
-  const { users, fetchProfiles } = useUserProfiles(initialUsers);
-
-  // Fetch user profiles once per unique set of players (not on every SignalR tick).
-  // Seed the cache key with the ids the loader already fetched so the initial
-  // render does not re-request them.
-  const initialFetchKey = useMemo(
-    () =>
-      [...initialUsers.map((u) => u.userId)].sort().join(","),
-    [initialUsers],
+  const { isConnected: chatConnected } = useGameLifecycle(
+    gameId ?? null,
+    loader,
   );
-  const fetchedForRef = useRef(initialFetchKey);
-  useEffect(() => {
-    if (!game?.players.length) return;
-    const userIds = game.players.map((p) => p.userId).filter(Boolean);
-    const key = [...userIds].sort().join(",");
-    if (key === fetchedForRef.current) return;
-    fetchedForRef.current = key;
-    void fetchProfiles(userIds);
-  }, [game, fetchProfiles]);
-
-  // Merge fetched display names into a derived game object used for rendering.
-  const enrichedGame = useMemo(() => {
-    if (!game) return null;
-    if (users.length === 0) return game;
-    const byUserId = new Map(users.map((u) => [u.userId, u]));
-    return {
-      ...game,
-      players: game.players.map((p) => ({
-        ...p,
-        displayName: byUserId.get(p.userId)?.displayName ?? p.displayName,
-      })),
-    };
-  }, [game, users]);
-
-  const { isConnected: chatConnected } = useGameSignalR(gameId ?? null);
-
-  const clearGameToasts = useGameToastStore((s) => s.clear);
-  const clearGameChat = useGameChatStore((s) => s.clear);
-  const clearGameOver = useGameOverStore((s) => s.clear);
-  const gameOverPayload = useGameOverStore((s) => s.payload);
-  useEffect(() => {
-    clearGameToasts();
-    clearGameChat();
-    clearGameOver();
-  }, [gameId, clearGameToasts, clearGameChat, clearGameOver]);
+  const enrichedGame = useEnrichedGame();
+  const { me, isMyTurn } = useMeAndTurn(enrichedGame);
 
   const { messages: chatMessages, sendMessage: sendChatMessage } = useGameChat(
     gameId ?? null,
-    enrichedGame?.players,
   );
-
-  useEffect(() => {
-    if (!gameId) return;
-    setLoading(gameId);
-
-    if (loadedStatus !== 200 || !gameData) {
-      setError(`Game request failed (${loadedStatus}).`);
-      return;
-    }
-
-    if (!applyGamePayloadFromApi(gameData))
-      setError("Game response could not be mapped.");
-  }, [gameId, loadedStatus, gameData, setLoading, setError]);
 
   useEffect(() => {
     if (!handHint) return;
@@ -221,18 +164,6 @@ function GamePage() {
     boardView === "loading" ? exampleGame : (game ?? exampleGame);
   const showLoadingBanner = boardView === "loading";
   const showExampleBanner = boardView === "example";
-
-  const me =
-    enrichedGame && privateGame ? getCurrentPlayer(enrichedGame, privateGame) : undefined;
-  const currentPid =
-    game && game.players.length > 0
-      ? game.players[game.playerIndex]?.id
-      : undefined;
-  const isMyTurn = !!(
-    privateGame &&
-    currentPid &&
-    currentPid === privateGame.myPlayerId
-  );
 
   const initialRoadHexes = useMemo(
     () =>
@@ -560,7 +491,7 @@ function GamePage() {
           <div className="pointer-events-none absolute top-3 right-3 z-20 flex flex-col items-end gap-1">
             <CatanButton
               size="sm"
-              variant="ghost"
+              variant="default"
               onClick={() => setPendingInitialVertex(null)}
               className="pointer-events-auto shadow-[2px_2px_0_var(--ink)]"
               title="Clear the pending initial settlement and pick a different spot"

@@ -19,3 +19,29 @@ export function playersForLayout(game: Game): (Player & { isCurrentTurn: boolean
     isCurrentTurn: p.id === currentId,
   }));
 }
+
+export type MeAndTurn = {
+  me: Player | undefined;
+  currentPlayerId: string | undefined;
+  isMyTurn: boolean;
+};
+
+/**
+ * Resolve the "who am I / whose turn is it" trio from a game snapshot plus
+ * the private slice. `me` follows the enrichment state of whatever `game` is
+ * passed in; `currentPlayerId` and `isMyTurn` only depend on player ids.
+ */
+export function selectMeAndTurn(
+  game: Game | null,
+  privateGame: PrivateGameInfo | null,
+): MeAndTurn {
+  const me = game && privateGame ? getCurrentPlayer(game, privateGame) : undefined;
+  const currentPlayerId =
+    game && game.players.length > 0 ? game.players[game.playerIndex]?.id : undefined;
+  const isMyTurn = !!(
+    privateGame &&
+    currentPlayerId &&
+    currentPlayerId === privateGame.myPlayerId
+  );
+  return { me, currentPlayerId, isMyTurn };
+}

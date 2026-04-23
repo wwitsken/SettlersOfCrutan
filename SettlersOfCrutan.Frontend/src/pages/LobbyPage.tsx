@@ -23,6 +23,7 @@ import ReadyToggle from "../components/ui/ReadyToggle";
 import CodeChip from "../components/ui/CodeChip";
 import ChatStub from "../components/ui/ChatStub";
 import { useUserProfiles } from "../hooks/useUserName";
+import { useUserProfilesStore } from "../stores/userProfiles";
 
 // ── Loader ──────────────────────────────────────────────────────
 
@@ -54,6 +55,9 @@ export async function LobbyLoader(
     .map((m) => m.userId)
     .filter((id): id is string => typeof id === "string" && id.length > 0);
   const users = await fetchUserProfiles(userIds);
+  // Seed the cross-page profile cache so a subsequent navigation into a game
+  // does not have to re-fetch these profiles.
+  if (users.length) useUserProfilesStore.getState().upsertProfiles(users);
 
   return { loadedStatus: 200, lobbyData, users };
 }
