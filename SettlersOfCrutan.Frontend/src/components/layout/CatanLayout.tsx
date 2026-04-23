@@ -19,6 +19,8 @@ import ChatStub from "../ui/ChatStub";
 interface CatanLayoutProps {
   players: (Player & { isCurrentTurn: boolean })[];
   chatMessages: ChatMessage[];
+  onSendChatMessage?: (text: string) => void;
+  chatDisabled?: boolean;
   resourceHand: Record<string, number>;
   unplayedDevCards: UnplayedDevCardView[];
   playedDevCards: Record<DevelopmentCardType, number>;
@@ -122,6 +124,8 @@ function HonorTag({ label, holder }: { label: string; holder?: string }) {
 export default function CatanLayout({
   players,
   chatMessages,
+  onSendChatMessage,
+  chatDisabled = false,
   resourceHand,
   unplayedDevCards,
   playedDevCards,
@@ -212,7 +216,9 @@ export default function CatanLayout({
           {chatOpen ? (
             <ChatStub
               title="Tavern Chat"
-              initialMessages={chatMessages}
+              messages={chatMessages}
+              onSend={onSendChatMessage}
+              disabled={chatDisabled}
               onToggleCollapsed={() => setChatOpen(false)}
               className="h-full"
             />

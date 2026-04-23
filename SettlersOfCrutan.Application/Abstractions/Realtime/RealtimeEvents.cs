@@ -13,4 +13,11 @@ public static class RealtimeEvents
 
     /// <summary>Full authoritative game snapshot for the receiving user (public + private slice).</summary>
     public const string GameStateUpdated = "GameStateUpdated";
+
+    /// <summary>
+    /// Ceremony payload fired once when a player reaches the win threshold. Payload type
+    /// is <see cref="SettlersOfCrutan.Application.Games.DTOs.GameEndedDto"/>. The regular
+    /// <see cref="GameStateUpdated"/> still broadcasts the transitioned snapshot after this.
+    /// </summary>
+    public const string GameEnded = "GameEnded";
 }

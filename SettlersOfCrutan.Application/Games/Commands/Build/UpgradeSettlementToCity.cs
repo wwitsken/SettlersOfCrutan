@@ -42,28 +42,34 @@ public sealed class UpgradeSettlementToCityCommandHandler(
         if (result.IsFailure) return Result<Nothing>.Failure(result.Error);
 
         var saved = await _gameRepository.SaveAsync(game, ct);
+        if (!saved) return Result<Nothing>.Failure(DomainError.InvalidOperation);
 
-        if (saved)
+        WinConditionEvaluator.EvaluateAndTransition(game);
+        if (game.GamePhase == GamePhase.GameEnd)
         {
-            var now = _clock.UtcNow;
-            var userViews = GameDto.UserViewsFromGame(game);
-
-            try
-            {
-                await _realtimePublisher.PublishGameStateToAllPlayersAsync(
-                    _userRepository,
-                    game.Id,
-                    userViews,
-                    now,
-                    RealtimeEvents.GameStateUpdated,
-                    ct);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to publish GameStateUpdated for GameId {GameId}", game.Id);
-            }
+            var savedEnd = await _gameRepository.SaveAsync(game, ct);
+            if (!savedEnd)
+                _logger.LogWarning("GameEnd persistence lost CAS for {GameId}; next action will retry win detection.", game.Id);
         }
 
-        return saved ? Result<Nothing>.Success() : Result<Nothing>.Failure(DomainError.InvalidOperation);
+        var now = _clock.UtcNow;
+        var userViews = GameDto.UserViewsFromGame(game);
+
+        try
+        {
+            await _realtimePublisher.PublishGameStateToAllPlayersAsync(
+                _userRepository,
+                game.Id,
+                userViews,
+                now,
+                RealtimeEvents.GameStateUpdated,
+                ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to publish GameStateUpdated for GameId {GameId}", game.Id);
+        }
+
+        return Result<Nothing>.Success();
     }
 }

@@ -50,23 +50,17 @@ import {
 } from "../api/gameCommands";
 import { GameBoardToasts } from "../components/game/GameBoardToasts";
 import CatanLayout from "../components/layout/CatanLayout";
+import CatanButton from "../components/ui/CatanButton";
 import { useGameToastStore } from "../stores/gameToastStore";
-import type { ChatMessage } from "../domain/game/gameTypes";
+import { useGameChatStore } from "../stores/gameChatStore";
+import { useGameOverStore } from "../stores/gameOverStore";
+import GameOverOverlay from "../components/game/GameOverOverlay";
+import { useGameChat } from "../hooks/useGameChat";
 import { useUserProfiles } from "../hooks/useUserName";
 import { fetchUserProfiles, type UserProfile } from "../api/userProfiles";
 
 type EdgeCoordDto = components["schemas"]["EdgeCoordDto"];
 type VertexCoordDto = components["schemas"]["VertexCoordDto"];
-
-const MOCK_CHAT_MESSAGES: ChatMessage[] = [
-  {
-    id: 1,
-    player: "System",
-    color: "none",
-    text: "Game started. Chat coming soon.",
-    time: "",
-  },
-];
 
 // ── Loader ──────────────────────────────────────────────────────
 
@@ -186,12 +180,22 @@ function GamePage() {
     };
   }, [game, users]);
 
-  useGameSignalR(gameId ?? null);
+  const { isConnected: chatConnected } = useGameSignalR(gameId ?? null);
 
   const clearGameToasts = useGameToastStore((s) => s.clear);
+  const clearGameChat = useGameChatStore((s) => s.clear);
+  const clearGameOver = useGameOverStore((s) => s.clear);
+  const gameOverPayload = useGameOverStore((s) => s.payload);
   useEffect(() => {
     clearGameToasts();
-  }, [gameId, clearGameToasts]);
+    clearGameChat();
+    clearGameOver();
+  }, [gameId, clearGameToasts, clearGameChat, clearGameOver]);
+
+  const { messages: chatMessages, sendMessage: sendChatMessage } = useGameChat(
+    gameId ?? null,
+    enrichedGame?.players,
+  );
 
   useEffect(() => {
     if (!gameId) return;
@@ -528,6 +532,12 @@ function GamePage() {
     setMaritimePopover({ discard, anchorEl });
   };
 
+  const setupAwaitingInitialRoad =
+    !!game &&
+    game.gamePhase === "setup" &&
+    isMyTurn &&
+    pendingInitialVertex != null;
+
   const boardSlot = (
     <>
       {(showLoadingBanner || showExampleBanner) && (
@@ -546,6 +556,19 @@ function GamePage() {
       )}
       <div className="flex-1 min-h-0 relative">
         <GameBoardToasts />
+        {setupAwaitingInitialRoad && (
+          <div className="pointer-events-none absolute top-3 right-3 z-20 flex flex-col items-end gap-1">
+            <CatanButton
+              size="sm"
+              variant="ghost"
+              onClick={() => setPendingInitialVertex(null)}
+              className="pointer-events-auto shadow-[2px_2px_0_var(--ink)]"
+              title="Clear the pending initial settlement and pick a different spot"
+            >
+              ✕ cancel settlement
+            </CatanButton>
+          </div>
+        )}
         <CatanBoardScene
           game={boardGame}
           hexRadius={1}
@@ -573,12 +596,6 @@ function GamePage() {
       </div>
     </>
   );
-
-  const setupAwaitingInitialRoad =
-    !!game &&
-    game.gamePhase === "setup" &&
-    isMyTurn &&
-    pendingInitialVertex != null;
 
   const actionBarSlot = (
     <GameActionBar
@@ -631,7 +648,9 @@ function GamePage() {
 
       <CatanLayout
         players={layoutPlayers}
-        chatMessages={MOCK_CHAT_MESSAGES}
+        chatMessages={chatMessages}
+        onSendChatMessage={sendChatMessage}
+        chatDisabled={!chatConnected}
         resourceHand={privateGame?.myHand.resources ?? {}}
         unplayedDevCards={layoutUnplayedDevCards}
         playedDevCards={layoutPlayedDevCards}
@@ -735,6 +754,8 @@ function GamePage() {
           else setDevErr(r.errorMessage);
         }}
       />
+
+      <GameOverOverlay payload={gameOverPayload} game={game} />
 
       {import.meta.env.DEV && <GameStoreDebugView />}
     </>

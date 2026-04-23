@@ -1916,6 +1916,7 @@ export interface components {
             currentPlayerId?: null | components["schemas"]["PlayerId"];
             currentTradeOffer?: null | components["schemas"]["TradeOfferDto"];
             players?: components["schemas"]["PlayerDto"][];
+            winnerPlayerId?: null | string;
         };
         ResolveRobberRequest: {
             newRobberHex: components["schemas"]["HexCoordDto"];

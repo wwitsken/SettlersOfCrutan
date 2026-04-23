@@ -9,7 +9,7 @@ export type GameType = components["schemas"]["GameType"];
 export type DevelopmentCardType = components["schemas"]["DevelopmentCardType"];
 
 export interface ChatMessage {
-  id: number;
+  id: string | number;
   player: string;
   color: PlayerColor;
   text: string;

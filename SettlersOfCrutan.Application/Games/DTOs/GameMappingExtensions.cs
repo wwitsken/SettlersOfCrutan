@@ -44,6 +44,7 @@ public static class GameMappingExtensions
             Round = game.Round,
             CurrentPlayerId = game.Players[game.PlayerIndex].Id,
             CurrentTradeOffer = game.CurrentTradeOffer?.ToDto(),
+            WinnerPlayerId = game.WinnerPlayerId?.Value,
             Players = [.. game.Players.Select((p, idx) => new PlayerDto {
                 Id = p.Id.Value,
                 UserId = p.UserId.Value,

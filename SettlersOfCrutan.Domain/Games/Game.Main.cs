@@ -30,6 +30,9 @@ public partial class Game : AggregateRoot<GameId>
     public int PlayerIndex { get; set; } = 0;
     public TradeOffer? CurrentTradeOffer { get; set; } = null;
 
+    /// <summary>Set once when a player reaches the win threshold and <see cref="GamePhase"/> transitions to <see cref="GamePhase.GameEnd"/>.</summary>
+    public PlayerId? WinnerPlayerId { get; private set; }
+
     private readonly List<Player> _players = [];
     public IReadOnlyList<Player> Players => [.. _players];
 
@@ -60,7 +63,8 @@ public partial class Game : AggregateRoot<GameId>
         int round = 1,
         int playerIndex = 0,
         TradeOffer? currentTradeOffer = null,
-        DateTimeOffset? turnExpiresAt = null
+        DateTimeOffset? turnExpiresAt = null,
+        PlayerId? winnerPlayerId = null
     )
     {
         GameType = gameType;
@@ -76,6 +80,7 @@ public partial class Game : AggregateRoot<GameId>
         PlayerIndex = playerIndex;
         CurrentTradeOffer = currentTradeOffer;
         TurnExpiresAt = turnExpiresAt;
+        WinnerPlayerId = winnerPlayerId;
     }
 
     public static Result<Game> CreateGame(string gameName, LobbyId spawnerLobbyId, IReadOnlyList<UserId> userIds, IBoardGenerator boardGenerator)

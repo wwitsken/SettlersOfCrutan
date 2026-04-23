@@ -18,4 +18,9 @@ public sealed record PublicGameDto
     public PlayerId? CurrentPlayerId { get; set; }
     public TradeOfferDto? CurrentTradeOffer { get; set; }
     public List<PlayerDto> Players { get; set; } = [];
+    /// <summary>
+    /// Set once <see cref="GamePhase"/> is <see cref="GamePhase.GameEnd"/>. Lets late joiners /
+    /// reload clients resolve the winner from a plain GET without replaying SignalR events.
+    /// </summary>
+    public string? WinnerPlayerId { get; set; }
 }

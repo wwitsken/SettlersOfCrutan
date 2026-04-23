@@ -346,7 +346,14 @@ function publicDtoToGame(publicPart: PublicGameDto): Game | null {
     playerIndex: Number.isFinite(playerIndex) && playerIndex >= 0 ? playerIndex : 0,
     currentTradeOffer: mapTradeOffer(publicPart.currentTradeOffer),
     players,
+    winnerPlayerId: extractWinnerPlayerId(publicPart),
   };
+}
+
+/** Read `winnerPlayerId` from the public DTO. Not in the generated OpenAPI types yet, hence the cast. */
+function extractWinnerPlayerId(publicPart: PublicGameDto): string | undefined {
+  const raw = (publicPart as { winnerPlayerId?: unknown }).winnerPlayerId;
+  return typeof raw === "string" && raw.length > 0 ? raw : undefined;
 }
 
 /** Public slice only (ignores `myPrivateGameInfo`). */

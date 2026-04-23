@@ -17,4 +17,6 @@ export type Game = {
   playerIndex: number;
   currentTradeOffer: TradeOffer | undefined;
   players: Player[];
+  /** Set once `gamePhase === "gameEnd"`. Lets reload / late-join clients resolve the winner without SignalR. */
+  winnerPlayerId?: string;
 };

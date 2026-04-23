@@ -294,6 +294,27 @@ export function CatanBoardScene({
     showGhostCityUpgrades &&
     !!myPlayerId;
 
+  /**
+   * 3D position (XZ centroid of the three surrounding hex centers) of the
+   * setup-phase settlement that has been clicked but not yet finalized with
+   * an adjacent road. Kept visible as a translucent marker so the player can
+   * see where they committed while they pick the road.
+   */
+  const pendingInitialVertexPosition = useMemo<
+    [number, number, number] | null
+  >(() => {
+    if (!initialRoadVertexHexes || initialRoadVertexHexes.length < 3) return null;
+    const [h0, h1, h2] = initialRoadVertexHexes;
+    const p0 = cubeToPosition(hexRadius, h0!.q, h0!.r);
+    const p1 = cubeToPosition(hexRadius, h1!.q, h1!.r);
+    const p2 = cubeToPosition(hexRadius, h2!.q, h2!.r);
+    return [(p0.x + p1.x + p2.x) / 3, 0.22, (p0.z + p1.z + p2.z) / 3];
+  }, [initialRoadVertexHexes, hexRadius]);
+
+  const myPieceColor = myPlayerId
+    ? pieceColorByPlayerId.get(myPlayerId)
+    : undefined;
+
   /** Wide plane under the island so open water reads as ocean. */
   const oceanPlaneSize = useMemo(() => {
     let maxDist = hexRadius * 4;
@@ -385,6 +406,14 @@ export function CatanBoardScene({
                 />
               ))}
             </group>
+          )}
+
+          {pendingInitialVertexPosition && (
+            <GhostSettlementMesh
+              position={pendingInitialVertexPosition}
+              color={myPieceColor ?? "#ffffff"}
+              alwaysVisible
+            />
           )}
 
           {board.roads.map((road, idx) => (

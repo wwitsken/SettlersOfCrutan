@@ -33,7 +33,17 @@ public sealed class BuildInitialCommandHandler(IGameRepository gameRepository,
         if (actor.IsFailure) return Result<Nothing>.Failure(actor.Error);
         var result = game.PlaceInitial(actor.Value, command.SettlementCoordinate, command.RoadCoordinate, _clock);
         if (result.IsFailure) return Result<Nothing>.Failure(result.Error);
-        await _gameRepository.SaveAsync(game, ct);
+
+        var saved = await _gameRepository.SaveAsync(game, ct);
+        if (!saved) return Result<Nothing>.Failure(DomainError.InvalidOperation);
+
+        WinConditionEvaluator.EvaluateAndTransition(game);
+        if (game.GamePhase == GamePhase.GameEnd)
+        {
+            var savedEnd = await _gameRepository.SaveAsync(game, ct);
+            if (!savedEnd)
+                _logger.LogWarning("GameEnd persistence lost CAS for {GameId}; next action will retry win detection.", game.Id);
+        }
 
         var now = _clock.UtcNow;
         var userViews = GameDto.UserViewsFromGame(game);
@@ -50,13 +60,7 @@ public sealed class BuildInitialCommandHandler(IGameRepository gameRepository,
         }
         catch (Exception ex)
         {
-            // Do NOT fail the command if state is already saved.
-            // Log and optionally enqueue retry/catch-up.
-
             _logger.LogWarning(ex, "Failed to publish GameStateUpdated for GameId {GameId}", game.Id);
-
-            // Optional: enqueue a lightweight "game changed" signal for retry,
-            // or rely on clients to resync on next poll/reconnect.
         }
 
         return Result<Nothing>.Success();
