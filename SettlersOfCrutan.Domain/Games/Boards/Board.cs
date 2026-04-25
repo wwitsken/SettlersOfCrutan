@@ -1,5 +1,4 @@
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.Resources;
 using System.Text.Json.Serialization;

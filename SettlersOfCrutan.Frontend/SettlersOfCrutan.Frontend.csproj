@@ -1,10 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <AspireHostingModel>None</AspireHostingModel>
     <RootNamespace>SettlersOfCrutan.Frontend</RootNamespace>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.6" />
-  </ItemGroup>
 </Project>

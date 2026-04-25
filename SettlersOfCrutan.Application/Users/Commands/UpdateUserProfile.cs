@@ -1,7 +1,6 @@
 using FluentValidation;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
 
 namespace SettlersOfCrutan.Application.Users.Commands;

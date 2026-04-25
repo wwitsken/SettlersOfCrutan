@@ -1,6 +1,4 @@
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
-using SettlersOfCrutan.Domain.Games.Boards;
 using SettlersOfCrutan.Domain.Games.DomainEvents;
 using SettlersOfCrutan.Domain.Games.Resources;
 using SettlersOfCrutan.Domain.Specifications;

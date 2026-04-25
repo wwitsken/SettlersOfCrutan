@@ -3,7 +3,6 @@ using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Abstractions.Realtime;
 using SettlersOfCrutan.Application.Lobbies.DTOs;
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Lobbies;
 namespace SettlersOfCrutan.Application.Lobbies.Commands;

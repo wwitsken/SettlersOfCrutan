@@ -1,6 +1,5 @@
 ﻿using System.Text.Json.Serialization;
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Domain.Games;

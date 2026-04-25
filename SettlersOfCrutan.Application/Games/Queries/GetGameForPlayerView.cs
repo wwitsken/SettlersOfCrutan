@@ -1,7 +1,6 @@
 ﻿using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
 
 namespace SettlersOfCrutan.Application.Games.Queries;

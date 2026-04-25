@@ -1,6 +1,6 @@
 using SettlersOfCrutan.Domain.Users;
 
-namespace SettlersOfCrutan.Domain.UnitTests.Specifications;
+namespace SettlersOfCrutan.Domain.UnitTests;
 
 internal static class TestIds
 {

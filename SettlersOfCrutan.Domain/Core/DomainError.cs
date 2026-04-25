@@ -1,7 +1,6 @@
-using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games; // For GameId, PlayerId
 
-namespace SettlersOfCrutan.Domain.DomainErrors;
+namespace SettlersOfCrutan.Domain.Core;
 public class DomainError(string code, string message) : Error(code, message)
 {
     // Generic / common

@@ -5,7 +5,6 @@ using SettlersOfCrutan.Application.Abstractions.Realtime;
 using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 using SettlersOfCrutan.Domain.Games.Resources;

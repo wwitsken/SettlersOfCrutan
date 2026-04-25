@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.2.0">
+<Project Sdk="Aspire.AppHost.Sdk/13.2.4">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,9 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.NodeJs" Version="9.5.2" />
-    <PackageReference Include="Aspire.Hosting.Redis" Version="13.2.2" />
-    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.6" />
+    <PackageReference Include="Aspire.Hosting.Azure.Redis" Version="13.2.4" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.2.4" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.7" />
   </ItemGroup>
 
   <ItemGroup>

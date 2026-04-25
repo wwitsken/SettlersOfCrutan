@@ -6,7 +6,6 @@ using SettlersOfCrutan.Application.Games;
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Application.Games.Policies;
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Resources;
 

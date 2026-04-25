@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SettlersOfCrutan.Application.Validation;
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
 
 namespace SettlersOfCrutan.Presentation.Extensions;
 

@@ -85,6 +85,7 @@ var app = builder.Build();
 if (app.Environment.IsProduction())
 {
     app.UseHttpsRedirection();
+    app.UseStaticFiles();
 }
 
 if (app.Environment.IsDevelopment())
@@ -123,5 +124,10 @@ app.MapGet("/api/health", Results<Ok<string>, BadRequest> () => TypedResults.Ok(
 app.MapGet("/api/test", Results<Ok<string>, BadRequest> () => TypedResults.Ok("Test endpoint is working")).RequireAuthorization();
 
 app.MapHub<CrutanHub>("/api/realtime-hub").RequireAuthorization();
+
+if (app.Environment.IsProduction())
+{
+    app.MapFallbackToFile("index.html");
+}
 
 app.Run();

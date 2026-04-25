@@ -1,5 +1,4 @@
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games.Boards;
 
 namespace SettlersOfCrutan.Domain.Specifications.Maritime3to1Trade;

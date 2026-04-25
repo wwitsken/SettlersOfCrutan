@@ -2,7 +2,6 @@
 using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Application.Users.DTOs;
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Users;
 using System;

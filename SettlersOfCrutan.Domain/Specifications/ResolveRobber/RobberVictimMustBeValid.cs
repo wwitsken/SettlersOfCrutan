@@ -1,6 +1,5 @@
 using System.Linq;
 using SettlersOfCrutan.Domain.Core;
-using SettlersOfCrutan.Domain.DomainErrors;
 
 namespace SettlersOfCrutan.Domain.Specifications.ResolveRobber;
 

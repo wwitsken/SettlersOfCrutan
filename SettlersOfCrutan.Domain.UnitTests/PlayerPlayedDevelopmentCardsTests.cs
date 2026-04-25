@@ -1,6 +1,5 @@
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Resources;
-using SettlersOfCrutan.Domain.UnitTests.Specifications;
 
 namespace SettlersOfCrutan.Domain.UnitTests;
 
