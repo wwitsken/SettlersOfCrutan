@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SettlersOfCrutan.Application.Abstractions;
 using SettlersOfCrutan.Application.Games.Policies;
-using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games.Generation;
 
 namespace SettlersOfCrutan.Application;
@@ -32,8 +31,15 @@ public static class DependencyInjection
                     .AsImplementedInterfaces()
                     .WithScopedLifetime());
 
-        services.Decorate(typeof(ICommandHandler<>), typeof(Behaviors.ValidationDecorator.CommandHandler<>));
-        services.Decorate(typeof(ICommandHandler<,>), typeof(Behaviors.ValidationDecorator.CommandHandler<,>));
+        /* Registration order matters - behaviors will be called in order, BOTTOM to TOP: */
+        /* 3RD */        services.Decorate(typeof(ICommandHandler<>), typeof(Behaviors.GameNotificationDecorator.CommandHandler<>));
+        /* 2ND */        services.Decorate(typeof(ICommandHandler<>), typeof(Behaviors.GameWinEvaluatorDecorator.CommandHandler<>));
+        /* 1ST */        services.Decorate(typeof(ICommandHandler<>), typeof(Behaviors.ValidationDecorator.CommandHandler<>));
+
+        /* Registration order matters - behaviors will be called in order, BOTTOM to TOP: */
+        /* 3RD */        services.Decorate(typeof(ICommandHandler<,>), typeof(Behaviors.GameNotificationDecorator.CommandHandler<,>));
+        /* 2ND */        services.Decorate(typeof(ICommandHandler<,>), typeof(Behaviors.GameWinEvaluatorDecorator.CommandHandler<,>));
+        /* 1ST */        services.Decorate(typeof(ICommandHandler<,>), typeof(Behaviors.ValidationDecorator.CommandHandler<,>));
 
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, includeInternalTypes: true);
 

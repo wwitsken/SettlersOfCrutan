@@ -1,9 +1,4 @@
-using Microsoft.Extensions.Logging;
-using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Application.Abstractions;
-using SettlersOfCrutan.Application.Abstractions.Realtime;
-using SettlersOfCrutan.Application.Games;
-using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
 using SettlersOfCrutan.Domain.Games.Boards;
@@ -11,22 +6,14 @@ using SettlersOfCrutan.Domain.Games.Boards.Coordinates;
 
 namespace SettlersOfCrutan.Application.Games.Commands.DevelopmentCards;
 
-public record UseRoadBuildingCommand(GameId GameId, Edge Edge1, Edge Edge2) : ICommand;
+public record UseRoadBuildingCommand(GameId GameId, Edge Edge1, Edge Edge2) : IGameCommand;
 
 public sealed class UseRoadBuildingCommandHandler(
     IGameRepository gameRepository,
-    ICurrentUser currentUser,
-    IUserRepository userRepository,
-    IRealtimePublisher realtimePublisher,
-    IDateTimeProvider clock,
-    ILogger<UseRoadBuildingCommandHandler> logger) : ICommandHandler<UseRoadBuildingCommand>
+    ICurrentUser currentUser) : ICommandHandler<UseRoadBuildingCommand>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
     private readonly ICurrentUser _currentUser = currentUser;
-    private readonly IUserRepository _userRepository = userRepository;
-    private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
-    private readonly IDateTimeProvider _clock = clock;
-    private readonly ILogger<UseRoadBuildingCommandHandler> _logger = logger;
 
     public async Task<Result<Nothing>> Handle(UseRoadBuildingCommand command, CancellationToken ct = default)
     {
@@ -40,33 +27,7 @@ public sealed class UseRoadBuildingCommandHandler(
         if (result.IsFailure) return Result.Failure(result.Error);
 
         var saved = await _gameRepository.SaveAsync(game, ct);
-        if (!saved) return Result.Failure(DomainError.InvalidOperation);
-
-        WinConditionEvaluator.EvaluateAndTransition(game);
-        if (game.GamePhase == GamePhase.GameEnd)
-        {
-            var savedEnd = await _gameRepository.SaveAsync(game, ct);
-            if (!savedEnd)
-                _logger.LogWarning("GameEnd persistence lost CAS for {GameId}; next action will retry win detection.", game.Id);
-        }
-
-        var now = _clock.UtcNow;
-        var userViews = GameDto.UserViewsFromGame(game);
-
-        try
-        {
-            await _realtimePublisher.PublishGameStateToAllPlayersAsync(
-                _userRepository,
-                game.Id,
-                userViews,
-                now,
-                RealtimeEvents.GameStateUpdated,
-                ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to publish GameStateUpdated for GameId {GameId}", game.Id);
-        }
+        if (!saved) return Result.Failure(new Error("Persistence", "Failed to save game state"));
 
         return Result.Success();
     }

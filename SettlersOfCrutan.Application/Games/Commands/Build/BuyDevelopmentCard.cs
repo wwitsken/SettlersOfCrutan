@@ -11,23 +11,15 @@ using SettlersOfCrutan.Domain.Games.Resources;
 
 namespace SettlersOfCrutan.Application.Games.Commands.Build;
 
-public record BuyDevelopmentCardCommand(GameId GameId) : ICommand<DevelopmentCardType>;
+public record BuyDevelopmentCardCommand(GameId GameId) : IGameCommand<DevelopmentCardType>;
 
 public sealed class BuyDevelopmentCardCommandHandler(
     IGameRepository gameRepository,
     ICurrentUser currentUser,
-    IUserRepository userRepository,
-    IRealtimePublisher realtimePublisher,
-    IDateTimeProvider clock,
-    ILogger<BuyDevelopmentCardCommandHandler> logger,
     StandardPriceCalculator priceCalculator) : ICommandHandler<BuyDevelopmentCardCommand, DevelopmentCardType>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
     private readonly ICurrentUser _currentUser = currentUser;
-    private readonly IUserRepository _userRepository = userRepository;
-    private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
-    private readonly IDateTimeProvider _clock = clock;
-    private readonly ILogger<BuyDevelopmentCardCommandHandler> _logger = logger;
     private readonly StandardPriceCalculator _priceCalculator = priceCalculator;
 
     public async Task<Result<DevelopmentCardType>> Handle(BuyDevelopmentCardCommand command, CancellationToken ct = default)
@@ -42,33 +34,7 @@ public sealed class BuyDevelopmentCardCommandHandler(
         if (result.IsFailure) return Result<DevelopmentCardType>.Failure(result.Error);
 
         var saved = await _gameRepository.SaveAsync(game, ct);
-        if (!saved) return Result<DevelopmentCardType>.Failure(DomainError.InvalidOperation);
-
-        WinConditionEvaluator.EvaluateAndTransition(game);
-        if (game.GamePhase == GamePhase.GameEnd)
-        {
-            var savedEnd = await _gameRepository.SaveAsync(game, ct);
-            if (!savedEnd)
-                _logger.LogWarning("GameEnd persistence lost CAS for {GameId}; next action will retry win detection.", game.Id);
-        }
-
-        var now = _clock.UtcNow;
-        var userViews = GameDto.UserViewsFromGame(game);
-
-        try
-        {
-            await _realtimePublisher.PublishGameStateToAllPlayersAsync(
-                _userRepository,
-                game.Id,
-                userViews,
-                now,
-                RealtimeEvents.GameStateUpdated,
-                ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to publish GameStateUpdated for GameId {GameId}", game.Id);
-        }
+        if (!saved) return Result<DevelopmentCardType>.Failure(new Error("Persistence", "Failed to save game state"));
 
         return Result<DevelopmentCardType>.Success(result.Value);
     }

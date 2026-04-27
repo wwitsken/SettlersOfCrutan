@@ -1,30 +1,17 @@
-using Microsoft.Extensions.Logging;
-using SettlersOfCrutan.Application;
 using SettlersOfCrutan.Application.Abstractions;
-using SettlersOfCrutan.Application.Abstractions.Realtime;
-using SettlersOfCrutan.Application.Games;
-using SettlersOfCrutan.Application.Games.DTOs;
 using SettlersOfCrutan.Domain.Core;
 using SettlersOfCrutan.Domain.Games;
 
 namespace SettlersOfCrutan.Application.Games.Commands.TurnFlow;
 
 public record RollDiceCommandResult(int Dice1, int Dice2);
-public record RollDiceCommand(GameId GameId) : ICommand<RollDiceCommandResult>;
+public record RollDiceCommand(GameId GameId) : IGameCommand<RollDiceCommandResult>;
 public sealed class RollDiceCommandHandler(
     IGameRepository gameRepository,
-    ICurrentUser currentUser,
-    IUserRepository userRepository,
-    IRealtimePublisher realtimePublisher,
-    IDateTimeProvider clock,
-    ILogger<RollDiceCommandHandler> logger) : ICommandHandler<RollDiceCommand, RollDiceCommandResult>
+    ICurrentUser currentUser) : ICommandHandler<RollDiceCommand, RollDiceCommandResult>
 {
     private readonly IGameRepository _gameRepository = gameRepository;
     private readonly ICurrentUser _currentUser = currentUser;
-    private readonly IUserRepository _userRepository = userRepository;
-    private readonly IRealtimePublisher _realtimePublisher = realtimePublisher;
-    private readonly IDateTimeProvider _clock = clock;
-    private readonly ILogger<RollDiceCommandHandler> _logger = logger;
 
     public async Task<Result<RollDiceCommandResult>> Handle(RollDiceCommand command, CancellationToken ct = default)
     {
@@ -41,29 +28,8 @@ public sealed class RollDiceCommandHandler(
 
         var saved = await _gameRepository.SaveAsync(game, ct);
 
-        if (saved)
-        {
-            var now = _clock.UtcNow;
-            var userViews = GameDto.UserViewsFromGame(game);
-
-            try
-            {
-                await _realtimePublisher.PublishGameStateToAllPlayersAsync(
-                    _userRepository,
-                    game.Id,
-                    userViews,
-                    now,
-                    RealtimeEvents.GameStateUpdated,
-                    ct);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to publish GameStateUpdated for GameId {GameId}", game.Id);
-            }
-        }
-
         return saved
             ? Result.Success(new RollDiceCommandResult(result.Value.Item1, result.Value.Item2))
-            : Result<RollDiceCommandResult>.Failure(result.Error);
+            : Result<RollDiceCommandResult>.Failure(new Error("Persistence", "Failed to save game state"));
     }
 }
