@@ -268,6 +268,7 @@ function LobbyPage() {
 
   const me = currentLobby?.lobbyMembers.find((m) => m.isMe);
   const isInLobby = !!me;
+  const isLobbyHost = !!me?.isHost;
   const isReady = !!me?.isReady;
   const activeLobbyId = currentLobby?.lobbyId ?? lobbyId ?? "";
   const allReady =
@@ -438,23 +439,27 @@ function LobbyPage() {
                 }}
               >
                 {allReady
-                  ? "All souls ready. Onward!"
+                  ? isLobbyHost
+                    ? "All souls ready. Onward!"
+                    : "All souls ready. Waiting for the host."
                   : "Wait for all to ready up."}
               </div>
-              <CatanButton
-                variant="primary"
-                className="w-full justify-center text-lg"
-                disabled={!allReady || status === "loading"}
-                onClick={async () => {
-                  if (!lobbyId || !allReady) return;
-                  await api.POST("/api/lobby/{lobbyId}/start-game", {
-                    params: { path: { lobbyId } },
-                    body: { gameName: "Crutan Game", gameType: "baseGame" },
-                  });
-                }}
-              >
-                ⚔︎ Start Game
-              </CatanButton>
+              {isLobbyHost && (
+                <CatanButton
+                  variant="primary"
+                  className="w-full justify-center text-lg"
+                  disabled={!allReady || status === "loading"}
+                  onClick={async () => {
+                    if (!lobbyId || !allReady) return;
+                    await api.POST("/api/lobby/{lobbyId}/start-game", {
+                      params: { path: { lobbyId } },
+                      body: { gameName: "Crutan Game", gameType: "baseGame" },
+                    });
+                  }}
+                >
+                  ⚔︎ Start Game
+                </CatanButton>
+              )}
 
               {isInLobby && lobbyId && (
                 <CatanButton

@@ -29,6 +29,8 @@ public partial class Game
                 return Result.Failure<PlayerId>(result.Error);
         }
 
+        CurrentDiceRoll = null;
+
         return GamePhase switch
         {
             GamePhase.Setup => EndTurnDuringSetup(playerId, clock, turnDuration),
@@ -57,6 +59,8 @@ public partial class Game
         int d1 = Random.Shared.Next(1, 7);
         int d2 = Random.Shared.Next(1, 7);
         int total = d1 + d2;
+
+        CurrentDiceRoll = new(d1, d2);
 
         if (total == 7)
         {

@@ -1,5 +1,7 @@
+import { enrichGamePlayerDisplayNames } from "../../domain/game/enrichGamePlayers";
 import { mapGamePayload } from "../../domain/game/mapGameFromApi";
 import { snapshotToastMessages } from "../../domain/game/snapshotToastMessages";
+import { useUserProfilesStore } from "../userProfiles";
 import { MAX_TOASTS } from "./toastSlice";
 import { useGameStore } from "./index";
 
@@ -20,7 +22,11 @@ export function applyGamePayloadFromApi(payload: unknown): boolean {
     s.error = null;
     s.privateGame = mapped.privateGame;
 
-    const lines = snapshotToastMessages(prev, mapped.game, mapped.privateGame);
+    const nextForToasts = enrichGamePlayerDisplayNames(
+      mapped.game,
+      useUserProfilesStore.getState().byId,
+    );
+    const lines = snapshotToastMessages(prev, nextForToasts, mapped.privateGame);
     for (const message of lines) {
       s.toasts.push({ id: crypto.randomUUID(), message });
     }

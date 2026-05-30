@@ -7,8 +7,17 @@ function coordKey(c: HexCoordinate): string {
   return `${c.q},${c.r},${c.s}`;
 }
 
+function findPlayer(game: Game, playerId: string) {
+  if (!playerId) return undefined;
+  return (
+    game.players.find((p) => p.id === playerId) ??
+    game.players.find((p) => p.userId === playerId)
+  );
+}
+
 function playerName(game: Game, playerId: string): string {
-  return game.players.find((p) => p.id === playerId)?.displayName ?? "Player";
+  const name = findPlayer(game, playerId)?.displayName?.trim();
+  return name || "Player";
 }
 
 function robberLocation(board: Board): string | null {

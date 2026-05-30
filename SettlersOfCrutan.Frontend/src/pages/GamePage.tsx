@@ -51,6 +51,7 @@ import {
   postUseYearOfPlenty,
 } from "../api/gameCommands";
 import { GameBoardToasts } from "../components/game/GameBoardToasts";
+import { DiceRollPopover } from "../components/game/DiceRollPopover";
 import CatanLayout from "../components/layout/CatanLayout";
 import CatanButton from "../components/ui/CatanButton";
 import GameOverOverlay from "../components/game/GameOverOverlay";
@@ -487,6 +488,7 @@ function GamePage() {
       )}
       <div className="flex-1 min-h-0 relative">
         <GameBoardToasts />
+        <DiceRollPopover roll={game?.currentDiceRoll} />
         {setupAwaitingInitialRoad && (
           <div className="pointer-events-none absolute top-3 right-3 z-20 flex flex-col items-end gap-1">
             <CatanButton

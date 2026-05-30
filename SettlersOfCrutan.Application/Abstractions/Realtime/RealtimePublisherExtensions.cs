@@ -20,11 +20,11 @@ public static class RealtimePublisherExtensions
     {
         var tasks = viewsByUserId.Select(async kvp =>
         {
-            var user = await users.GetAsync(kvp.Key, ct).ConfigureAwait(false);
+            var user = await users.GetAsync(kvp.Key, ct);
             if (user is null) return;
-            await publisher.UpdateGameAsync(gameId, user, timestamp, eventName, kvp.Value, ct).ConfigureAwait(false);
+            await publisher.UpdateGameAsync(gameId, user, timestamp, eventName, kvp.Value, ct);
         });
-        await Task.WhenAll(tasks).ConfigureAwait(false);
+        await Task.WhenAll(tasks);
     }
 
     public static async Task PublishLobbyStateToAllMembersAsync(
@@ -38,11 +38,11 @@ public static class RealtimePublisherExtensions
     {
         var tasks = viewsByUserId.Select(async kvp =>
         {
-            var user = await users.GetAsync(kvp.Key, ct).ConfigureAwait(false);
+            var user = await users.GetAsync(kvp.Key, ct);
             if (user is null) return;
-            await publisher.UpdateLobbyAsync(lobbyId, user, timestamp, eventName, kvp.Value, ct).ConfigureAwait(false);
+            await publisher.UpdateLobbyAsync(lobbyId, user, timestamp, eventName, kvp.Value, ct);
         });
-        await Task.WhenAll(tasks).ConfigureAwait(false);
+        await Task.WhenAll(tasks);
     }
 
     public static async Task<IReadOnlyList<User>> ResolveUsersForRealtimeAsync(
@@ -53,7 +53,7 @@ public static class RealtimePublisherExtensions
         var list = new List<User>();
         foreach (var id in userIds.Distinct())
         {
-            var u = await users.GetAsync(id, ct).ConfigureAwait(false);
+            var u = await users.GetAsync(id, ct);
             if (u is not null) list.Add(u);
         }
 

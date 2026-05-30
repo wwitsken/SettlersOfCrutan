@@ -23,4 +23,5 @@ public sealed record PublicGameDto
     /// reload clients resolve the winner from a plain GET without replaying SignalR events.
     /// </summary>
     public string? WinnerPlayerId { get; set; }
+    public DiceRoll? CurrentDiceRoll { get; set; }
 }

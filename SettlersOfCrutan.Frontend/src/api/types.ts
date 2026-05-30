@@ -1767,6 +1767,12 @@ export interface components {
         };
         /** @enum {unknown} */
         DevelopmentCardType: "knight" | "victoryPoint" | "roadBuilding" | "yearOfPlenty" | "monopoly";
+        DiceRoll: {
+            /** Format: int32 */
+            die1: number;
+            /** Format: int32 */
+            die2: number;
+        };
         DiscardHalfRequest: {
             discards: components["schemas"]["ResourceCardAmountDto"][];
         };
@@ -1917,6 +1923,7 @@ export interface components {
             currentTradeOffer?: null | components["schemas"]["TradeOfferDto"];
             players?: components["schemas"]["PlayerDto"][];
             winnerPlayerId?: null | string;
+            currentDiceRoll?: null | components["schemas"]["DiceRoll"];
         };
         ResolveRobberRequest: {
             newRobberHex: components["schemas"]["HexCoordDto"];

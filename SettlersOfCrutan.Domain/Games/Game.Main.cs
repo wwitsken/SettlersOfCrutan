@@ -11,6 +11,7 @@ namespace SettlersOfCrutan.Domain.Games;
 
 public record GameId : BaseId<Guid>;
 public enum PlayerDirection { Clockwise, CounterClockwise }
+public record DiceRoll(int Die1, int Die2);
 public partial class Game : AggregateRoot<GameId>
 {
     public override GameId Id { get; init; } = new() { Value = Guid.NewGuid() };
@@ -28,6 +29,7 @@ public partial class Game : AggregateRoot<GameId>
     public int Round { get; set; } = 1;
     public int PlayerIndex { get; set; } = 0;
     public TradeOffer? CurrentTradeOffer { get; set; } = null;
+    public DiceRoll? CurrentDiceRoll { get; set; } = null;
 
     /// <summary>Set once when a player reaches the win threshold and <see cref="GamePhase"/> transitions to <see cref="GamePhase.GameEnd"/>.</summary>
     public PlayerId? WinnerPlayerId { get; private set; }
@@ -63,7 +65,9 @@ public partial class Game : AggregateRoot<GameId>
         int playerIndex = 0,
         TradeOffer? currentTradeOffer = null,
         DateTimeOffset? turnExpiresAt = null,
-        PlayerId? winnerPlayerId = null
+        PlayerId? winnerPlayerId = null,
+        DiceRoll? currentDiceRoll = null
+        
     )
     {
         GameType = gameType;
@@ -80,6 +84,7 @@ public partial class Game : AggregateRoot<GameId>
         CurrentTradeOffer = currentTradeOffer;
         TurnExpiresAt = turnExpiresAt;
         WinnerPlayerId = winnerPlayerId;
+        CurrentDiceRoll = currentDiceRoll;
     }
 
     public static Result<Game> CreateGame(string gameName, LobbyId spawnerLobbyId, IReadOnlyList<UserId> userIds, IBoardGenerator boardGenerator)

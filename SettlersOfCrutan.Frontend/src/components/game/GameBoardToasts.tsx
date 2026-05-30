@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useGameStore, type GameToast } from "../../stores/game";
-
-const AUTO_DISMISS_MS = 5200;
+import { GAME_TOAST_AUTO_DISMISS_MS } from "./gameToastTiming";
 
 function ToastLine({
   toast,
@@ -17,7 +16,7 @@ function ToastLine({
     const id = toast.id;
     const t = window.setTimeout(
       () => onDismissRef.current(id),
-      AUTO_DISMISS_MS,
+      GAME_TOAST_AUTO_DISMISS_MS,
     );
     return () => window.clearTimeout(t);
   }, [toast.id]);

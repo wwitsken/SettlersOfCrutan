@@ -1,5 +1,12 @@
 import type { Game } from "./game";
-import type { Board, Hex, HexCoordinate, PopulationCenter, Port, Road } from "./board";
+import type {
+  Board,
+  Hex,
+  HexCoordinate,
+  PopulationCenter,
+  Port,
+  Road,
+} from "./board";
 import type { Player } from "./player";
 import type { PrivateGameInfo, MyHand } from "./privateGame";
 import type { TradeOffer } from "./tradeOffer";
@@ -15,6 +22,7 @@ import type { components } from "../../api/types";
 type PublicGameDto = components["schemas"]["PublicGameDto"];
 type HexDto = components["schemas"]["HexDto"];
 type HexCoordinateDto = components["schemas"]["HexCoordinateDto"];
+type CurrentDiceRollDto = components["schemas"]["DiceRoll"];
 
 const RESOURCE_VALUES: ResourceCardType[] = [
   "none",
@@ -109,8 +117,7 @@ function normalizeResourceCardType(v: unknown): ResourceCardType {
   const lower = trimmed.toLowerCase();
   if ((RESOURCE_VALUES as readonly string[]).includes(lower))
     return lower as ResourceCardType;
-  const camelFromPascal =
-    trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
+  const camelFromPascal = trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
   if ((RESOURCE_VALUES as readonly string[]).includes(camelFromPascal))
     return camelFromPascal as ResourceCardType;
   const aliased = RESOURCE_ALIASES[lower];
@@ -175,6 +182,11 @@ function mapHex(dto: HexDto | undefined): Hex | null {
   };
 }
 
+function mapCurrentRoll(currentRoll: CurrentDiceRollDto | null | undefined) {
+  if (!currentRoll || !currentRoll.die1 || !currentRoll.die2) return;
+  return { ...currentRoll };
+}
+
 function mapBoard(dto: PublicGameDto["board"] | undefined): Board {
   if (!dto) {
     return { hexes: [], populationCenters: [], roads: [], ports: [] };
@@ -232,8 +244,7 @@ function mapTradeOffer(
   dto: PublicGameDto["currentTradeOffer"],
 ): TradeOffer | undefined {
   if (!dto) return undefined;
-  const id =
-    dto.id != null && String(dto.id).length > 0 ? String(dto.id) : "";
+  const id = dto.id != null && String(dto.id).length > 0 ? String(dto.id) : "";
   if (!id || !(dto.playerProposerId ?? "").length) return undefined;
   return {
     id,
@@ -272,7 +283,9 @@ function mapCoordMatrix(v: unknown): HexCoordinate[][] {
   );
 }
 
-function mapPrivateGameFromPayload(root: Record<string, unknown>): PrivateGameInfo | null {
+function mapPrivateGameFromPayload(
+  root: Record<string, unknown>,
+): PrivateGameInfo | null {
   const raw = root.myPrivateGameInfo;
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
@@ -316,7 +329,9 @@ function publicDtoToGame(publicPart: PublicGameDto): Game | null {
   const playerIndex = currentId
     ? Math.max(
         0,
-        players.findIndex((p) => p.id === currentId || p.id === String(currentId)),
+        players.findIndex(
+          (p) => p.id === currentId || p.id === String(currentId),
+        ),
       )
     : 0;
 
@@ -343,10 +358,12 @@ function publicDtoToGame(publicPart: PublicGameDto): Game | null {
     playerDirection: normalizePlayerDirection(publicPart.playerDirection),
     gamePhase: normalizeGamePhase(publicPart.gamePhase),
     round: num(publicPart.round),
-    playerIndex: Number.isFinite(playerIndex) && playerIndex >= 0 ? playerIndex : 0,
+    playerIndex:
+      Number.isFinite(playerIndex) && playerIndex >= 0 ? playerIndex : 0,
     currentTradeOffer: mapTradeOffer(publicPart.currentTradeOffer),
     players,
     winnerPlayerId: extractWinnerPlayerId(publicPart),
+    currentDiceRoll: mapCurrentRoll(publicPart.currentDiceRoll),
   };
 }
 

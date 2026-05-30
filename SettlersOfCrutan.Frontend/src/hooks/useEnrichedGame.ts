@@ -1,7 +1,8 @@
 import { useEffect, useMemo } from "react";
+import { enrichGamePlayerDisplayNames } from "../domain/game/enrichGamePlayers";
+import type { Game } from "../domain/game/game";
 import { useGameStore } from "../stores/game";
 import { useUserProfilesStore } from "../stores/userProfiles";
-import type { Game } from "../domain/game/game";
 
 /**
  * Returns the current game with every player's `displayName` overlaid with the
@@ -28,12 +29,6 @@ export function useEnrichedGame(): Game | null {
 
   return useMemo(() => {
     if (!game) return null;
-    return {
-      ...game,
-      players: game.players.map((p) => ({
-        ...p,
-        displayName: byId[p.userId]?.displayName ?? p.displayName,
-      })),
-    };
+    return enrichGamePlayerDisplayNames(game, byId);
   }, [game, byId]);
 }

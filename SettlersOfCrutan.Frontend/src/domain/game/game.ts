@@ -1,7 +1,12 @@
 import type { Board } from "./board";
 import type { Player } from "./player";
 import type { TradeOffer } from "./tradeOffer";
-import type { GamePhase, GameType, PlayerDirection } from "./gameTypes";
+import type {
+  CurrentDiceRoll,
+  GamePhase,
+  GameType,
+  PlayerDirection,
+} from "./gameTypes";
 
 export type Game = {
   id: string;
@@ -19,4 +24,5 @@ export type Game = {
   players: Player[];
   /** Set once `gamePhase === "gameEnd"`. Lets reload / late-join clients resolve the winner without SignalR. */
   winnerPlayerId?: string;
+  currentDiceRoll?: CurrentDiceRoll;
 };

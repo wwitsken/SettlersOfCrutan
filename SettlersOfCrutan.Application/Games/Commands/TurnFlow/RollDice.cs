@@ -15,7 +15,7 @@ public sealed class RollDiceCommandHandler(
 
     public async Task<Result<RollDiceCommandResult>> Handle(RollDiceCommand command, CancellationToken ct = default)
     {
-        var game = await _gameRepository.GetAsync(command.GameId, ct);
+        Game? game = await _gameRepository.GetAsync(command.GameId, ct);
 
         if (game is null) return Result<RollDiceCommandResult>.Failure(new Error("NotFound", "Game not found"));
 

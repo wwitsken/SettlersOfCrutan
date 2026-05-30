@@ -45,6 +45,7 @@ public static class GameMappingExtensions
             CurrentPlayerId = game.Players[game.PlayerIndex].Id,
             CurrentTradeOffer = game.CurrentTradeOffer?.ToDto(),
             WinnerPlayerId = game.WinnerPlayerId?.Value,
+            CurrentDiceRoll = game.CurrentDiceRoll,
             Players = [.. game.Players.Select((p, idx) => new PlayerDto {
                 Id = p.Id.Value,
                 UserId = p.UserId.Value,
