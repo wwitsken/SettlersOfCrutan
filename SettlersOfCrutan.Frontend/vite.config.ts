@@ -7,7 +7,6 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss()],
-    // The server section only applies in development. In production, nginx does the rerouting.
     server: {
       port: parseInt(env.VITE_PORT),
       proxy: {

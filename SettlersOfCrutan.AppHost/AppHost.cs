@@ -3,10 +3,7 @@ using SettlersOfCrutan.AppHost;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-builder.AddAzureContainerAppEnvironment("settlers-of-crutan");
-
-var redis = builder.AddAzureManagedRedis("redis")
-    .RunAsContainer();
+var redis = builder.AddRedis("redis");
 
 var app = builder.AddProject<Projects.SettlersOfCrutan_Presentation>("api")
     .WithReference(redis)
