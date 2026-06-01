@@ -99,6 +99,7 @@ export const game: Game = {
   players: [
     {
       id: "p1",
+      userId: "Player 1",
       playOrder: 1,
       isPlaying: true,
       displayName: "Alice",

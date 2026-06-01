@@ -9,9 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.Azure.Redis" Version="13.2.4" />
-    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.2.4" />
-    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.7" />
+    <PackageReference Include="Aspire.Hosting.Azure.AppContainers" Version="13.3.5" />
+    <PackageReference Include="Aspire.Hosting.Azure.Redis" Version="13.3.5" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.3.5" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Redis" Version="2.3.0" />
   </ItemGroup>
 
   <ItemGroup>

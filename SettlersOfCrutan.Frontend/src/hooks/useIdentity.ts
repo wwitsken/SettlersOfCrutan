@@ -66,7 +66,7 @@ export function useIdentity() {
     void (async () => {
       setProfileError(null);
       const { error, response } = await api.PUT("/api/users/me", {
-        body: { displayName: next },
+        body: { displayName: next, preferredColor: null },
       });
       if (error) setProfileError(`Could not save name (${response.status}).`);
       else setProfileError(null);
@@ -80,7 +80,7 @@ export function useIdentity() {
     void (async () => {
       setProfileError(null);
       const { error, response } = await api.PUT("/api/users/me", {
-        body: { preferredColor: c as PlayerColor },
+        body: { preferredColor: c as PlayerColor, displayName: null },
       });
       if (error) setProfileError(`Could not save color (${response.status}).`);
       else setProfileError(null);
