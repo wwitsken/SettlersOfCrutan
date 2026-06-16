@@ -85,6 +85,7 @@ var app = builder.Build();
 if (app.Environment.IsProduction())
 {
     app.UseHttpsRedirection();
+    app.UseDefaultFiles();
     app.UseStaticFiles();
 }
 

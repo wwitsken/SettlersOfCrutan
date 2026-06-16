@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(xargs grep:*)",
-      "Bash(grep -r \"record.*Request\" /c/Users/wesle/source/repos/SettlersOfCrutan/SettlersOfCrutan.Presentation/Dtos/*.cs)"
+      "Bash(grep -r \"record.*Request\" /c/Users/wesle/source/repos/SettlersOfCrutan/SettlersOfCrutan.Presentation/Dtos/*.cs)",
+      "PowerShell(head *)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\wesle\\\\.aspire\\\\deployments\" -Recurse | Where-Object { $_.Extension -match '\\\\.\\(json|bicep\\)$' } | Select-Object FullName)"
     ]
   }
 }

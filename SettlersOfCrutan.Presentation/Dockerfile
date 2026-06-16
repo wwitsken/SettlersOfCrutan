@@ -1,30 +1,14 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+# Runtime image with pre-built application
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
-USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+# Copy the published application (assumes it's pre-built locally)
+COPY bin/Release/net10.0/publish/ .
 
-# This stage is used to build the service project
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-ARG BUILD_CONFIGURATION=Release
-WORKDIR /src
-COPY ["SettlersOfCrutan.Presentation/SettlersOfCrutan.Presentation.csproj", "SettlersOfCrutan.Presentation/"]
-RUN dotnet restore "./SettlersOfCrutan.Presentation/SettlersOfCrutan.Presentation.csproj"
-COPY . .
-WORKDIR "/src/SettlersOfCrutan.Presentation"
-RUN dotnet build "./SettlersOfCrutan.Presentation.csproj" -c $BUILD_CONFIGURATION -o /app/build
+# Copy frontend static files from wwwroot
+COPY wwwroot/ wwwroot/
 
-# This stage is used to publish the service project to be copied to the final stage
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./SettlersOfCrutan.Presentation.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
-
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "SettlersOfCrutan.Presentation.dll"]
