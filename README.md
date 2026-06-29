@@ -28,6 +28,10 @@ Chose Redis as the primary store. Game state is serialized to JSON, with Lua scr
 
 Multiplayer games require two-way communication with sub-second latency. SignalR is mature, handles reconnection transparently, and integrates seamlessly with the .NET stack. Considered WebSocket implementations directly, but the scaffolding savings (groups, hubs, automatic serialization) were worth the abstraction.
 
+Every command (place settlement, trade, roll dice) needs to send the updated game state to all players in that match. This meant dozens of handlers with identical code: execute command, grab the game, serialize it, send to group. Rather than repeat that pattern, used a decorator to wrap command handlers — the decorator handles the broadcast, the command handler focuses on the domain logic.
+
+**Trade-off**: A small amount of reflection overhead, but eliminated hundreds of lines of boilerplate. The pattern works cleanly here because the cross-cutting concern (broadcast to players) is identical across all commands.
+
 ### Full Game State Events, Not Incremental Diffs
 
 After each action, the server broadcasts the entire current game state to all players. This could seem wasteful, but Catan's state is small — a handful of resource counts, a few dozen board positions, up to 4 active players. Incremental updates would have saved bandwidth at the cost of reconciliation logic, ordering guarantees, and debugging complexity.
